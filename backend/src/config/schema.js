@@ -210,6 +210,8 @@ export async function initFullDatabase() {
         ('experience', 'History and culture', '🏛️', ARRAY['Historical tour', 'Cultural walk', 'Museum visit', 'Local traditions']),
         ('experience', 'Nature and outdoors', '🌲', ARRAY['Hiking', 'Camping', 'Wildlife watching', 'Boat ride']);
       `);
+    }
+
     // 7. Admins Table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS admins (
