@@ -47,9 +47,10 @@ function Profile() {
 
       try {
         setIsLoading(true);
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
         const url = targetId 
-          ? `http://localhost:5000/api/auth/profile?id=${targetId}` 
-          : `http://localhost:5000/api/auth/profile?email=${encodeURIComponent(targetEmail)}`;
+          ? `${baseUrl}/auth/profile?id=${targetId}` 
+          : `${baseUrl}/auth/profile?email=${encodeURIComponent(targetEmail)}`;
 
         const response = await fetch(url);
         const data = await response.json();

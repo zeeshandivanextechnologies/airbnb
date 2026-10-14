@@ -201,9 +201,10 @@ export default function HostSetup() {
     const fetchMetadata = async () => {
       try {
         setIsLoadingTypes(true);
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
         const [typesRes, catRes] = await Promise.all([
-          fetch('http://localhost:5000/api/listings/hosting-types'),
-          fetch('http://localhost:5000/api/listings/host-categories')
+          fetch(`${baseUrl}/listings/hosting-types`),
+          fetch(`${baseUrl}/listings/host-categories`)
         ]);
 
         const typesJson = await typesRes.json();
@@ -898,7 +899,8 @@ export default function HostSetup() {
         service_provision_type: serviceProvisionType
       };
 
-      const res = await fetch('http://localhost:5000/api/listings', {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+      const res = await fetch(`${baseUrl}/listings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

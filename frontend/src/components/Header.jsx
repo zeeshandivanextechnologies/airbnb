@@ -43,7 +43,8 @@ export default function Header() {
       const checkBlockedStatus = async () => {
         try {
           const endpoint = user.id ? `?id=${user.id}` : `?email=${encodeURIComponent(user.email)}`;
-          const res = await fetch(`http://localhost:5000/api/auth/profile${endpoint}`);
+          const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+          const res = await fetch(`${baseUrl}/auth/profile${endpoint}`);
           const data = await res.json();
           if (res.status === 403 || data.isBlocked || String(data.user?.status || '').toUpperCase() === 'BLOCKED') {
             dispatch(logoutUser());

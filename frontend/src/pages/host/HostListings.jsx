@@ -12,7 +12,8 @@ function HostListings() {
   useEffect(() => {
     const fetchListings = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/listings');
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+        const res = await fetch(`${baseUrl}/listings`);
         const data = await res.json();
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {
           setListings(data.data);

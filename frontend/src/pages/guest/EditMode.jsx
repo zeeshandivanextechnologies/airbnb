@@ -205,11 +205,12 @@ function EditMode() {
 
         const targetId = activeUser?.id;
         const targetEmail = activeUser?.email;
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
         const url = targetId
-          ? `http://localhost:5000/api/auth/profile?id=${targetId}`
+          ? `${baseUrl}/auth/profile?id=${targetId}`
           : targetEmail
-          ? `http://localhost:5000/api/auth/profile?email=${encodeURIComponent(targetEmail)}`
-          : 'http://localhost:5000/api/auth/profile';
+          ? `${baseUrl}/auth/profile?email=${encodeURIComponent(targetEmail)}`
+          : `${baseUrl}/auth/profile`;
 
         const res = await fetch(url, { headers });
         const data = await res.json();
@@ -245,7 +246,8 @@ function EditMode() {
         ...payload
       };
 
-      const res = await fetch('http://localhost:5000/api/auth/profile', {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+      const res = await fetch(`${baseUrl}/auth/profile`, {
         method: 'PUT',
         headers,
         body: JSON.stringify(bodyData)

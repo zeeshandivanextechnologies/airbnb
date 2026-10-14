@@ -9,7 +9,8 @@ export default function Services() {
   const [dynamicListings, setDynamicListings] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/listings')
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+    fetch(`${baseUrl}/listings`)
       .then(res => res.json())
       .then(data => {
         if (data.success && Array.isArray(data.data)) {
