@@ -49,14 +49,11 @@ router.post('/send-otp', async (req, res) => {
       await pool.query('UPDATE users SET otp = $1 WHERE id = $2', [otpCode, existingUser.id]);
     }
 
-    // 2. If it is an email, send actual email via Gmail SMTP using Nodemailer
+    // 2. If it is an email, dispatch actual email via Gmail SMTP asynchronously
     if (isEmail) {
-      try {
-        await sendOtpEmail(identifier.trim(), otpCode);
-        console.log(`✉️ Real OTP email successfully sent to: ${identifier.trim()}`);
-      } catch (mailErr) {
-        console.error('Mail delivery warning:', mailErr.message);
-      }
+      sendOtpEmail(identifier.trim(), otpCode)
+        .then(() => console.log(`✉️ Real OTP email successfully sent to: ${identifier.trim()}`))
+        .catch(mailErr => console.error('Mail delivery warning:', mailErr.message));
     }
 
     return res.status(200).json({

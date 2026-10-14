@@ -210,6 +210,32 @@ export async function initFullDatabase() {
         ('experience', 'History and culture', '🏛️', ARRAY['Historical tour', 'Cultural walk', 'Museum visit', 'Local traditions']),
         ('experience', 'Nature and outdoors', '🌲', ARRAY['Hiking', 'Camping', 'Wildlife watching', 'Boat ride']);
       `);
+    // 7. Admins Table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS admins (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(150) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        role VARCHAR(50) DEFAULT 'Super Admin',
+        avatar VARCHAR(10) DEFAULT 'SA',
+        status VARCHAR(20) DEFAULT 'ACTIVE',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        last_login TIMESTAMP WITH TIME ZONE
+      );
+    `);
+
+    // Seed default admin accounts if not already seeded
+    const adminCountRes = await pool.query('SELECT COUNT(*) FROM admins');
+    if (parseInt(adminCountRes.rows[0].count, 10) === 0) {
+      console.log('🌱 Seeding initial admin users...');
+      await pool.query(`
+        INSERT INTO admins (name, email, password, role, avatar, status) VALUES
+        ('Super Admin', 'admin@airbnb.internal', '$2a$10$vN0u02/9n2B6nI.W9.Zqeu.G9rL7/06PZq/QG1Q9Zqeu.G9rL7/06', 'Super Admin', 'SA', 'ACTIVE'),
+        ('Finance Manager', 'finance.lead@airbnb.internal', '$2a$10$vN0u02/9n2B6nI.W9.Zqeu.G9rL7/06PZq/QG1Q9Zqeu.G9rL7/06', 'Finance Manager', 'FM', 'ACTIVE'),
+        ('Senior Moderator', 'support.lead@airbnb.internal', '$2a$10$vN0u02/9n2B6nI.W9.Zqeu.G9rL7/06PZq/QG1Q9Zqeu.G9rL7/06', 'Senior Moderator', 'SM', 'ACTIVE')
+        ON CONFLICT (email) DO NOTHING;
+      `);
     }
 
     console.log('✅ PostgreSQL Shared Database Schema is ready!');
