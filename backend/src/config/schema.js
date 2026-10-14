@@ -38,8 +38,21 @@ export async function initFullDatabase() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS passkey_created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active_device VARCHAR(150) DEFAULT 'Windows 10.0 • Chrome';
       ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active_location VARCHAR(150) DEFAULT 'Jaipur, Rajasthan';
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS privacy_settings JSONB DEFAULT '{"readMessages":true,"searchEngines":false,"homeCity":false,"tripType":false,"lengthOfStay":false,"bookedServices":false,"aiFeatures":true}'::jsonb;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS notification_settings JSONB;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS tax_info JSONB;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS vat_info JSONB;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_language VARCHAR(50) DEFAULT 'English';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS timezone VARCHAR(100) DEFAULT 'UTC';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS known_languages JSONB;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code VARCHAR(100);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS custom_referral_links JSONB;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS about_me TEXT;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_answers JSONB;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS interests JSONB;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS stamps_enabled BOOLEAN DEFAULT true;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS automatic_translation BOOLEAN DEFAULT true;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_currency VARCHAR(10) DEFAULT 'INR';
     `);
 
     // Blocked Users Table
