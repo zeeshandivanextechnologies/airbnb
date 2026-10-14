@@ -1,0 +1,615 @@
+.pageContainer {
+  display: flex;
+  height: calc(100vh - 80px); /* Adjust based on header height */
+   font-family: 'Manrope', Airbnb Cereal VF, Circular, -apple-system, BlinkMacSystemFont, Roboto, Helvetica Neue, sans-serif !important;
+}
+
+.calendarSection {
+  flex: 1;
+  padding: 32px;
+  position: relative;
+  overflow-y: auto;
+}
+
+.calendarHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.monthTitle {
+  font-size: 32px;
+  font-weight: 600;
+  color: #222222;
+  margin: 0;
+}
+
+.chevronIcon {
+  font-size: 20px;
+  color: #222222;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.monthBtn {
+  background-color: #f7f7f7;
+  border: none;
+  border-radius: 24px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #222222;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.monthBtn:hover {
+  background-color: #ebebeb;
+}
+
+.smallChevron {
+  font-size: 12px;
+}
+
+.settingsBtn {
+  background-color: #f7f7f7;
+  border: none;
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.settingsBtn:hover {
+  background-color: #ebebeb;
+}
+
+.cogIcon {
+  color: #717171;
+  font-size: 16px;
+}
+
+.daysOfWeek {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 16px;
+}
+
+.dayName {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: #717171;
+}
+
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px;
+}
+
+.emptyCell {
+  min-height: 120px;
+}
+
+.dayCell {
+  border: 1px solid #ebebeb;
+  border-radius: 16px;
+  min-height: 120px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.dayCell:hover {
+  border-color: #222222;
+}
+
+.dayNumber {
+  font-size: 16px;
+  font-weight: 500;
+  color: #222222;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.activeDay {
+  background-color: #E51D53;
+  color: white;
+}
+
+.dayPrice {
+  font-size: 14px;
+  font-weight: 600;
+  color: #717171;
+}
+
+.floatingBtn {
+  position: absolute;
+  bottom: 40px;
+  right: 40px;
+  background-color: white;
+  border-radius: 24px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #222222;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  border: 1px solid #ebebeb;
+  cursor: pointer;
+  z-index: 100;
+  transition: transform 0.2s;
+}
+
+.floatingBtn:hover {
+  transform: scale(1.05);
+}
+
+.sidebarSection {
+  width: 350px;
+  border-left: 1px solid #ebebeb;
+  padding: 32px 24px;
+  overflow-y: auto;
+  background-color: white;
+}
+
+.sidebarItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 0;
+  border-bottom: 1px solid #ebebeb;
+  cursor: pointer;
+}
+
+.sidebarItem:hover .nextBtn {
+  background-color: #ebebeb;
+}
+
+.itemContent {
+  flex: 1;
+}
+
+.itemTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 8px;
+}
+
+.itemSub {
+  font-size: 14px;
+  color: #717171;
+  line-height: 1.5;
+}
+
+.nextBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #f7f7f7;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-left: 16px;
+}
+
+.nextIcon {
+  font-size: 12px;
+  color: #222222;
+}
+
+@media (max-width: 991px) {
+  .pageContainer {
+    flex-direction: column;
+    height: auto;
+  }
+  .sidebarSection {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid #ebebeb;
+  }
+  .calendarSection {
+    padding: 24px;
+  }
+  
+  .dayCell {
+    min-height: 100px;
+    padding: 12px;
+    border-radius: 12px;
+  }
+}
+
+
+.datePickerWrapper {
+  position: relative;
+}
+
+.datePickerDropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  background: white;
+  border: 1px solid #ebebeb;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.15);
+  z-index: 1000;
+}
+
+.dayCellSelected {
+  background-color: #222222;
+  color: white;
+  border-color: #222222;
+}
+
+.dayCellSelected .dayNumber,
+.dayCellSelected .dayPrice {
+  color: white;
+}
+
+.selectedSidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.selectedHeader {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.dateBadge {
+  background-color: #222222;
+  color: white;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.closeIconBtn {
+  background-color: #222222;
+  color: white;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.darkCard {
+  background-color: #1a1a1a;
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+  font-size: 14px;
+}
+
+.darkCardLarge {
+  background-color: #1a1a1a;
+  border-radius: 16px;
+  padding: 20px;
+  color: white;
+}
+
+.statusLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.greenDot {
+  width: 6px;
+  height: 6px;
+  background-color: #00C853;
+  border-radius: 50%;
+}
+
+.toggleWrap {
+  background-color: #333;
+  border-radius: 20px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  width: 64px;
+  justify-content: space-between;
+}
+
+.toggleTimes {
+  padding-left: 8px;
+  color: #888;
+}
+
+.toggleCircle {
+  width: 24px;
+  height: 24px;
+  background-color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.priceLabel {
+  color: #a0a0a0;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.priceRow {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.newPrice {
+  font-size: 32px;
+  font-weight: 600;
+}
+
+.oldPriceStrikethrough {
+  font-size: 18px;
+  color: #a0a0a0;
+  text-decoration: line-through;
+}
+
+.disabledDay {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #f9f9f9;
+}
+.disabledDay:hover {
+  border-color: #ebebeb;
+}
+
+.redDot {
+  width: 6px;
+  height: 6px;
+  background-color: #E51D53;
+  border-radius: 50%;
+}
+
+.toggleWrapOff {
+  background-color: #555;
+}
+
+.toggleCheck {
+  padding-right: 8px;
+  color: #888;
+}
+
+.darkCardColumn {
+  background-color: #1a1a1a;
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: white;
+}
+
+.statusRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.noteSection {
+  display: flex;
+  flex-direction: column;
+  margin-top: -4px;
+}
+
+.addNoteBtn {
+  background: transparent;
+  border: none;
+  color: white;
+  text-decoration: underline;
+  text-align: left;
+  padding: 0;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.noteInputContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.noteInput {
+  background-color: transparent;
+  border: 1px solid #555;
+  border-radius: 8px;
+  color: white;
+  padding: 12px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: none;
+  min-height: 80px;
+  outline: none;
+}
+
+.noteInput:focus {
+  border-color: white;
+}
+
+.charCount {
+  font-size: 12px;
+  color: #a0a0a0;
+}
+
+.noteActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.noteCancelBtn {
+  background: transparent;
+  color: white;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.noteSaveBtn {
+  background-color: white;
+  color: black;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.priceEditContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.priceInputWrapper {
+  display: flex;
+  align-items: center;
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.priceInputWrapper:focus-within {
+  border-color: white;
+}
+
+.currencySymbol {
+  font-size: 16px;
+  margin-right: 8px;
+  color: white;
+}
+
+.priceInput {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 16px;
+  outline: none;
+  width: 100%;
+}
+
+.discountText {
+  font-size: 12px;
+  color: #a0a0a0;
+}
+
+
+@media (max-width: 768px) {
+  .dayCell {
+    min-height: 80px;
+    padding: 8px;
+    border-radius: 8px;
+  }
+  
+  .dayNumber {
+    font-size: 14px;
+    width: 24px;
+    height: 24px;
+  }
+  
+  .dayPrice {
+    font-size: 12px;
+  }
+  
+  .monthTitle {
+    font-size: 24px;
+  }
+  
+  .floatingBtn {
+    bottom: 24px;
+    right: 24px;
+  }
+
+  .calendarGrid{
+    gap: 2px;
+  }
+
+  .dayCell{
+    min-height: 60px;
+  }
+
+  .emptyCell{
+     min-height: 60px;
+  }
+
+  .calendarHeader{
+    flex-direction: column;
+    margin-bottom: 16px;
+  }
+
+  .headerRight{
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .calendarSection{
+    padding: 12px;
+  }
+
+  .sidebarSection{
+    padding: 12px;
+  }
+
+  .sidebarItem{
+    padding: 12px 0px;
+  }
+
+  .itemTitle{
+    margin-bottom: 2px;
+  }
+
+}
+

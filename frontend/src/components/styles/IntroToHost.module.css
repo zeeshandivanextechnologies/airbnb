@@ -1,0 +1,199 @@
+.introPage {
+ padding: 50px 0;
+  background-color: white;
+}
+
+.headerContainer {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.topLine {
+  width: 48px;
+  height: 1px;
+  background-color: #222222;
+  margin: 0 auto 16px auto;
+}
+
+.mainTitle {
+  font-size: 32px;
+  font-weight: 700;
+  color: #222222;
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+}
+
+.subTitle {
+  font-size: 16px;
+  color: #222222;
+  font-weight: 500;
+}
+
+.imageContainer {
+  width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+}
+
+.bannerImage {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  display: block;
+}
+
+.expectSection {
+ padding-top: 50px;
+}
+
+.expectTextWrapper {
+  padding-right: 48px;
+}
+.expectTextWrapperSecond {
+  padding-left: 48px;
+}
+
+.expectItemTitle {
+  font-size: 24px;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 12px;
+}
+
+.expectItemText {
+  font-size: 16px;
+  color: #222222;
+  line-height: 1.5;
+}
+
+.expectImage {
+  width: 100%;
+  border-radius: 16px;
+  object-fit: cover;
+}
+
+.resourcesSection {
+  padding-top: 50px;
+}
+
+.resourcesTitle {
+  font-size: 40px;
+  font-weight: 600;
+  color: #222222;
+}
+
+.faqItem {
+  border-bottom: 1px solid #ebebeb;
+}
+
+.faqItem:first-child {
+  border-top: 1px solid #ebebeb;
+}
+
+.faqQuestion {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 12px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #222222;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.faqIcon {
+  font-size: 16px;
+  color: #222222;
+  transition: transform 0.3s ease;
+}
+
+.faqIconOpen {
+  transform: rotate(180deg);
+}
+
+.faqAnswer {
+  padding-bottom: 16px;
+  font-size: 16px;
+  color: #717171;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .expectTextWrapper {
+    padding-right: 0;
+  }
+}
+
+.webinarSection {
+  padding-top: 50px;
+}
+
+.webinarHeader {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.webinarTitle {
+  font-size: 48px;
+  font-weight: 700;
+  color: #222222;
+  margin-bottom: 12px;
+}
+
+.webinarSubTitle {
+  font-size: 20px;
+  color: #222222;
+  font-weight: 400;
+}
+
+.webinarCard {
+  text-align: center;
+  margin-bottom: 24px;
+
+}
+
+.countryName {
+  font-size: 22px;
+  font-weight: 700;
+  color: #222222;
+  margin-bottom: 0px;
+}
+
+.languageName {
+  font-size: 16px;
+  font-weight: 500;
+  color: #717171;
+  margin-bottom: 5px;
+}
+
+.pinkBtn {
+  background: linear-gradient(to right,#E61E4D 0%,#E31C5F 50%,#D70466 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.pinkBtn:hover {
+  opacity: 0.9;
+}
+
+@media (min-width: 768px) {
+  .mainTitle {
+    font-size: 40px;
+    margin-bottom: 16px;
+  }
+  .subTitle {
+    font-size: 18px;
+  }
+}

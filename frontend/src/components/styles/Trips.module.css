@@ -1,0 +1,80 @@
+.mainRow {
+  height: calc(100vh - 82px);
+}
+
+.leftSidebar {
+  height: 100%;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #ebebeb;
+  background-color: #ffffff;
+  overflow-y: auto;
+}
+
+.leftSidebar h1 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 16px;
+}
+
+.contentWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.illustration {
+  width: 100%;
+    max-width: 280px;
+    margin-bottom: 16px;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 12px;
+}
+
+.subtitle {
+  font-size: 0.95rem;
+  color: #717171;
+  line-height: 1.5;
+  margin-bottom: 32px;
+  max-width: 320px;
+}
+
+.getStartedBtn {
+  background-color: #e51d53;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 14px 32px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.getStartedBtn:hover {
+  background-color: #d11749;
+}
+
+.mapContainer {
+  height: 100%;
+  width: 100%;
+  padding: 32px;
+}
+
+.mapFrame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 20px;
+  overflow: hidden;
+  isolation: isolate;
+  z-index: 1;
+}

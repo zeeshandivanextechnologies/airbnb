@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>airbnb</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+      // Early pre-render hook: ensure googtrans cookie is set BEFORE first paint to eliminate flicker
+      (function() {
+        try {
+          var saved = localStorage.getItem('airbnb_preferred_language') || 'English';
+          var map = {
+            'English': 'en', 'Hindi': 'hi', 'Spanish': 'es', 'French': 'fr', 'German': 'de',
+            'Japanese': 'ja', 'Chinese': 'zh-CN', 'Italian': 'it', 'Portuguese': 'pt',
+            'Russian': 'ru', 'Korean': 'ko', 'Arabic': 'ar', 'Bengali': 'bn', 'Marathi': 'mr',
+            'Telugu': 'te', 'Tamil': 'ta', 'Gujarati': 'gu', 'Urdu': 'ur', 'Kannada': 'kn',
+            'Malayalam': 'ml', 'Punjabi': 'pa', 'Dutch': 'nl', 'Polish': 'pl', 'Turkish': 'tr',
+            'Indonesian': 'id', 'Vietnamese': 'vi', 'Thai': 'th', 'Greek': 'el', 'Czech': 'cs'
+          };
+          var code = map[saved] || 'en';
+          if (code !== 'en') {
+            document.documentElement.classList.add('translating-active');
+            var domain = window.location.hostname;
+            document.cookie = 'googtrans=/en/' + code + '; path=/;';
+            if (domain) {
+              document.cookie = 'googtrans=/en/' + code + '; domain=.' + domain + '; path=/;';
+              document.cookie = 'googtrans=/en/' + code + '; domain=' + domain + '; path=/;';
+            }
+          }
+        } catch(e) {}
+      })();
+    </script>
+    <style>
+      /* Force hide all Google Translate banner frames, iframes & popups */
+      .goog-te-banner-frame,
+      .goog-te-banner-frame.skiptranslate,
+      iframe.goog-te-banner-frame,
+      iframe[id*=":1.container"],
+      iframe[id*=":2.container"],
+      .VIpgJd-ZVi9od-ORHb-OEVmcd,
+      .VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
+      .VIpgJd-ZVi9od-aZ2wEe-OtuOH-Gx9qEb,
+      #goog-gt-tt,
+      .goog-te-balloon-frame {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0px !important;
+        width: 0px !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        border: none !important;
+      }
+      html, body {
+        top: 0px !important;
+        position: static !important;
+      }
+      .goog-tooltip, .goog-tooltip:hover {
+        display: none !important;
+      }
+      .goog-text-highlight {
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+      }
+      /* Anti-flicker: smooth transition so user never sees English flashing */
+      html.translating-active #root {
+        opacity: 0;
+        visibility: hidden;
+      }
+      html.translated-ready #root {
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.15s ease-in;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <div id="google_translate_element" style="display: none !important;"></div>
+    <script type="text/javascript">
+      function googleTranslateElementInit() {
+        new google.translate.TranslateElement({
+          pageLanguage: 'en',
+          autoDisplay: false
+        }, 'google_translate_element');
+      }
+
+      // Realtime MutationObserver to instantly kill Google's top banner bar
+      (function() {
+        var observer = new MutationObserver(function(mutations) {
+          var frames = document.querySelectorAll('.goog-te-banner-frame, iframe.goog-te-banner-frame, .VIpgJd-ZVi9od-aZ2wEe-wOHMyf');
+          frames.forEach(function(f) {
+            f.remove();
+          });
+          if (document.body && document.body.style.top !== '0px') {
+            document.body.style.top = '0px';
+          }
+          if (document.documentElement && document.documentElement.style.top !== '0px') {
+            document.documentElement.style.top = '0px';
+          }
+        });
+        observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
+      })();
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

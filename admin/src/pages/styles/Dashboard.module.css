@@ -1,0 +1,452 @@
+
+
+
+/* =========================================
+   Stat Cards (Users, Hosts, Listings, Bookings)
+   ========================================= */
+.statCard {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #ebebeb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: all 0.25s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.statCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.07);
+  border-color: #dedede;
+}
+
+.statHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.statTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #717171;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.iconBox {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.statValue {
+  font-size: 26px;
+  font-weight: 800;
+  color: #111111;
+  letter-spacing: -0.5px;
+  margin-bottom: 5px;
+  line-height: 1.1;
+}
+
+.statFooter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.badgeTrend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.badgeSuccess {
+  background: #eaf8ee;
+  color: #16a34a;
+}
+
+.badgeAlert {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.statSubtext {
+  color: #888888;
+  font-size: 12px;
+}
+
+/* =========================================
+   Revenue & Commission Highlight Banner (Elevated)
+   ========================================= */
+.revenueBanner {
+  background: linear-gradient(135deg, #111111 0%, #1a1a20 100%);
+  border-radius: 12px;
+  padding: 16px;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  position: relative;
+  overflow: hidden;
+}
+
+.revenueBanner::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(255, 56, 92, 0.22) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.revenueBannerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+margin-bottom: 16px;
+}
+
+.revenueBannerTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.revenueBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  color: #d1d5db;
+  font-weight: 500;
+}
+
+.revenueCardItem {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.25s ease;
+  height: 100%;
+}
+
+.revenueCardItem:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-2px);
+}
+
+.revIconBox {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.revInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.revLabel {
+  font-size: 13px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.revAmount {
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.4px;
+  line-height: 1.2;
+}
+
+.revSubPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 4px;
+  width: fit-content;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+/* =========================================
+   Section Card
+   ========================================= */
+.sectionCard {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #ebebeb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  padding: 16px;
+  height: 100%;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111111;
+  margin: 0;
+}
+
+.sectionSubtitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: #717171;
+  margin: 4px 0 0 0;
+}
+
+/* =========================================
+   Filter Controls (Daily / Monthly)
+   ========================================= */
+.timeFilterGroup {
+  display: flex;
+  background: #f7f9fa;
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid #ebebeb;
+  gap: 4px;
+}
+
+.filterBtn {
+  background: transparent;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filterBtnActive {
+  background: #ffffff;
+  color: #111111;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+/* =========================================
+   SVG Chart
+   ========================================= */
+.chartContainer {
+  position: relative;
+  width: 100%;
+  padding-top: 10px;
+  overflow: hidden;
+}
+
+.svgChart {
+  width: 100%;
+  height: 270px;
+  display: block;
+}
+
+.chartGridLine {
+  stroke: #f1f3f5;
+  stroke-dasharray: 4 4;
+}
+
+.chartAxisText {
+  font-size: 11px;
+  fill: #888888;
+  font-family: inherit;
+}
+
+.chartBarBg {
+  fill: #f7f9fa;
+  rx: 6;
+}
+
+.chartBarFill {
+  fill: url(#barGradient);
+  rx: 6;
+  transition: height 0.3s ease, y 0.3s ease;
+  cursor: pointer;
+}
+
+.chartBarFill:hover {
+  fill: #ff385c;
+  opacity: 0.9;
+}
+
+.chartTooltip {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  background: #111111;
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* =========================================
+   Breakdown Metrics
+   ========================================= */
+.metricBarsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.metricBarRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.metricBarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.metricBarLabel {
+  font-weight: 600;
+  color: #222222;
+}
+
+.metricBarValue {
+  font-weight: 700;
+  color: #111111;
+}
+
+.metricProgressTrack {
+  height: 8px;
+  background: #f1f3f5;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.metricProgressBar {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* =========================================
+   Recent Activity Feed
+   ========================================= */
+.activityList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.activityItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #fbfcfd;
+  border: 1px solid #f0f2f5;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.activityItem:hover {
+  background: #f8fafc;
+  transform: translateX(2px);
+}
+
+.activityLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+}
+
+.activityIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.activityDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.activityTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111111;
+  line-height: 1.3;
+}
+
+.activitySub {
+  font-size: 12px;
+  color: #717171;
+}
+
+.activityTime {
+  font-size: 12px;
+  font-weight: 500;
+  color: #9ca3af;
+  white-space: nowrap;
+}

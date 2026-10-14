@@ -1,0 +1,1853 @@
+.pageContainer {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #ffffff;
+  font-family: inherit;
+}
+
+.header {
+  padding: 24px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  background-color: #ffffff;
+  z-index: 100;
+}
+
+.logoLink {
+  text-decoration: none;
+  display: inline-block;
+  color: #222222;
+}
+
+.saveExitBtn {
+  background: white;
+  border: 1px solid #dddddd;
+  border-radius: 24px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #222222;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.saveExitBtn:hover {
+  border-color: #222222;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.mainContent {
+  flex: 1;
+  width: 100%;
+}
+
+.stepText {
+  font-size: 18px;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.title {
+  font-size: 48px;
+  font-weight: 600;
+  color: #222222;
+  line-height: 1.1;
+  margin-bottom: 24px;
+  letter-spacing: -1px;
+}
+
+.description {
+  font-size: 18px;
+  color: #717171;
+  line-height: 1.5;
+  font-weight: 400;
+  max-width: 480px;
+}
+
+.imageContainer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.illustration {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+.footer {
+  width: 100%;
+  background: white;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+}
+
+.progressBar {
+  width: 100%;
+  height: 4px;
+  display: flex;
+  gap: 8px;
+}
+
+.progressSegment {
+  flex: 1;
+  background-color: #ebebeb;
+  height: 100%;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background-color: #222222;
+  transition: width 0.3s ease;
+}
+
+.footerContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.backBtn {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  color: #222222;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 12px 0;
+}
+
+.backBtn:hover {
+  color: #000000;
+}
+
+.nextBtn {
+  background-color: #222222;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 14px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.nextBtn:hover {
+  background-color: #000000;
+}
+
+
+
+.headerRight {
+  display: flex;
+  gap: 16px;
+}
+
+.questionsBtn {
+  background: white;
+  border: 1px solid #dddddd;
+  border-radius: 24px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #222222;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.questionsBtn:hover {
+  border-color: #222222;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.step2Container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 0 100px;
+}
+
+.step2Title {
+  font-size: 32px;
+  font-weight: 600;
+  color: #222222;
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.gridContainer {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.typeCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  border: 1px solid #dddddd;
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  background: white;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+  height: 100px;
+}
+
+.typeCard:hover {
+  border-color: #222222;
+}
+
+.typeCardSelected {
+  border: 2px solid #222222;
+  background-color: #f7f7f7;
+  padding: 15px;
+  /* adjust for border */
+}
+
+.typeIcon {
+  font-size: 28px;
+  color: #222222;
+  margin-bottom: 8px;
+}
+
+.typeLabel {
+  font-size: 16px;
+  font-weight: 600;
+  color: #222222;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.disabledBtn {
+  background-color: #dddddd;
+  color: #ffffff;
+  cursor: not-allowed;
+}
+
+.disabledBtn:hover {
+  background-color: #dddddd;
+}
+
+@media (max-width: 768px) {
+  .gridContainer {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .gridContainer {
+    grid-template-columns: 1fr;
+  }
+}
+
+.step3Container {
+  max-width: 650px;
+  margin: 0 auto;
+  padding: 40px 0 100px;
+}
+
+.placeTypeList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.placeTypeCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #dddddd;
+  border-radius: 12px;
+  padding: 24px;
+  cursor: pointer;
+  background: white;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.placeTypeCard:hover {
+  border-color: #222222;
+}
+
+.placeTypeCardSelected {
+  border: 2px solid #222222;
+  background-color: #f7f7f7;
+  padding: 23px;
+}
+
+.placeTypeText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 24px;
+}
+
+.placeTypeTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #222222;
+}
+
+.placeTypeSubtitle {
+  font-size: 14px;
+  color: #717171;
+  line-height: 1.4;
+}
+
+.placeTypeIcon {
+  font-size: 32px;
+  color: #222222;
+}
+
+.step4Container {
+  max-width: 650px;
+  margin: 0 auto;
+  padding: 40px 0 100px;
+}
+
+.mapSubtitle {
+  font-size: 16px;
+  color: #717171;
+  line-height: 1.4;
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.mapContainer {
+  position: relative;
+  width: 100%;
+  height: 450px;
+  border-radius: 16px;
+  overflow: hidden;
+  background-color: #f7f7f7;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.mapImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mapOverlayTop {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border-radius: 24px;
+  padding: 16px 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 90%;
+  max-width: 400px;
+}
+
+.mapOverlayTopText {
+  font-size: 14px;
+  color: #222222;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.mapPin {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 48px;
+  background-color: #222222;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.mapOverlayBottom {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border-radius: 16px;
+  padding: 16px 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 90%;
+  max-width: 500px;
+  gap: 16px;
+}
+
+.mapOverlayBottomText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mapOverlayBottomTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #222222;
+}
+
+.mapOverlayBottomSubtitle {
+  font-size: 12px;
+  color: #717171;
+  line-height: 1.4;
+}
+
+.toggleSwitch {
+  position: relative;
+  width: 48px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.toggleInput {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggleSlider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #b0b0b0;
+  transition: 0.4s;
+  border-radius: 32px;
+}
+
+.toggleSlider:before {
+  position: absolute;
+  content: "";
+  height: 28px;
+  width: 28px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+.toggleInput:checked+.toggleSlider {
+  background-color: #222222;
+}
+
+.toggleInput:checked+.toggleSlider:before {
+  transform: translateX(16px);
+}
+
+.step6Container {
+  max-width: 650px;
+  margin: 0 auto;
+  padding: 40px 0 100px;
+}
+
+.counterRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 0;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.counterRow:last-child {
+  border-bottom: none;
+}
+
+.counterLabel {
+  font-size: 18px;
+  color: #222222;
+}
+
+.counterControls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.counterBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #b0b0b0;
+  background: white;
+  color: #717171;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
+}
+
+.counterBtn:hover {
+  border-color: #222222;
+  color: #222222;
+}
+
+.counterBtn:disabled {
+  border-color: #ebebeb;
+  color: #ebebeb;
+  cursor: not-allowed;
+}
+
+.counterValue {
+  font-size: 16px;
+  color: #222222;
+  min-width: 16px;
+  text-align: center;
+}
+
+.photoUploadBox {
+  border: 1px dashed #b0b0b0;
+  border-radius: 12px;
+  width: 100%;
+  height: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #f7f7f7;
+  margin-top: 32px;
+  position: relative;
+}
+
+.photoUploadIcon {
+  font-size: 64px;
+  color: #222222;
+  margin-bottom: 24px;
+}
+
+.addPhotosBtn {
+  background: white;
+  border: 1px solid #dddddd;
+  border-radius: 24px;
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #222222;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.addPhotosBtn:hover {
+  border-color: #222222;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.typeSublabel {
+  font-size: 12px;
+  color: #717171;
+  line-height: 1.2;
+  text-align: left;
+  margin-top: 4px;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #222222;
+  margin-top: 32px;
+  margin-bottom: 16px;
+}
+
+.tadaContainer {
+  max-width: 650px;
+  margin: 0 auto;
+  padding: 40px 0 100px;
+}
+
+.tadaHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.tadaPlusBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #f7f7f7;
+  border: 1px solid #dddddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.tadaPlusBtn:hover {
+  border-color: #222222;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.photosGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.coverPhoto {
+  width: 100%;
+  height: 350px;
+  border-radius: 12px;
+  position: relative;
+}
+
+.coverPhotoImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.coverPill {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: white;
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #222222;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.photoMenuBtn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  color: #222;
+  font-size: 18px;
+}
+
+.smallPhotosGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.smallPhoto {
+  width: 100%;
+  height: 200px;
+  border-radius: 12px;
+  position: relative;
+}
+
+.smallPhotoImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.addMoreBox {
+  width: 100%;
+  height: 200px;
+  border: 1px dashed #b0b0b0;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f7f7f7;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.addMoreBox:hover {
+  border-color: #222222;
+}
+
+.addMoreIcon {
+  font-size: 24px;
+  color: #717171;
+  margin-bottom: 8px;
+}
+
+.photoDropdown {
+  position: absolute;
+  top: 56px;
+  right: 16px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  width: 200px;
+  overflow: hidden;
+  padding: 8px 0;
+}
+
+.photoDropdownItem {
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #222222;
+  cursor: pointer;
+  transition: 0.2s;
+  text-align: left;
+}
+
+.photoDropdownItem:hover {
+  background: #f7f7f7;
+}
+
+.uploadOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.uploadModal {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+  height: 60vh;
+  max-height: 700px;
+  min-height: 400px;
+}
+
+.uploadModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ebebeb;
+  padding: 16px 24px;
+  position: relative;
+}
+
+.uploadModalTitle {
+  font-size: 16px;
+  font-weight: 800;
+  color: #222222;
+  text-align: center;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.uploadModalSubtitle {
+  font-size: 12px;
+  color: #717171;
+  font-weight: normal;
+  margin-top: 2px;
+}
+
+.uploadModalBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.uploadModalBodyGrid {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-content: flex-start;
+}
+
+.uploadDragBox {
+  width: 100%;
+  height: 100%;
+  min-height: 250px;
+  border: 1px dashed #b0b0b0;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.uploadDragIcon {
+  font-size: 48px;
+  color: #222222;
+  margin-bottom: 16px;
+}
+
+.uploadDragTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 8px;
+}
+
+.uploadDragSub {
+  font-size: 14px;
+  color: #717171;
+  margin-bottom: 24px;
+}
+
+.uploadBrowseBtn {
+  background: #222222;
+  color: white;
+  padding: 10px 24px;
+  border-radius: 8px;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.uploadPreviewWrap {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.uploadPreviewImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.uploadDeleteBtn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  color: #222;
+}
+
+.uploadOverlayDark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.uploadSpinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.uploadModalFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-top: 1px solid #ebebeb;
+}
+
+.uploadCancelBtn {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #222222;
+  padding: 8px 0;
+}
+
+.uploadDoneBtn {
+  background: #dddddd;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: not-allowed;
+}
+
+.uploadDoneBtnActive {
+  background: #222222;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.deleteModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.deleteModal {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+}
+
+.deleteModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ebebeb;
+  padding: 24px;
+  position: relative;
+}
+
+.deleteModalTitle {
+  font-size: 16px;
+  font-weight: 800;
+  color: #222222;
+  text-align: center;
+  flex: 1;
+  margin: 0;
+}
+
+.deleteModalBody {
+  padding: 24px;
+  font-size: 16px;
+  color: #717171;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.deleteModalFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+}
+
+.deleteCancelBtn {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  color: #222222;
+  padding: 8px 0;
+}
+
+.deleteConfirmBtn {
+  background: #222222;
+  color: white;
+  padding: 14px 24px;
+  border-radius: 8px;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.deleteConfirmBtn:hover {
+  background: #000000;
+}
+
+.editModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  animation: fadeIn 0.2s ease;
+}
+
+.editModal {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 1000px;
+  height: 100%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+}
+
+.editModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  position: relative;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.editModalTitle {
+  font-size: 16px;
+  font-weight: 800;
+  color: #222222;
+  text-align: center;
+  flex: 1;
+  margin: 0;
+}
+
+.editModalBody {
+  flex: 1;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 32px;
+  overflow-y: auto;
+}
+
+.editModalImgWrap {
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f7f7f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.editModalImg {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.editModalRight {
+  display: flex;
+  flex-direction: column;
+}
+
+.editModalLabel {
+  font-size: 18px;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 8px;
+}
+
+.editModalDesc {
+  font-size: 14px;
+  color: #717171;
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.editModalTextarea {
+  width: 100%;
+  height: 150px;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #b0b0b0;
+  font-size: 16px;
+  resize: none;
+  font-family: inherit;
+}
+
+.editModalTextarea:focus {
+  outline: 2px solid #222222;
+}
+
+.editModalFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-top: 1px solid #ebebeb;
+}
+
+.editModalDeleteBtn {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #222222;
+  padding: 8px 0;
+}
+
+.editModalSaveBtn {
+  background: #222222;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.editModalSaveBtn:hover {
+  background: #000000;
+}
+
+.titleContainer {
+  max-width: 650px;
+  margin: 0 auto;
+  padding: 40px 0 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.titleTextarea {
+  width: 100%;
+  height: 180px;
+  padding: 24px;
+  font-size: 24px;
+  border: 1px solid #b0b0b0;
+  border-radius: 12px;
+  resize: none;
+  font-family: inherit;
+  font-weight: 600;
+  color: #222222;
+}
+
+.titleTextarea:focus {
+  outline: 2px solid #222222;
+  border-color: transparent;
+}
+
+.charCount {
+  align-self: flex-start;
+  font-size: 14px;
+  font-weight: 600;
+  color: #717171;
+  margin-top: 12px;
+  margin-left: 8px;
+}
+
+.highlightsContainer {
+  max-width: 650px;
+  margin: 0 auto;
+  padding: 40px 0 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.highlightsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.highlightPill {
+  border: 1px solid #dddddd;
+  border-radius: 32px;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #222222;
+  background: white;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.highlightPill:hover {
+  border-color: #222222;
+}
+
+.highlightPillSelected {
+  border: 2px solid #222222;
+  background: #f7f7f7;
+  padding: 11px 23px;
+}
+
+.highlightIcon {
+  font-size: 20px;
+}
+
+.bookingOptionCard {
+  border: 1px solid #b0b0b0;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: white;
+  transition: 0.2s;
+}
+
+.bookingOptionCard:hover {
+  border-color: #222222;
+}
+
+.bookingOptionCardSelected {
+  border: 2px solid #222222;
+  background-color: #f7f7f7;
+  padding: 23px;
+}
+
+.bookingOptionText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  max-width: 85%;
+}
+
+.bookingOptionTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #222222;
+}
+
+.bookingOptionRecommended {
+  font-size: 14px;
+  font-weight: 600;
+  color: #008a05;
+}
+
+.bookingOptionDesc {
+  font-size: 14px;
+  color: #717171;
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+.bookingOptionIcon {
+  font-size: 28px;
+  color: #222222;
+  margin-left: 24px;
+  display: flex;
+  align-items: center;
+}
+
+.priceCard {
+  border: 1px solid #b0b0b0;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 16px;
+  background: white;
+  width: 100%;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.priceCard:hover {
+  border-color: #222222;
+}
+
+.priceCardLabel {
+  font-size: 14px;
+  color: #222;
+  margin-bottom: 8px;
+}
+
+.priceCardValue {
+  font-size: 42px;
+  font-weight: 800;
+  color: #222;
+  margin: 0;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.priceCardSub {
+  font-size: 12px;
+  color: #717171;
+}
+
+.showListingsBtn {
+  background: white;
+  border: 1px solid #dddddd;
+  border-radius: 24px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #222;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  cursor: pointer;
+  transition: 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.showListingsBtn:hover {
+  border-color: #222;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.priceModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.priceModal {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 480px;
+  padding: 24px;
+  position: relative;
+  animation: slideUp 0.3s ease;
+}
+
+.priceModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.priceModalTitle {
+  font-size: 16px;
+  font-weight: 800;
+  color: #222;
+  margin: 0;
+  text-align: center;
+  flex: 1;
+}
+
+.priceModalBigPrice {
+  font-size: 48px;
+  font-weight: 800;
+  color: #222;
+  text-align: center;
+  margin: 24px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.priceModalBigPrice svg {
+  font-size: 20px;
+  color: #717171;
+  cursor: pointer;
+}
+
+.priceBreakdownBox {
+  border: 1px solid #dddddd;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.priceBreakdownRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 16px;
+  color: #222;
+  margin-bottom: 12px;
+}
+
+.priceBreakdownRow:last-child {
+  margin-bottom: 0;
+  font-weight: 600;
+  border-top: 1px solid #ebebeb;
+  padding-top: 12px;
+  margin-top: 12px;
+}
+
+.priceModalFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+}
+
+.mapModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: white;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+}
+
+.mapModalHeader {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: 2010;
+}
+
+.mapModalClose {
+  background: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.mapModalContent {
+  flex: 1;
+  position: relative;
+}
+
+.mapModalInfoBox {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  width: 360px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  z-index: 2010;
+}
+
+.mapModalInfoTitle {
+  font-size: 22px;
+  font-weight: 600;
+  color: #222;
+  margin-bottom: 8px;
+}
+
+.mapModalInfoSub {
+  font-size: 14px;
+  color: #717171;
+  margin-bottom: 24px;
+}
+
+.mapModalInfoSectTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #222;
+  margin-bottom: 8px;
+}
+
+.mapModalInfoDesc {
+  font-size: 14px;
+  color: #222;
+  line-height: 1.4;
+  margin-bottom: 16px;
+}
+
+.discountCard {
+  border: 1px solid #b0b0b0;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  background: white;
+  transition: 0.2s;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.discountCardSelected {
+  border: 2px solid #222222;
+  background-color: #f7f7f7;
+  padding: 23px;
+}
+
+.discountCard:hover {
+  border-color: #222222;
+}
+
+.discountPrefix {
+  width: 72px;
+  height: 56px;
+  background: #f7f7f7;
+  border: 1px solid #ebebeb;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: #222;
+  margin-right: 24px;
+  flex-shrink: 0;
+}
+
+.discountPrefixInput {
+  width: 72px;
+  height: 56px;
+  background: white;
+  border: 1px solid #b0b0b0;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #222;
+  margin-right: 24px;
+  text-align: center;
+  outline: none;
+  flex-shrink: 0;
+}
+
+.discountPrefixInput:focus {
+  border: 2px solid #222;
+}
+
+.discountContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.discountTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #222;
+  margin-bottom: 4px;
+}
+
+.discountDesc {
+  font-size: 14px;
+  color: #717171;
+}
+
+.discountCheckbox {
+  width: 24px;
+  height: 24px;
+  border: 1px solid #b0b0b0;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  background: white;
+  flex-shrink: 0;
+  margin-left: 24px;
+}
+
+.discountCheckboxChecked {
+  background-color: #222;
+  border-color: #222;
+}
+
+.safetyRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  cursor: pointer;
+}
+
+.safetyLabel {
+  font-size: 18px;
+  color: #222;
+}
+
+.safetyCheckbox {
+  width: 24px;
+  height: 24px;
+  border: 1px solid #b0b0b0;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  background: white;
+}
+
+.safetyCheckboxChecked {
+  background-color: #222;
+  border-color: #222;
+}
+
+.cameraDetailsBox {
+  background: #f7f7f7;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: -8px;
+  margin-bottom: 8px;
+}
+
+.cameraDetailsText {
+  font-size: 14px;
+  color: #222;
+  margin-bottom: 12px;
+}
+
+.cameraDetailsEditBtn {
+  background: white;
+  border: 1px solid #dddddd;
+  border-radius: 24px;
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #222;
+  cursor: pointer;
+}
+
+.cameraModal {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 560px;
+  padding: 24px;
+  position: relative;
+  animation: slideUp 0.3s ease;
+}
+
+.cameraModalTextarea {
+  width: 100%;
+  height: 120px;
+  padding: 16px;
+  border: 1px solid #b0b0b0;
+  border-radius: 8px;
+  font-size: 16px;
+  color: #222;
+  outline: none;
+  resize: none;
+  margin-top: 16px;
+}
+
+.cameraModalTextarea:focus {
+  border: 2px solid #222;
+  padding: 15px;
+}
+
+.cameraModalCharCount {
+  font-size: 12px;
+  color: #717171;
+  text-align: right;
+  margin-top: 8px;
+  font-weight: 600;
+}
+
+.businessBtnGroup {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+}
+.businessBtn {
+  flex: 1;
+  padding: 16px 24px;
+  border: 1px solid #b0b0b0;
+  border-radius: 12px;
+  background: white;
+  font-size: 16px;
+  font-weight: 600;
+  color: #222;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.businessBtn:hover {
+  border-color: #222;
+}
+.businessBtnSelected {
+  border: 2px solid #222;
+  background-color: #f7f7f7;
+}
+
+
+@media (max-width: 768px) {
+  .title {
+    font-size: 32px;
+  }
+
+  .header,
+ 
+  .footerContent {
+    padding: 10px 16px;
+  }
+
+  .illustration {
+    margin-top: 0px;
+  }
+
+  .step2Container{
+    max-width: 100%;
+    padding: 16px 16px 90px;
+  }
+
+  .step2Title{
+    margin-bottom: 16px;
+  }
+
+  .step3Container{
+     max-width: 100%;
+     padding: 16px;
+  }
+  
+  .step4Container{
+     max-width: 100%;
+     padding: 16px;
+  }
+
+  .step6Container{
+     max-width: 100%;
+     padding: 16px;
+  }
+
+  .tadaContainer{
+    max-width: 100%;
+     padding: 16px 16px 90px;  
+  }
+
+  .counterRow{
+    padding: 16px 0;
+  }
+
+  .step2Title{
+    font-size: 24px;
+  }
+  
+  .uploadOverlay{
+    padding: 16px;
+  }
+
+  .highlightsContainer{
+    padding: 16px;
+     max-width: 100%;
+  }
+
+  .titleContainer{
+    padding: 16px 16px 90px;
+     max-width: 100%;
+  }
+
+  .priceModalOverlay{
+    padding: 16px;
+  }
+
+  .discountCard{
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .discountTitle{
+    font-size: 16px;
+  }
+
+  .discountPrefixInput{
+    margin-right: 16px;
+  }
+
+  .titleContainer hr{
+    margin: 16px 0 !important;
+  }
+
+
+  .mapSubtitle{
+    margin-bottom: 16px !important;
+  }
+  
+
+
+}

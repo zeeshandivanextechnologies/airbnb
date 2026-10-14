@@ -1,0 +1,418 @@
+/*global-css-start*/
+
+body {
+    font-family: 'Manrope', Airbnb Cereal VF, Circular, -apple-system, BlinkMacSystemFont, Roboto, Helvetica Neue, sans-serif !important;
+   font-size: 16px;
+   font-weight: 500;
+   color: #000;
+   background-color: #fff;
+   scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-synthesis: none;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+   color: #00022A;
+   font-weight: 600;
+}
+
+strong {
+   font-weight: 800;
+   color: #000;
+}
+
+a {
+   text-decoration: none !important;
+   -webkit-transition: all 0.2s;
+   transition: all 0.2s;
+   color: #000;
+   font-weight: 400;
+}
+
+a:hover,
+a:focus {
+   text-decoration: none;
+   outline: none;
+   cursor: pointer;
+   color: auto;
+}
+
+.btn.focus,
+.btn:focus {
+   outline: 0;
+   box-shadow: none;
+}
+
+@keyframes modalSlideDown {
+  from { opacity: 0; transform: translateY(-50px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+button {
+   color: inherit;
+   border: none;
+   background-color: transparent;
+}
+
+p {
+   margin-bottom: 0.5rem;
+   font-size: 16px;
+   font-weight: 400;
+   color: #626884;
+   line-height: 24px;
+}
+
+ul,
+li {
+   margin: 0;
+   padding: 0;
+   list-style-type: none !important;
+}
+
+ul {
+   padding-left: 0 !important;
+}
+
+hr {
+   background-color: #D0D0D0 !important;
+   opacity: 1;
+   border-color: #D0D0D0 !important;
+}
+
+.form-select:focus,
+.form-control:focus {
+   box-shadow: none !important;
+   border-color: #ccc;
+}
+
+.dropdown-item:focus,
+.dropdown-item:hover {
+   background-color: inherit;
+   color: inherit;
+}
+
+label {
+   margin-bottom: 5px;
+}
+
+textarea {
+   resize: none;
+}
+
+input:focus,
+button:focus,
+textarea:focus {
+   outline: none;
+   box-shadow: none;
+}
+
+img {
+   max-width: 100%;
+   height: auto;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+   -webkit-appearance: none;
+   margin: 0;
+}
+
+input[type=number] {
+   -moz-appearance: textfield;
+}
+
+.img-40 {
+   width: 40px;
+   height: 40px;
+}
+
+.img-80 {
+   width: 80px;
+   height: 80px;
+   background-color: #ccc;
+}
+
+.fz-14 {
+   font-size: 14px !important;
+}
+
+.fz-16 {
+   font-size: 16px !important;
+}
+
+.fz-18 {
+   font-size: 18px !important;
+}
+
+.fz-20 {
+   font-size: 20px !important;
+}
+
+.fz-22 {
+   font-size: 22px !important;
+}
+
+.fz-24 {
+   font-size: 24px !important;
+}
+
+.fz-26 {
+   font-size: 26px !important;
+}
+
+.fz-28 {
+   font-size: 28px !important;
+}
+
+.fz-30 {
+   font-size: 30px !important;
+}
+
+.fw-300 {
+   font-weight: 300 !important;
+}
+
+.fw-400 {
+   font-weight: 400 !important;
+}
+
+.fw-500 {
+   font-weight: 500 !important;
+}
+
+.fw-600 {
+   font-weight: 600 !important;
+}
+
+.fw-700 {
+   font-weight: 700 !important;
+}
+
+.fw-800 {
+   font-weight: 800 !important;
+}
+
+.decoration {
+   text-decoration: underline !important;
+}
+
+.btn-close {
+   background-image: none;
+   padding: 0 !important;
+   box-shadow: none !important;
+   opacity: 1 !important;
+}
+
+.form-check {
+   vertical-align: middle;
+   margin-bottom: 10px;
+}
+
+.form-check .form-check-label {
+   margin-bottom: 0;
+   cursor: pointer;
+}
+
+.tp-space {
+   padding-top: 100px;
+   padding-bottom: 100px;
+}
+
+.tp-space-scond {
+   padding-top: 50px;
+   padding-bottom: 50px;
+}
+
+.pt-100 {
+   padding-top: 100px;
+}
+
+.pb-100 {
+   padding-bottom: 100px;
+}
+
+.title {
+   font-size: 40px;
+   font-weight: 600;
+   color: #00022A;
+   margin-bottom: 30px;
+   text-transform: capitalize;
+}
+
+.lg_title {
+   font-size: 42px;
+   color: #00022A;
+   margin-bottom: 24px;
+}
+
+.subtitle {
+   font-size: 18px;
+   font-weight: 500;
+   color: #00022A;
+   margin-bottom: 20px;
+}
+
+.innr-title {
+   font-size: 24px;
+   font-weight: 600;
+   color: #fff;
+   margin-bottom: 30px;
+}
+
+.new_title {
+   font-size: 32px;
+   font-weight: 500;
+   color: #00022A;
+   line-height: 1.4;
+}
+
+.thm-btn {
+   display: inline-block;
+   padding: 12px 20px;
+   background-color: #4F40FF;
+   border: 1px solid #4F40FF;
+   border-radius: 8px;
+   color: #fff;
+   font-weight: 500;
+   font-size: 16px;
+   text-align: center;
+}e
+
+.thm-btn.light-btn {
+   background-color: #fff;
+   border-color: #fff;
+   color: #4F40FF;
+}
+
+.thm-btn:hover,
+.thm-btn.outline:hover {
+   background-color: #4435f4;
+   border-color: #4435f4;
+   color: #fff;
+}
+
+.thm-btn.outline {
+   background-color: transparent;
+   border-color: #4F40FF;
+   color: #4F40FF;
+}
+
+.thm-lg-btn {
+   display: inline-block;
+   padding: 16px 30px;
+   font-size: 18px;
+   color: #00022A;
+   font-weight: 500;
+   background-color: #fff;
+   border: 1px solid #fff;
+   border-radius: 8px;
+}
+
+.thm-lg-btn:hover {
+   background-color: #d3d4d5;
+   border-color: #d3d4d5;
+   color: #00022A;
+}
+
+.thm-lg-btn.grn-btn {
+   background-color: #BEE14A;
+   border-color: #BEE14A;
+}
+
+.thm-lg-btn.warning {
+   background-color: #EEBD5B;
+   color: #fff;
+   border-color: #EEBD5B;
+   text-align: center;
+}
+
+.custom-frm-bx {
+   margin-bottom: 30px;
+   position: relative;
+}
+
+.custom-frm-bx label {
+   font-size: 16px;
+   font-weight: 400;
+   color: #00022A;
+}
+
+.custom-frm-bx .form-control,
+.custom-frm-bx .form-select {
+   height: 56px;
+   border-radius: 8px;
+   border: 1px solid #E5E5E5;
+   font-size: 18px;
+   font-weight: 400;
+}
+
+.custom-frm-bx textarea.form-control {
+   height: 150px;
+}
+
+.custom-frm-bx::placeholder {
+   color: #626884;
+   opacity: 1;
+}
+
+.custom-frm-bx::-ms-input-placeholder {
+   color: #626884;
+}
+
+.p-100 {
+   padding-top: 100px;
+   padding-bottom: 100px;
+}
+
+.clr {
+   color: #4F40FF !important;
+}
+
+/* Hide Google Translate top bar, iframes and tooltips to preserve Airbnb design perfectly */
+.goog-te-banner-frame,
+.goog-te-banner-frame.skiptranslate,
+iframe.goog-te-banner-frame,
+iframe[id*=":1.container"],
+iframe[id*=":2.container"],
+iframe[class*="goog-te-banner-frame"],
+.VIpgJd-ZVi9od-ORHb-OEVmcd,
+.VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
+.VIpgJd-ZVi9od-aZ2wEe-OtuOH-Gx9qEb,
+#goog-gt-tt,
+.goog-te-balloon-frame {
+   display: none !important;
+   visibility: hidden !important;
+   height: 0px !important;
+   width: 0px !important;
+   opacity: 0 !important;
+   pointer-events: none !important;
+   border: none !important;
+}
+
+html, body {
+   top: 0px !important;
+   position: static !important;
+}
+
+.goog-tooltip,
+.goog-tooltip:hover {
+   display: none !important;
+}
+
+.goog-text-highlight {
+   background-color: transparent !important;
+   border: none !important;
+   box-shadow: none !important;
+}
+
+#google_translate_element {
+   display: none !important;
+}
+
+/*global-css-end*/

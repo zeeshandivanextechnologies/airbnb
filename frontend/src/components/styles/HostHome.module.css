@@ -1,0 +1,626 @@
+.hostHomeContainer {
+  color: #222222;
+  background-color: #ffffff;
+}
+
+.heroTitle {
+  font-size: 3.5rem;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 24px;
+}
+
+.priceHighlight {
+  color: #222222;
+}
+
+.earningsSubtitle {
+  font-size: 1.1rem;
+  color: #717171;
+  margin-bottom: 32px;
+  line-height: 1.4;
+}
+.earningsSubtitle strong {
+  color: #222222;
+  font-weight: 600;
+}
+
+.estimateLink {
+  color: #717171;
+  text-decoration: underline;
+  font-size: 1rem;
+}
+
+.sliderWrapper {
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: 48px;
+}
+
+.rangeSlider {
+  width: 100%;
+  -webkit-appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  outline: none;
+}
+
+.rangeSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: white;
+  border: 1px solid #b0b0b0;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.rangeSlider::-moz-range-thumb {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: white;
+  border: 1px solid #b0b0b0;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.searchPill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #DDDDDD;
+  border-radius: 32px;
+  padding: 14px 24px;
+  background-color: white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  width: auto;
+  min-width: 350px;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.searchPill:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+
+.searchIcon {
+  color: #e51d53;
+  font-size: 1.1rem;
+  margin-right: 12px;
+}
+
+.searchTextWrapper {
+  display: flex;
+  gap: 6px;
+  font-size: 1rem;
+}
+
+.searchMainText {
+  font-weight: 600;
+  color: #222222;
+}
+
+.searchSubText {
+  color: #717171;
+}
+
+.mapContainer {
+  position: relative;
+  width: 100%;
+  max-width: 550px;
+  border-radius: 24px;
+  overflow: hidden;
+  aspect-ratio: 1; /* Ensures it has height for the iframe */
+}
+
+.mapImage {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Banner Section */
+.bannerContainer {
+  background-color: #f7f7f7;
+  border-radius: 16px;
+
+  overflow: hidden;
+}
+
+.bannerContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px 16px 16px;
+}
+
+.bannerLeft {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.bannerImage {
+  width: 120px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.bannerTextWrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.bannerTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  color: #222222;
+}
+
+.bannerSubText {
+  font-size: 1rem;
+  color: #717171;
+  margin: 0;
+}
+
+.bannerBtn {
+  background-color: #222222;
+  color: #ffffff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 24px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.bannerBtn:hover {
+  background-color: #000000;
+}
+
+/* Join Millions Section */
+.joinSection {
+  padding: 30px 0;
+}
+
+.joinSectionTitle {
+  font-size: 4rem;
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.1;
+  margin-bottom: 24px;
+  letter-spacing: -0.05em;
+  color: #222222ff;
+}
+
+.featureIconWrap {
+  width: 84px;
+  height: 84px;
+  background-color: #F7F7F7;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.featureIcon {
+  font-size: 2rem;
+  color: #222222;
+}
+
+.featureTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+   color: #222222ff;
+}
+
+.featureDesc {
+  color: #717171;
+  font-size: 1.1rem;
+  line-height: 1.2;
+  font-weight: 500;
+}
+
+/* AirCover Section */
+.aircoverTitle {
+ font-size: 3.5rem;
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.1;
+  margin-bottom: 24px;
+  letter-spacing: -0.05em;
+  color: #222222ff;
+}
+
+.aircoverSubtitle {
+  font-size: 1.25rem;
+  color: #717171;
+  margin-bottom: 40px;
+}
+
+.aircoverListItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.aircoverListText {
+  font-size: 1.1rem;
+  color: #222222;
+  font-weight: 500;
+}
+
+.aircoverCheckIcon {
+  color: #008a05;
+  font-size: 1.25rem;
+}
+
+.aircoverDisclaimer {
+  font-size: 0.85rem;
+  color: #717171;
+  margin: 24px 0 24px 0;
+  line-height: 1.4;
+}
+
+.aircoverBtn {
+  background-color: #222222;
+  color: #ffffff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 24px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-bottom: 24px;
+}
+
+.aircoverBtn:hover {
+  background-color: #000000;
+}
+
+.safeguardsTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 16px;
+}
+
+.safeguardIcon {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  margin-bottom: 16px;
+}
+
+/* Great on Airbnb Section */
+.greatOnAirbnbTitle {
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: #222222;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+}
+
+.greatImage {
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+  border-radius: 20px;
+  object-fit: contain;
+}
+
+.greatSubtitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #222222;
+  margin-bottom: 8px;
+}
+
+.greatDesc {
+  color: #717171;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+/* FAQ & Slider Section */
+.faqMainTitle {
+  font-size: 3.5rem;
+  font-weight: 800;
+  text-align: center;
+  color: #222222;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  margin-bottom: 48px;
+}
+
+.sliderSectionTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #222222;
+  margin: 0;
+}
+
+.sliderControls {
+  display: flex;
+  gap: 8px;
+}
+
+.sliderBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #dddddd;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #222222;
+  transition: box-shadow 0.2s, transform 0.1s;
+}
+
+.sliderBtn:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+.sliderBtn:active {
+  transform: scale(0.95);
+}
+
+.sliderContainer {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+}
+
+.sliderContainer::-webkit-scrollbar {
+  display: none; /* Hide scrollbar for Chrome/Safari */
+}
+.sliderContainer {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.sliderCard {
+  flex: 0 0 calc((100% - 32px) / 3);
+  scroll-snap-align: start;
+}
+
+
+
+.sliderImg {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+
+.sliderCardTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #222222;
+  margin: 0;
+}
+
+.faqAccordionWrap {
+  border-top: 1px solid #ebebeb;
+  border-bottom: 1px solid #ebebeb;
+  padding: 24px 0;
+  margin-top: 32px;
+}
+
+.faqAccordionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.faqSectionTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #222222;
+  margin: 0;
+}
+
+.faqIcon {
+  font-size: 1.25rem;
+  color: #222222;
+}
+
+.faqContent {
+  margin-top: 10px;
+}
+
+.faqItem {
+  margin-bottom: 24px;
+}
+
+.faqItem:last-child {
+  margin-bottom: 0;
+}
+
+.faqItemTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 8px;
+}
+
+.faqItemDesc {
+  font-size: 1rem;
+  color: #717171;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.faqLink {
+  color: #222222;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.faqLink:hover {
+  color: #000000;
+}
+
+/* Footer CTA */
+.footerCtaTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 8px;
+}
+
+.footerCtaDesc {
+  font-size: 1rem;
+  color: #717171;
+  margin-bottom: 24px;
+}
+
+.footerCtaBtn {
+  background-color: #222222;
+  color: #ffffff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.footerCtaBtn:hover {
+  background-color: #000000;
+}
+
+.safeguardSubtitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #222222;
+}
+
+.safeguardDesc {
+  color: #717171;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+
+@media (max-width: 768px) {
+  .sliderCard {
+    flex: 0 0 100%;
+  }
+
+  .heroTitle{
+     font-size: 1.5rem !important;
+    text-align: start !important;
+    margin-bottom: 10px !important;
+    letter-spacing: normal;
+  }
+
+  .faqAccordionWrap{
+    margin-top: 16px;
+    padding: 16px 0;
+  }
+
+  .sliderContainer{
+    margin-bottom: 16px;
+    padding-bottom: 0px;
+  }
+
+  .faqMainTitle{
+      font-size: 1.5rem !important;
+    text-align: start !important;
+    margin-bottom: 10px !important;
+    letter-spacing: normal;
+  }
+
+  .greatOnAirbnbTitle{
+     font-size: 1.5rem !important;
+    text-align: start !important;
+    margin-bottom: 10px !important;
+    letter-spacing: normal;
+  }
+
+  .aircoverSubtitle{
+    margin-bottom: 0px;
+  }
+
+  .joinSectionTitle{
+      font-size: 1.5rem !important;
+    text-align: start !important;
+    margin-bottom: 10px !important;
+    letter-spacing: normal;
+  }
+
+  .aircoverTitle{
+      font-size: 1.3rem !important;
+    text-align: start !important;
+    margin-bottom: 10px !important;
+    letter-spacing: normal;
+  }
+
+  .aircoverSubtitle{
+    font-size: 1rem;
+    text-align: start;
+  }
+
+  .joinSection{
+    padding: 0;
+  }
+
+  .featureIconWrap{
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
+  }
+
+  .featureTitle{
+    font-size: 1.2rem;
+    margin-bottom: 8px;
+  }
+
+  .featureDesc{
+    font-size: 0.9rem;
+    margin-bottom: 0;
+  }
+  .bannerContent{
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .bannerLeft{
+    gap: 10px;
+  }
+
+  .bannerImage{
+    width: 75px;
+  }
+
+  .bannerTitle{
+    font-size: 1rem;
+  }
+
+  .bannerSubText{
+    font-size: 0.9rem;
+  }
+
+}

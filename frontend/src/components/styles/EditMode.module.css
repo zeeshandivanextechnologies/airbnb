@@ -1,0 +1,642 @@
+.emWrapper {
+  background-color: #ffffff;
+  padding: 50px 0 40px;
+}
+
+.stickyAvatar {
+  position: sticky;
+  top: 100px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.avatarCircle {
+  width: 200px;
+  height: 200px;
+  background-color: #e6f4ea;
+  color: #137333;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 5rem;
+  font-weight: 700;
+  position: relative;
+}
+
+.addPhotoBtn {
+  position: absolute;
+  bottom: -10px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  cursor: pointer;
+}
+
+.sectionBlock {
+  border-bottom: 1px solid #ebebeb;
+  padding-bottom: 40px;
+  margin-bottom: 40px;
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 8px;
+}
+
+.sectionDesc {
+  font-size: 1rem;
+  color: #717171;
+  margin-bottom: 24px;
+}
+
+.sectionDesc a {
+  color: #222222;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.infoItem {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 10px;
+  border-radius: 0px;
+  border-bottom: 1px solid #ebebeb;
+  color: #222;
+  font-size: 18px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.infoItem:hover{
+  background-color: #f7f7f7;
+  border-bottom: 0;
+  border-radius: 10px;
+}
+
+.infoItem:has(+ .infoItem:hover) {
+   border-bottom-color: transparent !important;
+}
+
+.infoItemIcon {
+  font-size: 1.25rem;
+  width: 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.dashedBox {
+  border: 1px dashed #cccccc;
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 16px;
+}
+
+.dashedBox p {
+  color: #717171;
+  margin-bottom: 8px;
+}
+
+.dashedBox a {
+  color: #222222;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.stampsContainer {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 16px;
+}
+
+.stampBox {
+  border: 1px solid #dddddd;
+  border-radius: 16px;
+  width: 110px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: #b0b0b0;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.stampBoxActive {
+  border-color: #222222;
+  color: #222222;
+}
+
+.stampText {
+  font-size: 0.8rem;
+  color: #717171;
+  text-align: center;
+  margin-top: 8px;
+  transition: color 0.3s ease;
+}
+
+.stampTextActive {
+  color: #222222;
+  font-weight: 600;
+}
+
+.editBtn {
+  background-color: #f7f7f7;
+  border: 1px solid #dddddd;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 600;
+  margin-top: 16px;
+}
+
+.interestsContainer {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.interestCircle {
+  width: 50px;
+  height: 50px;
+  border: 1px dashed #cccccc;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: #717171;
+}
+
+.bottomFooter {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: white;
+  padding: 16px 24px;
+  z-index: 100;
+}
+
+.fullBorder {
+  border-top: 1px solid #ebebeb;
+}
+
+.innerBorder {
+  border-top: 1px solid #ebebeb;
+  padding-top: 16px;
+  margin-top: -16px; /* offset the padding to keep total height same */
+}
+
+.doneBtn {
+  background-color: #222222;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 32px;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.toggleSwitch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 28px;
+}
+
+.toggleSwitch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggleSlider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #b0b0b0;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.toggleSlider:before {
+  position: absolute;
+  content: "";
+  height: 24px;
+  width: 24px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .toggleSlider {
+  background-color: #222222;
+}
+
+input:checked + .toggleSlider:before {
+  transform: translateX(20px);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popUp {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modalContent {
+  background-color: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 560px;
+  padding: 24px;
+  position: relative;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.15);
+  animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards;
+}
+
+.modalCloseBtn {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.modalCloseBtn:hover {
+  background-color: #f7f7f7;
+}
+
+.modalTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #222222;
+  margin-top: 24px;
+  margin-bottom: 8px;
+}
+
+.modalDesc {
+  font-size: 1rem;
+  color: #717171;
+  margin-bottom: 24px;
+}
+
+.modalInputContainer {
+  border: 1px solid #b0b0b0;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.modalInputContainer:focus-within {
+  border: 2px solid #222222;
+  padding: 11px;
+}
+
+.modalInput {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  color: #222222;
+}
+
+.modalTextarea {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  color: #222222;
+  resize: none;
+  font-family: inherit;
+}
+
+.modalCharCount {
+  font-size: 0.75rem;
+  color: #717171;
+  text-align: right;
+  margin-bottom: 24px;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #ebebeb;
+  padding-top: 16px;
+  margin-top: 16px;
+}
+
+.modalSaveBtn {
+  background-color: #222222;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.modalSaveBtn:hover {
+  background-color: #000000;
+}
+
+.modalFooterInterests {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #ebebeb;
+  padding-top: 16px;
+  margin-top: 24px;
+}
+
+.modalFooterInterestsCount {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #222222;
+}
+
+.interestsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+  margin-bottom: 24px;
+}
+
+.interestPill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid #dddddd;
+  border-radius: 30px;
+  background-color: #ffffff;
+  color: #222222;
+  font-size: 0.9rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.interestPill:hover {
+  border-color: #222222;
+}
+
+.interestPillActive {
+  border-color: #222222;
+  background-color: #f7f7f7;
+  border-width: 2px;
+  padding: 9px 15px; /* offset the border width */
+  font-weight: 500;
+}
+
+.uploadedAvatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 50%;
+}
+
+.previewModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.previewModalContent {
+  background-color: #000000;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.28);
+  color: #ffffff;
+  animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards;
+  overflow: hidden;
+}
+
+.previewModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  position: relative;
+  z-index: 9999;
+}
+
+.previewCloseBtn, .previewTipsBtn {
+  background: none;
+  border: none;
+  color: #ffffff !important;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.previewTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: #ffffff !important;
+}
+
+.previewBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  position: relative;
+}
+
+.previewImageCircle {
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 0 0 2000px rgba(0,0,0,0.8);
+  position: relative;
+  z-index: 10;
+}
+
+.previewImageCircle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* Crop Editor Container */
+.cropperWrapper {
+  position: relative;
+  width: 100%;
+  height: 340px;
+  background-color: #111111;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.cropControlsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 440px;
+  margin-top: 24px;
+  z-index: 9999;
+  position: relative;
+}
+
+.cropSliderRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #ffffff;
+}
+
+.cropSliderLabel {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #dddddd;
+  min-width: 50px;
+}
+
+.cropSlider {
+  flex: 1;
+  accent-color: #e51d53;
+  cursor: pointer;
+  height: 6px;
+}
+
+.cropRotateBtn {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cropRotateBtn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.previewTooltip {
+  background-color: #222222;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 40px;
+  width: 100%;
+  max-width: 400px;
+  z-index: 9999;
+  position: relative;
+  color: #ffffff !important;
+}
+
+.previewTooltip strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.95rem;
+  color: #ffffff !important;
+}
+
+.previewTooltip p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #dddddd !important;
+}
+
+.previewFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  position: relative;
+  z-index: 9999;
+}
+
+.previewEditBtn {
+  background: none;
+  border: none;
+  color: #ffffff !important;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.previewSubmitBtn {
+  background-color: #e51d53 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  opacity: 1 !important;
+}
+
+.previewSubmitBtn:hover {
+  background-color: #d11749 !important;
+}

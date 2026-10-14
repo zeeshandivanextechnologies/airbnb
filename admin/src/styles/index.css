@@ -1,0 +1,19 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden; /* Lock the outer window scroll */
+ font-family: 'Manrope', Airbnb Cereal VF, Circular, -apple-system, BlinkMacSystemFont, Roboto, Helvetica Neue, sans-serif !important;
+  color: #222222;
+  background-color: #f7f9fa;
+}
+
+
+/*global-css-start*/
+

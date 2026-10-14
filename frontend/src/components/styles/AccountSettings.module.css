@@ -1,0 +1,2110 @@
+.pageContainer {
+  padding: 0px 2rem;
+}
+
+.breadcrumb {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 0px;
+}
+
+.pageTitle {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 16px;
+}
+
+.sidebarColumn {
+  border-right: 1px solid #ebebeb;
+  padding: 30px 24px 30px 0px;
+  position: sticky;
+  top: 80px;
+  /* height: calc(100vh - 80px);
+  overflow-y: auto; */
+}
+
+.contentRight{
+  padding: 30px 0;
+}
+
+.sidebarTitleHeader {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #222222;
+}
+
+.sidebarMenu {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebarMenuItem {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-radius: 24px;
+  cursor: pointer;
+  color: #222222;
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: background-color 0.2s ease;
+  margin-bottom: 2px;
+}
+
+.sidebarMenuItem:hover {
+  background-color: #f7f7f7;
+}
+
+.sidebarMenuItem.active {
+  background-color: #f1f1f1;
+  font-weight: 600;
+}
+
+.menuIcon {
+  font-size: 1.25rem;
+  margin-right: 16px;
+  color: #484848;
+}
+
+.sidebarMenuItem.active .menuIcon {
+  color: #222222;
+}
+
+.newBadge {
+  background-color: #e51d53;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+  text-transform: uppercase;
+}
+
+.sidebarDivider {
+  height: 1px;
+  background-color: #ebebeb;
+  margin: 16px 8px;
+}
+
+/* Content Area */
+.infoItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 22px 0;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.infoItem:first-child {
+  padding-top: 0;
+}
+
+.infoItem:last-child {
+  border-bottom: none;
+}
+
+.itemContent {
+  padding-right: 24px;
+}
+
+.itemTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 4px;
+}
+
+.itemDesc {
+  font-size: 0.95rem;
+  color: #717171;
+  margin-bottom: 0;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.actionBtn {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: underline;
+  color: #222222;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* Right Column / Sidebar Info Card */
+.sidebarCard {
+  border: 1px solid #dddddd;
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 16px;
+}
+
+.sidebarItem {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.sidebarItem:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.sidebarIcon {
+  font-size: 1.8rem;
+  color: #e51d53;
+  margin-right: 16px;
+  flex-shrink: 0;
+}
+
+.sidebarTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 8px;
+}
+
+.sidebarDesc {
+  font-size: 0.95rem;
+  color: #717171;
+  margin-bottom: 0;
+  line-height: 1.4;
+}
+
+/* Privacy Tab Styles */
+.privacySection {
+  margin-bottom: 16px;
+  border-bottom: 1px solid #ebebeb;
+  padding-bottom: 16px;
+}
+
+.privacySection:last-child {
+  border-bottom: none;
+}
+
+.privacyHeading {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 16px;
+}
+
+.privacyDesc {
+  font-size: 1rem;
+  color: #222222;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.actionBox {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid #dddddd;
+  border-radius: 12px;
+  cursor: pointer;
+  margin-bottom: 0px;
+  transition: border-color 0.2s ease;
+}
+
+.actionBox:hover {
+  border-color: #222222;
+}
+
+.actionBoxTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #222222;
+}
+
+.actionBoxDesc {
+  font-size: 0.95rem;
+  color: #717171;
+  margin-top: 0px;
+  margin-bottom: 0;
+}
+
+.actionBoxIcon {
+  font-size: 1.2rem;
+  color: #222222;
+}
+
+.toggleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.toggleTextContent {
+  padding-right: 24px;
+}
+
+.toggleLabel {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 4px;
+}
+
+.toggleDesc {
+  font-size: 0.95rem;
+  color: #717171;
+  margin-bottom: 0;
+  line-height: 1.5;
+}
+
+.learnMoreLink {
+  color: #222222;
+  text-decoration: underline;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Custom Switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 32px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #b0b0b0;
+  transition: 0.2s ease-in-out;
+  border-radius: 32px;
+}
+
+.slider.checked {
+  background-color: #222222;
+}
+
+.sliderThumb {
+  position: absolute;
+  height: 28px;
+  width: 28px;
+  left: 2px;
+  top: 2px;
+  background-color: white;
+  color: #222222;
+  transition: transform 0.2s ease-in-out;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slider.checked .sliderThumb {
+  transform: translateX(20px);
+}
+
+.privacyInfoCard {
+  display: flex;
+  align-items: flex-start;
+  background-color: #f7f7f7;
+  border: 1px solid #dddddd;
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 16px;
+}
+/* Login & Security Styles */
+.subTabsContainer {
+  display: flex;
+  border-bottom: 1px solid #ebebeb;
+  margin-bottom: 16px;
+}
+
+.subTab {
+  background: none;
+  border: none;
+  padding: 0 0 12px 0;
+  margin-right: 24px;
+  font-size: 1rem;
+  font-weight: 400;
+  color: #717171;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.subTab:hover {
+  color: #222222;
+}
+
+.subTabActive {
+  color: #222222;
+  font-weight: 600;
+  border-bottom: 2px solid #222222;
+}
+
+.sectionHeading {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #222222;
+  margin:16px 0 0px 0;
+}
+
+.deviceIconWrapper {
+  font-size: 2.2rem;
+  color: #717171;
+  margin-right: 16px;
+}
+
+.currentSessionBadge {
+  background-color: #ffffff;
+  color: #222222;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border: 1px solid #dddddd;
+  border-radius: 4px;
+  display: inline-block;
+  margin: 4px 0;
+}
+
+.sharedAccessText {
+  font-size: 1rem;
+  color: #222222;
+  line-height: 1.5;
+  margin-bottom: 32px;
+}
+
+.infoCardPinkIcon {
+  font-size: 1.8rem;
+  color: #e51d53;
+  margin-right: 16px;
+  flex-shrink: 0;
+}
+
+/* Taxes Tab Styles */
+.blackBtn {
+  background-color: #222222;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 16px;
+  margin-bottom:16px;
+  transition: background-color 0.2s ease;
+}
+
+.blackBtn:hover {
+  background-color: #000000;
+}
+
+.taxYearItem {
+  padding: 16px 0;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.taxYearItem:first-of-type {
+  border-top: 1px solid #ebebeb;
+}
+
+.taxYearTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 4px;
+}
+
+.taxYearDesc {
+  font-size: 0.95rem;
+  color: #717171;
+  margin-bottom: 0;
+}
+
+/* Donations Carousel Styles */
+.carouselHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 40px;
+  margin-bottom: 24px;
+}
+
+.carouselNavBtns {
+  display: flex;
+  gap: 8px;
+}
+
+.carouselNavBtn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #dddddd;
+  border-radius: 50%;
+  background-color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #222222;
+  font-size: 0.8rem;
+}
+
+.carouselNavBtn:hover {
+  border-color: #222222;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.carouselContainer {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 32px;
+  scrollbar-width: none;
+}
+
+.carouselContainer::-webkit-scrollbar {
+  display: none;
+}
+
+.donationCard {
+  border: 1px solid #dddddd;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  cursor: pointer;
+  height: 100%;
+}
+
+.donationCardImg {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.donationCardContent {
+  padding: 16px;
+  background-color: white;
+}
+
+.donationCardTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.donationCardSubtitle {
+  font-size: 0.95rem;
+  color: #717171;
+  margin-bottom: 0;
+}
+
+/* Payments Tab Styles */
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.currencyPill {
+  padding: 8px 16px;
+  border: 1px solid #dddddd;
+  border-radius: 32px;
+  background-color: white;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #222222;
+  cursor: pointer;
+}
+
+.currencyPill:hover {
+  background-color: #f7f7f7;
+}
+
+.couponRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.couponLabel {
+  font-size: 1rem;
+  color: #222222;
+}
+
+.couponValue {
+  font-size: 1rem;
+  color: #222222;
+}
+
+.helpCard {
+  border: 1px solid #dddddd;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.helpCardLink {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid #ebebeb;
+  font-size: 1rem;
+  color: #222222;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.helpCardLink:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.alertCardBlue {
+  display: flex;
+  align-items: flex-start;
+  background-color: #ffffff;
+  border: 1px solid #dddddd;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 32px;
+}
+
+.alertCardBlueIcon {
+  color: #0076ff;
+    background-color: #e5f1ff;
+    border-radius: 50%;
+    /* padding: 8px; */
+    margin-right: 16px;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+    padding: 8px;
+}
+
+.percentPill {
+  padding: 10px 20px;
+  border: 1px solid #dddddd;
+  border-radius: 32px;
+  background-color: white;
+  font-size: 0.95rem;
+  color: #717171;
+  cursor: pointer;
+  margin-right: 12px;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.percentPill:hover {
+  border-color: #222222;
+  color: #222222;
+}
+
+.disabledBtn {
+  background-color: #f7f7f7;
+  color: #b0b0b0;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-top: 24px;
+  margin-bottom: 16px;
+  cursor: not-allowed;
+}
+
+.accordionItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid #ebebeb;
+  cursor: pointer;
+}
+
+.accordionTitle {
+  font-size: 1rem;
+  color: #222222;
+}
+
+/* Languages Tab Styles */
+.fieldBox {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border: 1px solid #dddddd;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.fieldBoxValue {
+  font-size: 1rem;
+  color: #222222;
+}
+
+.greyEditBtn {
+  background-color: #f7f7f7;
+  color: #222222;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.greyEditBtn:hover {
+  background-color: #ebebeb;
+}
+
+.greyBtn {
+  background-color: #f7f7f7;
+  color: #222222;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 16px;
+  margin-bottom: 40px;
+  transition: background-color 0.2s ease;
+}
+
+.greyBtn:hover {
+  background-color: #ebebeb;
+}
+
+.newBadgeInline {
+  background-color: #fff0f3;
+  color: #e51d53;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+/* Booking Permissions Empty State */
+.emptyStateContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin-top: 64px;
+}
+
+.emptyStateImage {
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 50%;
+  margin-bottom: 24px;
+}
+
+.emptyStateTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 8px;
+}
+
+.emptyStateDesc {
+  font-size: 1rem;
+  color: #717171;
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+
+.emptyStateLink {
+  text-decoration: underline;
+  color: #222222;
+  font-weight: 600;
+  cursor: pointer;
+  display: block;
+  margin-bottom: 24px;
+}
+
+/* Travel for Work Tab Styles */
+.emailInput {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #717171;
+  border-radius: 8px;
+  font-size: 1rem;
+  margin-top: 0px;
+  margin-bottom: 16px;
+}
+.emailInput:focus {
+  outline: none;
+  border-color: #222222;
+  box-shadow: 0 0 0 1px #222222;
+}
+.featuresBox {
+  border: 1px solid #dddddd;
+  border-radius: 12px;
+  margin-top: 16px;
+}
+.featureRow {
+  display: flex;
+  padding: 24px;
+  border-bottom: 1px solid #ebebeb;
+}
+.featureRow:last-child {
+  border-bottom: none;
+}
+.featureIcon {
+  font-size: 1.8rem;
+  color: #222222;
+  margin-right: 24px;
+  flex-shrink: 0;
+}
+.featureTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 4px;
+}
+.featureDesc {
+  font-size: 0.95rem;
+  color: #717171;
+  margin-bottom: 0;
+}
+
+/* Professional Hosting Tools Tab */
+.urlInputRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 16px;
+  margin-bottom: 24px;
+}
+
+.urlInput {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid #dddddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  outline: none;
+  color: #222222;
+}
+.urlInput:focus {
+  border-color: #222222;
+  box-shadow: 0 0 0 1px #222222;
+}
+
+.urlBtnBlack {
+  background-color: #222222;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 32px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.urlBtnBlack:hover {
+  background-color: #000000;
+}
+
+.urlBtnGray {
+  background-color: #f7f7f7;
+  color: #b0b0b0;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 32px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: default;
+}
+/* Edit Form Styles */
+.editFormContainer {
+  width: 100%;
+}
+.editFormHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+.cancelBtn {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: underline;
+  color: #222222;
+  cursor: pointer;
+  padding: 0;
+}
+.inputGroup {
+  margin-bottom: 16px;
+}
+.inputLabel {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 8px;
+}
+.formControl {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #b0b0b0;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #222222;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.formControl:focus {
+  border-color: #222222;
+  box-shadow: 0 0 0 1px #222222;
+}
+.passwordInputWrapper {
+  position: relative;
+  width: 100%;
+}
+.passwordToggleBtn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #717171;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  font-size: 1.25rem;
+  outline: none;
+  transition: color 0.2s ease;
+  z-index: 2;
+}
+.passwordToggleBtn:hover {
+  color: #222222;
+}
+.saveBtn {
+  background-color: #222222;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 14px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.saveBtn:hover {
+  background-color: #000000;
+}
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  overscroll-behavior: contain;
+}
+.modalContent {
+  background-color: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  padding: 24px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.15);
+}
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.modalTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #222222;
+  margin: 0;
+}
+.closeModalBtn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #222222;
+  line-height: 1;
+}
+
+/* Blocked Users Modal Styles */
+.blockedUserList {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.blockedUserItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.blockedUserLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.blockedUserAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #f0f0f0;
+  color: #222222;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1rem;
+  border: 1px solid #e0e0e0;
+}
+
+.blockedUserName {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 2px;
+}
+
+.blockedUserMeta {
+  font-size: 0.82rem;
+  color: #717171;
+  margin: 0;
+}
+
+.unblockBtn {
+  border: 1px solid #222222;
+  background: transparent;
+  color: #222222;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.unblockBtn:hover {
+  background: #222222;
+  color: #ffffff;
+}
+
+.emptyBlockedBox {
+  text-align: center;
+  padding: 32px 16px;
+  background: #fafafa;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.emptyBlockedIcon {
+  font-size: 2.5rem;
+  color: #b0b0b0;
+  margin-bottom: 12px;
+}
+
+/* Request Personal Data Modal Styles */
+.dataModalContent {
+  background-color: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 560px;
+  padding: 28px 32px 32px 32px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.15);
+}
+
+.dataBackBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  color: #222222;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.dataBackBtn:hover {
+  background-color: #f7f7f7;
+}
+
+.dataModalHeading {
+  font-size: 28px;
+  font-weight: 700;
+  color: #222222;
+  margin: 0 0 14px 0;
+  letter-spacing: -0.4px;
+  line-height: 1.2;
+}
+
+.dataModalSubtitle {
+  font-size: 15px;
+  color: #717171;
+  line-height: 1.45;
+  margin: 0 0 28px 0;
+}
+
+.dataFormGroup {
+  margin-bottom: 24px;
+}
+
+.dataFormGroupLast {
+  margin-bottom: 32px;
+}
+
+.dataFormLabel {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 8px;
+}
+
+.dataSelectWrapper {
+  position: relative;
+}
+
+.dataSelect {
+  width: 100%;
+  padding: 16px 40px 16px 16px;
+  border-radius: 8px;
+  border: 1px solid #717171;
+  font-size: 15px;
+  color: #222222;
+  background-color: #ffffff;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  outline: none;
+  line-height: 1.4;
+  transition: border-color 0.2s ease;
+}
+
+.dataSelect:focus {
+  border-color: #222222;
+}
+
+.dataSelectPlaceholder {
+  color: #717171;
+}
+
+.dataSelectIcon {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #222222;
+  font-size: 15px;
+}
+
+.dataFormatBox {
+  position: relative;
+  border: 1px solid #717171;
+  border-radius: 8px;
+  padding: 8px 40px 8px 16px;
+  background-color: #ffffff;
+  transition: border-color 0.2s ease;
+}
+
+.dataFormatBox:focus-within {
+  border-color: #222222;
+}
+
+.dataFormatSubLabel {
+  font-size: 11px;
+  color: #717171;
+  line-height: 1.2;
+  margin-bottom: 2px;
+}
+
+.dataFormatSelect {
+  width: 100%;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-size: 15px;
+  color: #222222;
+  background-color: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  outline: none;
+  line-height: 1.3;
+}
+
+.dataHelpText {
+  font-size: 13px;
+  color: #222222;
+  line-height: 1.5;
+  margin: 0 0 24px 0;
+}
+
+.dataHelpLink {
+  text-decoration: underline;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.dataHelpLink:hover {
+  color: #717171;
+}
+
+.dataSubmitBtn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dataSubmitBtnActive {
+  background-color: #222222;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.dataSubmitBtnActive:hover {
+  background-color: #000000;
+}
+
+.dataSubmitBtnDisabled {
+  background-color: #ebebeb;
+  color: #b0b0b0;
+  cursor: not-allowed;
+}
+
+/* Delete Account Modal Styles */
+.deleteModalContent {
+  background-color: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  padding: 24px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.15);
+}
+
+.deleteHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.deleteIconBadge {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #fee2e2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #dc2626;
+  flex-shrink: 0;
+}
+
+.deleteTitle {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #222222;
+}
+
+.deleteBodyText {
+  font-size: 15px;
+  color: #222222;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.deleteWarningBox {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.deleteWarningTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 8px;
+}
+
+.deleteWarningList {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.deleteAccountBadge {
+  font-size: 13px;
+  color: #717171;
+  padding: 10px 14px;
+  background-color: #fff1f2;
+  border-radius: 8px;
+  border: 1px solid #fecdd3;
+  margin-bottom: 24px;
+}
+
+.deleteModalActions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.deleteCancelBtn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1px solid #b0b0b0;
+  background-color: #ffffff;
+  color: #222222;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.deleteCancelBtn:hover {
+  background-color: #f7f7f7;
+}
+
+.deleteCancelBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.deleteConfirmBtn {
+  padding: 10px 22px;
+  border-radius: 8px;
+  border: none;
+  background-color: #dc2626;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+  transition: all 0.2s ease;
+}
+
+.deleteConfirmBtn:hover {
+  background-color: #b91c1c;
+}
+
+.deleteConfirmBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Notifications Tab Styles */
+.notifMainHeading {
+  font-size: 22px;
+  font-weight: 600;
+  color: #222222;
+  margin-top: 16px;
+  margin-bottom: 6px;
+  letter-spacing: -0.3px;
+}
+
+.notifMainDesc {
+  font-size: 15px;
+  color: #717171;
+  line-height: 1.45;
+  margin-bottom: 24px;
+}
+
+.notifItemBlock {
+  margin-bottom: 24px;
+}
+
+.notifItemTitle {
+  font-size: 16px;
+  font-weight: 500;
+  color: #222222;
+  margin-bottom: 4px;
+}
+
+.notifItemStatus {
+  font-size: 14px;
+  color: #717171;
+  margin-bottom: 4px;
+}
+
+.notifEditBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #222222;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.notifEditBtn:hover {
+  color: #717171;
+}
+
+.notifSectionDivider {
+  border: none;
+  border-bottom: 1px solid #ebebeb;
+  margin: 32px 0;
+}
+
+/* Dynamic Tax and VAT Cards */
+.taxInfoCard {
+  border: 1px solid #dddddd;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 16px;
+  margin-bottom: 20px;
+  background-color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.taxInfoCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.taxInfoRegionTitle {
+  font-size: 17px;
+  font-weight: 600;
+  color: #222222;
+  margin: 0;
+}
+
+.taxInfoBadge {
+  background-color: #e6f7ec;
+  color: #008a05;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.taxInfoCardDetail {
+  font-size: 14px;
+  color: #717171;
+  margin: 4px 0;
+}
+
+.taxInfoActions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.taxRemoveBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #c13515;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.taxRemoveBtn:hover {
+  opacity: 0.8;
+}
+
+.taxInputGroup {
+  margin-bottom: 20px;
+}
+
+.taxInputLabel {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 8px;
+}
+
+.taxInput {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #b0b0b0;
+  font-size: 15px;
+  color: #222222;
+  outline: none;
+  background-color: #ffffff;
+  transition: border-color 0.2s ease;
+}
+
+.taxInput:focus {
+  border-color: #222222;
+}
+
+.taxSubmitBtn {
+  background-color: #222222;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 12px;
+  transition: background-color 0.2s ease;
+}
+
+.taxSubmitBtn:hover {
+  background-color: #000000;
+}
+
+.taxSubmitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.marketingUnsubscribeContainer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+  margin-bottom: 40px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.marketingCheckboxSquare {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 1px solid #222222;
+  background-color: #222222;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.marketingCheckboxSquareUnchecked {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 1px solid #b0b0b0;
+  background-color: #ffffff;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.marketingCheckboxSquareUnchecked:hover {
+  border-color: #222222;
+}
+
+.marketingCheckboxLabel {
+  font-size: 15px;
+  font-weight: 500;
+  color: #222222;
+}
+
+/* Notification Channels Edit Modal */
+.notifModalCard {
+  background-color: #ffffff;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 440px;
+  padding: 28px 24px 32px 24px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+  position: relative;
+  animation: notifModalIn 0.2s ease-out;
+}
+
+@keyframes notifModalIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.notifModalCloseBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: #222222;
+  margin-bottom: 20px;
+  transition: background-color 0.2s ease;
+}
+
+.notifModalCloseBtn:hover {
+  background-color: #f7f7f7;
+}
+
+.notifModalTitle {
+  font-size: 22px;
+  font-weight: 600;
+  color: #222222;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.3px;
+  line-height: 1.25;
+}
+
+.notifModalSubtitle {
+  font-size: 14px;
+  color: #717171;
+  line-height: 1.45;
+  margin: 0 0 24px 0;
+}
+
+.notifChannelList {
+  display: flex;
+  flex-direction: column;
+}
+
+.notifChannelRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+}
+
+.notifChannelName {
+  font-size: 16px;
+  color: #222222;
+  font-weight: 400;
+}
+
+/* Booking Setup Modal */
+.setupCard {
+  border: 1px solid #dddddd;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 16px;
+  background-color: white;
+}
+.setupCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.setupCardLeft {
+  display: flex;
+  align-items: flex-start;
+}
+.setupCardIcon {
+  font-size: 1.8rem;
+  margin-right: 16px;
+  flex-shrink: 0;
+}
+.setupCardTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 4px;
+}
+.setupCardSubtitle {
+  font-size: 0.95rem;
+  color: #717171;
+  margin-bottom: 0;
+}
+.setupCardActionBtn {
+  background-color: #f7f7f7;
+  color: #222222;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  width: 100%;
+  margin-top: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.setupCardActionBtn:hover {
+  background-color: #ebebeb;
+}
+.setupCheckIcon {
+  color: #008a05;
+  font-size: 1.5rem;
+}
+
+/* Payouts Modal Styles */
+.payoutModalTitle {
+  text-align: center;
+  width: 100%;
+  font-size: 1.5rem;
+}
+.payoutModalSubtitle {
+  text-align: center;
+  margin-bottom: 24px;
+  color: #222;
+  font-size: 1rem;
+}
+.payoutBankCard {
+  border: 1px solid #b0b0b0;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: flex-start;
+  cursor: pointer;
+  background-color: white;
+  transition: all 0.2s ease;
+}
+.payoutBankCardSelected {
+  border: 1px solid #222222;
+  background-color: #f7f7f7;
+}
+.payoutBankIcon {
+  font-size: 2rem;
+  margin-right: 16px;
+  color: #222;
+}
+.payoutBankTitle {
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 1.1rem;
+  color: #222;
+}
+.payoutBankDescList {
+  margin: 0;
+  padding-left: 20px;
+  color: #717171;
+  font-size: 0.95rem;
+}
+.payoutModalFooter {
+  margin-top: 32px;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #ebebeb;
+  padding-top: 20px;
+}
+.shieldIcon {
+  color: #e51d53;
+  font-size: 3rem;
+  margin-bottom: 24px;
+}
+.shieldTitle {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #222;
+}
+.shieldDesc {
+  color: #717171;
+  margin-bottom: 40px;
+  font-size: 1.1rem;
+  line-height: 1.4;
+}
+.goBackBtn {
+  width: 100%;
+  margin: 0;
+  border: none;
+  font-weight: 600;
+  font-size: 1rem;
+  color: #222;
+  background: transparent;
+  cursor: pointer;
+  padding: 16px;
+}
+.goBackBtn:hover {
+  text-decoration: underline;
+}
+.payoutStepTitle {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 32px;
+  color: #222;
+}
+.formControlLarge {
+  padding: 16px;
+  font-size: 1rem;
+}
+.groupedInputContainer {
+  border: 1px solid #b0b0b0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.groupedInputFirst {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-bottom: 1px solid #b0b0b0;
+  outline: none;
+  font-size: 1rem;
+}
+.groupedInputSecond {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+}
+
+/* Passkey Biometric Styles */
+.passkeySubtitle {
+  font-size: 0.95rem;
+  color: #717171;
+  margin-bottom: 20px;
+  line-height: 1.45;
+}
+
+.passkeyMethodsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.passkeyMethodCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border: 1.5px solid #dddddd;
+  border-radius: 12px;
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.passkeyMethodCard:hover {
+  border-color: #717171;
+  background-color: #fafafa;
+}
+
+.passkeyMethodCardSelected {
+  border-color: #222222;
+  background-color: #f7f7f7;
+  box-shadow: 0 0 0 1px #222222;
+}
+
+.passkeyCardLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.passkeyCardIcon {
+  font-size: 1.5rem;
+  color: #222222;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #f0f0f0;
+}
+
+.passkeyMethodCardSelected .passkeyCardIcon {
+  background-color: #222222;
+  color: #ffffff;
+}
+
+.passkeyCardTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 2px;
+}
+
+.passkeyCardDesc {
+  font-size: 0.82rem;
+  color: #717171;
+  margin: 0;
+}
+
+.biometricScannerBox {
+  background: linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%);
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 16px;
+  padding: 22px 18px;
+  text-align: center;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.scannerIconWrap {
+  width: 68px;
+  height: 68px;
+  margin: 0 auto 12px auto;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: #e51d53;
+  box-shadow: 0 4px 14px rgba(229, 29, 83, 0.15);
+  transition: all 0.3s ease;
+}
+
+.scannerIconWrapActive {
+  animation: pulseScanner 1.5s infinite;
+  box-shadow: 0 0 0 10px rgba(229, 29, 83, 0.12), 0 0 0 20px rgba(229, 29, 83, 0.06);
+}
+
+@keyframes pulseScanner {
+  0% {
+    transform: scale(0.98);
+    box-shadow: 0 0 0 0 rgba(229, 29, 83, 0.3);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 16px rgba(229, 29, 83, 0);
+  }
+  100% {
+    transform: scale(0.98);
+    box-shadow: 0 0 0 0 rgba(229, 29, 83, 0);
+  }
+}
+
+.scannerStatusText {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 4px;
+}
+
+.scannerHintText {
+  font-size: 0.82rem;
+  color: #717171;
+  margin: 0;
+}
+
+.passkeySuccessContainer {
+  text-align: center;
+  padding: 20px 10px 10px 10px;
+}
+
+.passkeySuccessIcon {
+  font-size: 3.5rem;
+  color: #008a05;
+  margin-bottom: 16px;
+  display: inline-block;
+  animation: scaleSuccess 0.4s ease-out;
+}
+
+@keyframes scaleSuccess {
+  0% { transform: scale(0.5); opacity: 0; }
+  80% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.passkeySuccessTitle {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 8px;
+}
+
+.passkeySuccessDesc {
+  font-size: 0.95rem;
+  color: #717171;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.passkeyInfoPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #eaf8eb;
+  color: #008a05;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.managePasskeyCard {
+  border: 1px solid #ebebeb;
+  border-radius: 12px;
+  padding: 16px;
+  background: #fafafa;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.managePasskeyIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: #eaf8eb;
+  color: #008a05;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  flex-shrink: 0;
+}
+
+@media (max-width : 991px) {
+  .sidebarColumn{
+    padding: 14px;
+    border-right: 0;
+    position: static;
+
+  }
+  
+
+  .pageContainer{
+    padding: 0px 16px; 
+  }
+
+  .contentRight{
+    padding: 0px 14px; 
+  }
+
+  .sidebarMenu{
+    flex-direction: row;
+    align-items: center;
+    overflow-x: scroll;
+    gap: 5px;
+  }
+
+  .sidebarMenuItem{
+    white-space: nowrap;
+    padding: 10px 12px;
+    border-radius: 12px;
+    margin-bottom: 0;
+  }
+
+  .sharedAccessText{
+    margin-bottom: 16px;
+  }
+
+  .sidebarCard{
+    margin-bottom: 16px;
+  }
+
+  .urlInputRow{
+    flex-wrap: wrap;
+  }
+
+  .sidebarDivider{
+    margin: 0;
+  }
+
+  .pageTitle{
+    font-size: 1.5rem;
+  }
+
+  .sectionHeading{
+    font-size: 1rem;
+  }
+
+  .featureRow{
+    padding: 16px;
+  }
+  
+
+  .featuresBox{
+    margin-top: 0px;
+    margin-bottom: 16px;
+  }
+
+  .sidebarTitleHeader{
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+  }
+
+
+}
+
+@media (max-width : 767px) {
+  
+}
+
+@media (max-width : 576px) {
+  
+}

@@ -1,0 +1,450 @@
+.experienceContainer {
+  background-color: #ffffff;
+  color: #222222;
+  font-family: 'Manrope', Airbnb Cereal VF, Circular, -apple-system, BlinkMacSystemFont, Roboto, Helvetica Neue, sans-serif !important;
+  overflow: hidden;
+}
+
+.heroTitle {
+  font-size: 4rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  color: #222222;
+  margin-bottom: 24px;
+}
+
+.heroSubtitle {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: #717171;
+  line-height: 1.4;
+  margin-bottom: 0;
+}
+
+.phoneContainer {
+  position: relative;
+  width: 100%;
+}
+
+.phoneVideo {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  border-radius: 40px; /* Adjust if it needs a border radius to match a phone frame */
+}
+
+
+
+/* Bring the best of your city section */
+.bestCityTitle {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  color: #222222;
+  margin-bottom: 16px;
+}
+
+.bestCitySubtitle {
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: #717171;
+  line-height: 1.4;
+}
+
+.bestCityCard {
+  background-color: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.bestCityImg {
+  width: 100%;
+  height: 350px;
+  object-fit: cover;
+}
+
+.bestCityTextWrap {
+  padding: 24px;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bestCityText {
+  font-size: 0.95rem;
+  color: #222222;
+  font-weight: 500;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Host one-of-a-kind section */
+.kindTitle {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  color: #222222;
+  margin-bottom: 32px;
+}
+
+.kindIcon {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  margin-right: 24px;
+}
+
+.kindItemTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 4px;
+}
+
+.kindItemDesc {
+  font-size: 1rem;
+  color: #717171;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Millions of Guests Section */
+.guestsTitle {
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  color: #222222;
+  margin-bottom: 16px;
+}
+
+.guestsSubtitle {
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: #717171;
+  margin-bottom: 24px;
+}
+
+.facesContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+  padding: 24px 0;
+}
+
+.faceImg {
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #ffffff;
+  margin-left: -16px; /* overlapping effect */
+}
+
+.faceImg:first-child {
+  margin-left: 0;
+}
+
+.faceSmall {
+  width: 90px;
+  height: 90px;
+}
+
+.faceMedium {
+  width: 120px;
+  height: 120px;
+}
+
+.faceLarge {
+  width: 160px;
+  height: 160px;
+}
+
+.statTitle {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #222222;
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+}
+
+.statSubtitle {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #717171;
+  margin-bottom: 24px;
+}
+
+.statDivider {
+  width: 150px;
+  margin: 24px auto;
+  border: none;
+  border-top: 1px solid #ebebeb;
+}
+
+.statDisclaimer {
+  font-size: 0.85rem;
+  color: #717171;
+  line-height: 1.4;
+  margin-top: 24px;
+  margin-bottom: 0;
+}
+
+/* Show up beautifully Section */
+.beautifulTitle {
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  color: #222222;
+  margin-bottom: 16px;
+}
+
+.beautifulSubtitle {
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: #717171;
+  margin-bottom: 48px;
+  line-height: 1.4;
+}
+
+.beautifulVideoContainer {
+  position: relative;
+  width: 100%;
+}
+
+.beautifulVideoContainerSecond {
+  position: relative;
+  width: 100%;
+  max-width: 450px;
+}
+
+.beautifulVideo {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  border-radius: 40px; /* to match the phone outline */
+}
+
+.toolsVideoBox {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  background-color: #f7f7f7;
+  border-radius: 16px;
+}
+
+.toolsVideo {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  border-radius: 32px;
+}
+
+.hostContentBox{
+  text-align: center;
+  margin-top: 12px;
+}
+
+.hostContentBox h4{
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #222222;
+  margin-bottom: 4px;
+}
+.hostContentBox p{
+  font-size: 1rem;
+  color: #717171;
+  font-weight: 500;
+  margin-bottom: 0;
+  line-height: 1.4;
+}
+
+/* FAQ Section */
+.faqSectionWrapper {
+  background-color: #f7f7f7;
+}
+
+.faqTitle {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  color: #222222;
+  margin-bottom: 48px;
+  text-align: center;
+}
+
+.faqList {
+  display: flex;
+  flex-direction: column;
+}
+
+.faqItem {
+  border-bottom: 1px solid #dddddd;
+}
+
+.faqButton {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.faqQuestion {
+  font-size: 1.15rem;
+  font-weight: 400;
+  color: #222222;
+}
+
+.faqIcon {
+  color: #222222;
+  display: flex;
+  align-items: center;
+}
+
+.faqAnswer {
+  font-size: 1.15rem;
+  color: #717171;
+  padding-bottom: 24px;
+  line-height: 1.4;
+}
+
+
+@media (max-width: 768px) {
+  .heroTitle {
+    font-size: 1.5rem;
+    text-align: start;
+    margin-bottom: 10px;
+  }
+
+  .host-main-section{
+    min-height: auto !important;
+  }
+
+  .bestCityTitle{
+    font-size: 1.5rem !important;
+    text-align: start;
+    margin-bottom: 10px !important;
+  }
+  
+  .heroSubtitle {
+    font-size: 1rem;
+    text-align: start;
+  }
+
+  .bestCityText{
+    text-align: start;
+  }
+
+  .bestCityTextWrap{
+    padding: 16px;
+  }
+
+  .bestCitySubtitle{
+    text-align: start;
+    font-size: 1rem !important;
+  }
+
+  .kindIcon{
+    margin-right: 12px;
+  }
+
+  .kindIcon{
+    width: 60px;
+    height: 60px;
+  }
+
+  .guestsTitle{
+    font-size: 1.5rem !important;
+    text-align: start;
+    margin-bottom: 10px !important;
+  letter-spacing: normal;
+    
+    
+  }
+
+  .guestsSubtitle{
+    text-align: start;
+    font-size: 1rem;
+  }
+
+  .facesContainer{
+    padding: 0px;
+  }
+
+  .kindTitle{
+    font-size: 1.5rem !important;
+    text-align: start !important;
+    margin-bottom: 10px !important;
+  }
+
+  .statTitle{
+    font-size: 1.5rem !important;
+  
+    margin-bottom: 10px !important;
+  }
+
+  .statSubtitle{
+    margin-bottom: 10px;
+  }
+
+  .statDivider{
+    margin: 10px auto;
+  }
+
+  .faceSmall{
+    width: 50px;
+    height: 50px;
+  }
+
+  .faceMedium{
+    width: 70px;
+    height: 70px;
+  }
+
+  .faceLarge{
+    width: 100px;
+    height: 100px;
+  }
+  
+  .beautifulTitle{
+    font-size: 1.5rem !important;
+    text-align: start !important;
+    margin-bottom: 10px !important;
+    letter-spacing: normal;
+  }
+
+  .beautifulSubtitle{
+    margin-bottom: 16px !important;
+    text-align: start !important;
+    font-size: 1rem;
+  }
+
+  .faqTitle{
+    font-size: 1.5rem !important;
+    text-align: start !important;
+    margin-bottom: 10px !important;
+    letter-spacing: normal; 
+  }
+
+  .faqButton{
+    padding: 12px 0;
+  }
+
+}
