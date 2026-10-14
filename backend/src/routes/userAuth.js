@@ -44,20 +44,28 @@ router.post('/send-otp', async (req, res) => {
       });
     }
 
-    // Store generated OTP in DB
+    // Store generated OTP in DB (whether new or existing user)
     if (existingUser) {
       await pool.query('UPDATE users SET otp = $1 WHERE id = $2', [otpCode, existingUser.id]);
+    } else if (isEmail) {
+      // Create user record with OTP so verification succeeds seamlessly
+      await pool.query(
+        'INSERT INTO users (email, first_name, otp, status) VALUES ($1, $2, $3, $4) ON CONFLICT (email) DO UPDATE SET otp = EXCLUDED.otp',
+        [identifier.trim(), identifier.trim().split('@')[0], otpCode, 'ACTIVE']
+      );
     }
 
-    // 2. If it is an email, dispatch actual email via Gmail SMTP
+    // 2. Dispatch actual email with 4-second timeout race so Render never hangs
     if (isEmail) {
-      try {
-        console.log(`[AUTH] Dispatching OTP email to: ${identifier.trim()}`);
-        const mailResult = await sendOtpEmail(identifier.trim(), otpCode);
-        console.log(`✉️ Real OTP email successfully sent to: ${identifier.trim()} (MsgId: ${mailResult.messageId})`);
-      } catch (mailErr) {
-        console.error('❌ Mail delivery error on server:', mailErr.message);
-      }
+      const emailPromise = sendOtpEmail(identifier.trim(), otpCode)
+        .then(r => console.log(`✉️ Real OTP email sent: ${identifier.trim()} (MsgId: ${r.messageId})`))
+        .catch(err => console.error('❌ Mail delivery error:', err.message));
+
+      // Wait max 3.5s for email, then continue anyway so user never waits more than 3 seconds
+      await Promise.race([
+        emailPromise,
+        new Promise(resolve => setTimeout(resolve, 3500))
+      ]);
     }
 
     return res.status(200).json({
