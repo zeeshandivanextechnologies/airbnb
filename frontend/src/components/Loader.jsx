@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import './Loader.css';
 
 /**
@@ -19,6 +19,35 @@ const Loader = ({
   blur = true,
   className = ''
 }) => {
+  // Lock background scroll completely when fullScreen loader is active
+  useEffect(() => {
+    if (!fullScreen) return;
+
+    // Save previous styles
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+
+    // Prevent scrolling on both html and body
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    // Prevent wheel, touch and arrow keys scroll leakage
+    const preventScroll = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    };
+
+    window.addEventListener('wheel', preventScroll, { passive: false });
+    window.addEventListener('touchmove', preventScroll, { passive: false });
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      window.removeEventListener('wheel', preventScroll);
+      window.removeEventListener('touchmove', preventScroll);
+    };
+  }, [fullScreen]);
   const content = (
     <div className={`airbnb-loader-container ${size} ${className}`}>
       {variant === 'airbnb' && (
