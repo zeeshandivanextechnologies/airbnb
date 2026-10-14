@@ -3,13 +3,18 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Create Gmail SMTP transporter
+// Create Gmail SMTP transporter with explicit secure connection (Port 465)
 export const mailTransporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, // Use SSL/TLS directly (Render blocks unencrypted/starttls port 587 often)
   auth: {
     user: process.env.SMTP_USER || 'zeeshandivanextechnologies@gmail.com',
-    pass: (process.env.SMTP_PASS || 'mabz jajx cwdf ymgx').replace(/\s+/g, ''), // Strip spaces from app password
+    pass: (process.env.SMTP_PASS || 'mabzjajxcwdfymgx').replace(/\s+/g, ''),
   },
+  tls: {
+    rejectUnauthorized: false
+  }
 });
 
 /**
