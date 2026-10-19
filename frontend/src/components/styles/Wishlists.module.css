@@ -53,32 +53,418 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0px;
+  margin-bottom: 8px;
 }
 
 .backBtn {
   background: none;
   border: none;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   cursor: pointer;
   padding: 8px;
   border-radius: 50%;
   transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .backBtn:hover {
   background-color: #f7f7f7;
 }
 
-.editBtn {
+.moreOptionsBtn {
   background: none;
   border: none;
-  font-size: 0.95rem;
-  font-weight: 600;
-  text-decoration: underline;
+  font-size: 1.2rem;
   cursor: pointer;
-  color: #222222;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #222;
 }
+
+.moreOptionsBtn:hover {
+  background-color: #f7f7f7;
+}
+
+.filterPillsRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.filterPill {
+  background: white;
+  border: 1px solid #b0b0b0;
+  border-radius: 30px;
+  padding: 8px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #222;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.filterPillActive {
+  border-color: #222 !important;
+  background-color: #f7f7f7;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Dates Dropdown in Wishlist Detail */
+.wishlistDatesDropdown {
+  position: absolute;
+  top: 50px;
+  left: 0;
+  width: 780px;
+  max-width: 90vw;
+  background: white;
+  border-radius: 32px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  padding: 24px;
+  z-index: 1000;
+  animation: scaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: left;
+  border: 1px solid #ebebeb;
+}
+
+.datesTabsContainer {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.datesTabs {
+  display: flex;
+  background: #ebebeb;
+  border-radius: 32px;
+  padding: 4px;
+}
+
+.datesTab {
+  padding: 8px 24px;
+  border-radius: 32px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #222;
+}
+
+.datesTabActive {
+  background: white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+.fakeCalendars {
+  display: flex;
+  gap: 32px;
+}
+
+.fakeCalendar {
+  flex: 1;
+}
+
+.calHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  margin-bottom: 20px;
+  padding: 0 8px;
+}
+
+.calGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  gap: 2px 0;
+}
+
+.calDayName {
+  font-size: 12px;
+  color: #717171;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+
+.calDay {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #222;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: all 0.15s ease;
+}
+
+.calDay:hover:not(.calEmpty) {
+  border: 1px solid #222;
+}
+
+.calEmpty {
+  cursor: default;
+}
+
+.calPast {
+  color: #dddddd;
+  cursor: default;
+}
+
+.calPast:hover {
+  border: none;
+}
+
+.calActive {
+  background: #222;
+  color: white;
+}
+
+.calActive:hover {
+  border: none;
+}
+
+.calInRange {
+  background: #f7f7f7;
+  border-radius: 0;
+}
+
+.exactDatesOptions {
+  display: flex;
+  gap: 10px;
+  padding-top: 16px;
+  flex-wrap: wrap;
+}
+
+.exactOptBtn {
+  padding: 6px 14px;
+  border-radius: 32px;
+  border: 1px solid #dddddd;
+  background: white;
+  font-size: 13px;
+  color: #222;
+  cursor: pointer;
+}
+
+.exactOptBtnActive {
+  padding: 6px 14px;
+  border-radius: 32px;
+  border: 1px solid #222;
+  background: #f7f7f7;
+  font-size: 13px;
+  font-weight: 600;
+  color: #222;
+  cursor: pointer;
+}
+
+.flexibleContent {
+  text-align: center;
+}
+
+.flexTitle {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.flexDurationOpts {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 36px;
+}
+
+.flexDurBtn {
+  padding: 8px 24px;
+  border-radius: 32px;
+  border: 1px solid #dddddd;
+  background: white;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.flexDurBtnActive {
+  border: 2px solid #222;
+  font-weight: 600;
+  background-color: #f7f7f7;
+}
+
+.flexMonthsRow {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 4px;
+  scrollbar-width: none;
+}
+.flexMonthsRow::-webkit-scrollbar {
+  display: none;
+}
+
+.flexMonthCard {
+  border: 1px solid #dddddd;
+  border-radius: 16px;
+  width: 110px;
+  height: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.flexMonthActive {
+  border: 2px solid #222;
+  background-color: #f7f7f7;
+}
+
+/* Wishlist Guests Dropdown */
+.wishlistGuestsDropdown {
+  position: absolute;
+  top: 50px;
+  left: 120px;
+  width: 400px;
+  background: white;
+  border-radius: 32px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  padding: 16px 30px;
+  z-index: 1000;
+  animation: scaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: left;
+  border: 1px solid #ebebeb;
+}
+
+.wishlistGuestRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 0;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.wishlistGuestRow:last-child {
+  border-bottom: none;
+}
+
+.wishlistGuestInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.wishlistGuestTitle {
+  font-size: 15.5px;
+  font-weight: 600;
+  color: #222;
+}
+
+.wishlistGuestSubtitle {
+  font-size: 13.5px;
+  color: #717171;
+  margin-top: 2px;
+}
+
+.wishlistGuestControls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.wishlistGuestCtrlBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #b0b0b0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #717171;
+  transition: all 0.15s ease;
+}
+
+.wishlistGuestCtrlBtn:hover:not(:disabled) {
+  border-color: #222;
+  color: #222;
+}
+
+.wishlistGuestCtrlBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: #e0e0e0;
+}
+
+.wishlistGuestCount {
+  width: 16px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: #222;
+}
+
+
+
+.wishlistDetailRow {
+  height: calc(100vh - 140px);
+}
+
+.wishlistItemsCol {
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 16px;
+}
+
+.wishlistMapCol {
+  height: 100%;
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.detailMapFrame {
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.addNoteBtn {
+  background: #f7f7f7;
+  border: 1px solid #ebebeb;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #484848;
+  cursor: pointer;
+  margin-top: 10px;
+  /* width: 100%; */
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+
+.addNoteBtn:hover {
+  background-color: #eeeeee;
+  color: #222;
+}
+
 
 .dateTitle {
   font-size: 1.1rem;
@@ -236,3 +622,491 @@ margin: 8px 0;
   background-color: #dddddd;
   cursor: not-allowed;
 }
+
+/* Card Close Button on Hover */
+.cardCloseBtn {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #222222;
+  font-size: 11px;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+.wishlistCard:hover .cardCloseBtn {
+  opacity: 1;
+}
+
+.cardCloseBtn:hover {
+  transform: scale(1.1);
+  background: #ffffff;
+}
+
+/* Delete Confirmation Modal */
+.deleteModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.deleteModalContent {
+  background: #ffffff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+  padding: 32px 28px 24px 28px;
+  position: relative;
+  animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: center;
+}
+
+.deleteModalCloseBtn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  color: #222222;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.deleteModalCloseBtn:hover {
+  background: #f7f7f7;
+}
+
+.deleteModalTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #222222;
+  margin: 8px 0 10px;
+}
+
+.deleteModalSubtitle {
+  font-size: 0.92rem;
+  color: #717171;
+  margin-bottom: 28px;
+  line-height: 1.4;
+}
+
+.deleteModalFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.deleteCancelLink {
+  background: none;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  color: #222222;
+}
+
+.deleteConfirmBtn {
+  background-color: #222222;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 28px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.deleteConfirmBtn:hover {
+  background-color: #000000;
+}
+
+/* Share Avatar Pill */
+.shareAvatarPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: white;
+  border: 1px solid #dddddd;
+  border-radius: 30px;
+  padding: 4px 14px 4px 5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.shareAvatarPill:hover {
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  border-color: #222222;
+}
+
+.shareAvatarImg {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.shareAvatarInitials {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #222222;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.sharePlusIcon {
+  color: #222222;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+}
+
+/* Modals Overlay */
+.shareModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.2s ease;
+}
+
+/* 1. First Modal: Wishlist Share Overview */
+.shareModalCard {
+  background: white;
+  border-radius: 24px;
+  width: 440px;
+  max-width: 90vw;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22);
+  padding: 24px;
+  position: relative;
+  animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.shareModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 24px;
+}
+
+.shareModalTitleCenter {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #222222;
+  text-align: center;
+  margin: 0;
+}
+
+.shareModalCloseBtn {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #222222;
+  transition: background 0.15s;
+}
+
+.shareModalCloseBtn:hover {
+  background: #f7f7f7;
+}
+
+.shareOwnerRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #ebebeb;
+  margin-bottom: 24px;
+}
+
+.shareOwnerAvatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.shareOwnerInitials {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #222222;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.shareOwnerName {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #222222;
+}
+
+.shareOwnerRole {
+  font-size: 0.88rem;
+  color: #717171;
+  margin-top: 2px;
+}
+
+.sharePrimaryBtn {
+  width: 100%;
+  background-color: #222222;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 12px;
+  transition: background-color 0.15s;
+}
+
+.sharePrimaryBtn:hover {
+  background-color: #000000;
+}
+
+.shareSecondaryBtn {
+  width: 100%;
+  background-color: #f7f7f7;
+  color: #222222;
+  border: none;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.shareSecondaryBtn:hover {
+  background-color: #ebebeb;
+}
+
+/* 2. Second Modal: Invite Others to Join */
+.inviteModalCard {
+  background: white;
+  border-radius: 28px;
+  width: 540px;
+  max-width: 92vw;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.25);
+  padding: 28px;
+  position: relative;
+  animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.inviteModalTitle {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #222222;
+  margin: 0 0 20px;
+  text-align: left;
+}
+
+.inviteWishlistBadge {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.inviteWishlistImg {
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  object-fit: cover;
+}
+
+.inviteWishlistInfo {
+  font-size: 1rem;
+  color: #222222;
+  font-weight: 500;
+}
+
+.inviteGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.inviteOptionBtn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: white;
+  border: 1px solid #dddddd;
+  border-radius: 16px;
+  padding: 14px 18px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #222222;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.inviteOptionBtn:hover {
+  border-color: #222222;
+  background: #fafafa;
+  transform: translateY(-1px);
+}
+
+.inviteOptionIcon {
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inviteFooterNote {
+  font-size: 0.88rem;
+  color: #717171;
+  text-align: left;
+  line-height: 1.4;
+}
+
+.inviteLearnMoreLink {
+  color: #222222;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* 3. Third Modal: More Options */
+.moreOptionsModalCard {
+  background: white;
+  border-radius: 28px;
+  width: 520px;
+  max-width: 92vw;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.25);
+  padding: 24px 28px 36px;
+  position: relative;
+  animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.moreOptionsHeader {
+  display: flex;
+  align-items: center;
+  position: relative;
+  margin-bottom: 28px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.moreOptionsBackBtn {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #222222;
+  transition: background 0.15s;
+}
+
+.moreOptionsBackBtn:hover {
+  background: #f7f7f7;
+}
+
+.moreOptionsTitle {
+  flex: 1;
+  text-align: center;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #222222;
+  margin: 0;
+  padding-right: 32px;
+}
+
+.deactivateItemRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 12px 0;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: background 0.15s;
+}
+
+.deactivateItemRow:hover {
+  background: #fafafa;
+}
+
+.deactivateIcon {
+  font-size: 26px;
+  color: #222222;
+  margin-top: 2px;
+}
+
+.deactivateHeading {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #222222;
+}
+
+.deactivateSubtext {
+  font-size: 0.9rem;
+  color: #717171;
+  margin-top: 4px;
+}
+
+

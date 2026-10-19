@@ -20,118 +20,33 @@ import {
   FaCalendarAlt,
   FaMapMarkerAlt
 } from 'react-icons/fa';
+import toast from 'react-hot-toast';
 import styles from './styles/Users.module.css';
 import { adminApiRequest } from '../services/api';
 
 export default function Users() {
-  // Mock Guest Users list with email and phone verification status
-  const initialUsers = [
-    {
-      id: 1,
-      name: 'Aarav Sharma',
-      email: 'aarav.sharma@example.com',
-      phone: '+91 98765 43210',
-      city: 'Mumbai, Maharashtra',
-      registeredDate: '12 Jan 2026',
-      totalBookings: 8,
-      status: 'Active',
-      emailVerified: true,
-      phoneVerified: true,
-      avatarBg: '#ff385c',
-      initials: 'AS'
-    },
-    {
-      id: 2,
-      name: 'Rohan Mehra',
-      email: 'rohan.mehra@example.com',
-      phone: '+91 98234 56789',
-      city: 'Delhi, NCR',
-      registeredDate: '24 Feb 2026',
-      totalBookings: 3,
-      status: 'Active',
-      emailVerified: true,
-      phoneVerified: false,
-      avatarBg: '#2563eb',
-      initials: 'RM'
-    },
-    {
-      id: 3,
-      name: 'Neha Kapoor',
-      email: 'neha.kapoor@example.com',
-      phone: '+91 97112 34567',
-      city: 'Bengaluru, Karnataka',
-      registeredDate: '05 Mar 2026',
-      totalBookings: 14,
-      status: 'Active',
-      emailVerified: true,
-      phoneVerified: true,
-      avatarBg: '#16a34a',
-      initials: 'NK'
-    },
-    {
-      id: 4,
-      name: 'Vikramaditya Rao',
-      email: 'vikram.rao@example.com',
-      phone: '+91 99887 66554',
-      city: 'Hyderabad, Telangana',
-      registeredDate: '18 Apr 2026',
-      totalBookings: 0,
-      status: 'Blocked',
-      emailVerified: false,
-      phoneVerified: false,
-      avatarBg: '#dc2626',
-      initials: 'VR'
-    },
-    {
-      id: 5,
-      name: 'Pooja Verma',
-      email: 'pooja.verma@example.com',
-      phone: '+91 94567 89012',
-      city: 'Jaipur, Rajasthan',
-      registeredDate: '02 May 2026',
-      totalBookings: 5,
-      status: 'Active',
-      emailVerified: true,
-      phoneVerified: true,
-      avatarBg: '#ca8a04',
-      initials: 'PV'
-    },
-    {
-      id: 6,
-      name: 'Siddharth Sen',
-      email: 'siddharth.sen@example.com',
-      phone: '+91 93345 67890',
-      city: 'Kolkata, West Bengal',
-      registeredDate: '22 Jun 2026',
-      totalBookings: 1,
-      status: 'Pending',
-      emailVerified: true,
-      phoneVerified: false,
-      avatarBg: '#8b5cf6',
-      initials: 'SS'
-    }
-  ];
-
-  const [users, setUsers] = useState(initialUsers);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all'); // 'all' | 'active' | 'blocked'
   const [verificationFilter, setVerificationFilter] = useState('all'); // 'all' | 'verified' | 'unverified'
 
-  // Modals state
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const res = await adminApiRequest('/admin/auth/users');
+      if (res.success && Array.isArray(res.users)) {
+        setUsers(res.users);
+      }
+    } catch (err) {
+      console.warn('Could not fetch live users from backend:', err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Fetch real guest users from PostgreSQL Backend
   React.useEffect(() => {
-    let isMounted = true;
-    adminApiRequest('/admin/auth/users')
-      .then((res) => {
-        if (isMounted && res.success && Array.isArray(res.users) && res.users.length > 0) {
-          setUsers(res.users);
-        }
-      })
-      .catch((err) => {
-        console.warn('Could not fetch live users from backend:', err.message);
-      });
-    return () => { isMounted = false; };
+    fetchUsers();
   }, []);
 
   const [viewUser, setViewUser] = useState(null);
@@ -141,9 +56,9 @@ export default function Users() {
   const filteredUsers = users.filter((u) => {
     // 1. Search filter
     const matchesSearch = 
-      u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.phone.includes(searchTerm);
+      (u.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.phone || '').includes(searchTerm);
 
     // 2. Tab status filter
     const matchesTab = 
@@ -161,36 +76,45 @@ export default function Users() {
     return matchesSearch && matchesTab && matchesVerify;
   });
 
-    // Action handlers
+  // Action handlers
   const handleToggleBlock = async (id) => {
     const targetUser = users.find((u) => u.id === id);
     if (!targetUser) return;
     const nextStatus = targetUser.status === 'Blocked' ? 'Active' : 'Blocked';
 
     // Optimistically update state
-    setUsers(users.map((u) => {
-      if (u.id === id) {
-        return { ...u, status: nextStatus };
-      }
-      return u;
-    }));
+    setUsers(users.map((u) => (u.id === id ? { ...u, status: nextStatus } : u)));
+    if (viewUser && viewUser.id === id) {
+      setViewUser({ ...viewUser, status: nextStatus });
+    }
 
     try {
       await adminApiRequest(`/admin/auth/users/${id}/status`, {
         method: 'PATCH',
         body: JSON.stringify({ status: nextStatus })
       });
-      console.log(`✅ Guest #${id} status toggled to ${nextStatus} in backend database`);
+      toast.success(nextStatus === 'Blocked' ? `User account blocked` : `User account unblocked`);
     } catch (e) {
-      console.warn('Backend status update failed:', e.message);
+      // Revert on error
+      setUsers(users.map((u) => (u.id === id ? { ...u, status: targetUser.status } : u)));
+      toast.error('Failed to update user status');
     }
   };
 
-  const handleDeleteUser = (id) => {
-    if (window.confirm('Are you sure you want to delete this guest account?')) {
-      setUsers(users.filter((u) => u.id !== id));
-      if (viewUser && viewUser.id === id) setViewUser(null);
-      if (editUser && editUser.id === id) setEditUser(null);
+  const handleDeleteUser = async (id) => {
+    if (window.confirm('Are you sure you want to permanently delete this user account?')) {
+      try {
+        await adminApiRequest(`/admin/auth/users/${id}`, {
+          method: 'DELETE'
+        });
+        setUsers(users.filter((u) => u.id !== id));
+        if (viewUser && viewUser.id === id) setViewUser(null);
+        if (editUser && editUser.id === id) setEditUser(null);
+        toast.success('User deleted successfully');
+      } catch (err) {
+        toast.error('Failed to delete user');
+        console.error('Failed to delete user:', err);
+      }
     }
   };
 
@@ -203,13 +127,20 @@ export default function Users() {
     setEditUser(null);
 
     try {
-      await adminApiRequest(`/admin/auth/users/${updatedUser.id}/status`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: updatedUser.status })
+      await adminApiRequest(`/admin/auth/users/${updatedUser.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ 
+          name: updatedUser.name,
+          email: updatedUser.email,
+          phone: updatedUser.phone,
+          city: updatedUser.city,
+          status: updatedUser.status 
+        })
       });
-      console.log(`✅ Saved edit for user #${updatedUser.id} with status ${updatedUser.status}`);
+      toast.success('User profile updated successfully');
     } catch (err) {
-      console.error('Failed to update status in backend:', err);
+      toast.error('Failed to update user');
+      console.error('Failed to update user in backend:', err);
     }
   };
 

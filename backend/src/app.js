@@ -3,6 +3,10 @@ import cors from 'cors';
 import adminAuthRouter from './routes/adminAuth.js';
 import listingsRouter from './routes/listings.js';
 import userAuthRouter from './routes/userAuth.js';
+import paymentsRouter from './routes/payments.js';
+import couponsRouter from './routes/coupons.js';
+import financeRouter from './routes/finance.js';
+import securityRouter from './routes/security.js';
 
 const app = express();
 
@@ -33,6 +37,10 @@ app.use('/api/admin/auth', adminAuthRouter);
 app.use('/api/admin', adminAuthRouter);
 app.use('/api/listings', listingsRouter);
 app.use('/api/auth', userAuthRouter);
+app.use('/api/payments', paymentsRouter);
+app.use('/api/coupons', couponsRouter);
+app.use('/api/finance', financeRouter);
+app.use('/api/security', securityRouter);
 
 // 404 Handler
 app.use((req, res) => {

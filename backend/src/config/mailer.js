@@ -181,3 +181,554 @@ export async function sendOtpEmail(toEmail, otpCode) {
     throw error;
   }
 }
+
+import { generateBookingInvoicePDF } from '../utils/pdfInvoiceGenerator.js';
+
+/**
+ * Send Airbnb Booking Confirmation & Invoice Email to Guest (with PDF attachment)
+ */
+export async function sendBookingConfirmationEmail(booking) {
+  if (!booking || !booking.guest_email) {
+    console.warn('⚠️ No guest email provided for booking confirmation.');
+    return { success: false, message: 'Missing recipient email' };
+  }
+
+  const toEmail = booking.guest_email;
+  const guestName = booking.guest_name || 'Guest';
+  const bookingCode = booking.booking_code || 'BK-CONFIRMED';
+  const listingTitle = booking.listing_title || 'Airbnb Experience / Service';
+  const packageTitle = booking.package_title || 'Standard Experience';
+  const hostName = booking.host_name || 'Host';
+  const location = booking.location || 'Jaipur, Rajasthan, India';
+  const guestsCount = booking.guests_count || 1;
+  const paymentId = booking.razorpay_payment_id || 'PAY_VERIFIED';
+  const totalAmount = Number(booking.total_amount || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
+  const coverImg = booking.cover_img || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80';
+  
+  const rawDate = booking.booking_date || booking.check_in || new Date();
+  const formattedDate = new Date(rawDate).toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  const bookingTime = booking.booking_time || '10:00 am';
+
+  // Generate official PDF invoice attachment
+  let pdfBuffer = null;
+  try {
+    pdfBuffer = await generateBookingInvoicePDF(booking);
+  } catch (pdfErr) {
+    console.error('Failed to generate PDF buffer:', pdfErr);
+  }
+
+  const mailOptions = {
+    from: process.env.SMTP_FROM || '"Airbnb Reservations" <zeeshandivanextechnologies@gmail.com>',
+    to: toEmail,
+    subject: `Reservation Confirmed & Paid: ${listingTitle} (${bookingCode})`,
+    attachments: pdfBuffer ? [
+      {
+        filename: `Airbnb-Invoice-${bookingCode}.pdf`,
+        content: pdfBuffer,
+        contentType: 'application/pdf'
+      }
+    ] : [],
+    html: `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Reservation Confirmed - Airbnb</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+          body {
+            font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+          }
+        </style>
+      </head>
+      <body style="margin: 0; padding: 32px 12px; background-color: #f7f7f7; font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #222222;">
+        
+        <!-- Main Email Container -->
+        <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 580px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.06);">
+          
+          <!-- Top Airbnb Header with Logo -->
+          <tr>
+            <td style="padding: 32px 40px 24px 40px;">
+              <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td align="left" valign="middle">
+                    <!-- Airbnb Red Bélo Icon -->
+                    <svg width="34" height="38" viewBox="0 0 32 32" fill="#FF385C" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+                      <path d="M16 1c2.008 0 3.463.963 4.751 3.269l.533.993c2.428 4.604 5.385 10.428 6.438 12.875 1.188 2.76 1.778 5.161 1.778 7.238 0 3.738-2.887 6.625-6.625 6.625-2.478 0-4.636-1.285-5.875-3.328-1.239 2.043-3.397 3.328-5.875 3.328-3.738 0-6.625-2.887-6.625-6.625 0-2.077.59-4.478 1.778-7.238 1.053-2.447 4.01-8.271 6.438-12.875l.533-.993C10.537 1.963 11.992 1 16 1zm0 3c-2.446 0-3.411 1.042-4.484 2.969l-.534.993c-2.396 4.545-5.327 10.32-6.368 12.739-1.04 2.417-1.614 4.582-1.614 6.424 0 2.222 1.778 4 4 4 1.838 0 3.407-1.218 3.876-2.991l.124-.551c.362-1.849 1.488-5.382 5-5.382s4.638 3.533 5 5.382l.124.551c.469 1.773 2.038 2.991 3.876 2.991 2.222 0 4-1.778 4-4 0-1.842-.574-4.007-1.614-6.424-1.041-2.419-3.972-8.194-6.368-12.739l-.534-.993C19.411 5.042 18.446 4 16 4zm0 14c-1.657 0-3 1.343-3 3 0 1.258.775 2.336 1.874 2.766l.376.119.375-.119c1.099-.43 1.875-1.508 1.875-2.766 0-1.657-1.343-3-3-3z"/>
+                    </svg>
+                  </td>
+                  <td align="right" valign="middle">
+                    <span style="display: inline-block; background-color: #E6F7EB; color: #008A05; font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 16px; letter-spacing: 0.2px;">
+                      ✓ Confirmed & Paid
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Hero Headline -->
+          <tr>
+            <td style="padding: 0 40px 24px 40px;">
+              <h1 style="color: #222222; font-size: 28px; font-weight: 800; line-height: 1.2; margin: 0 0 10px 0; letter-spacing: -0.5px;">
+                You're all booked, ${guestName.split(' ')[0]}!
+              </h1>
+              <p style="color: #717171; font-size: 15px; line-height: 1.5; margin: 0;">
+                Your reservation is all set. We've included all details below and attached your official PDF receipt for your records.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Experience Card (Clean Airbnb Style) -->
+          <tr>
+            <td style="padding: 0 40px 28px 40px;">
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #ffffff; border: 1px solid #ebebeb; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.03);">
+                <tr>
+                  <td width="150" valign="top">
+                    <img src="${coverImg}" alt="${listingTitle}" width="150" height="130" style="display: block; object-fit: cover; width: 150px; height: 130px;" />
+                  </td>
+                  <td valign="middle" style="padding: 16px 20px;">
+                    <div style="font-size: 11px; font-weight: 700; color: #717171; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
+                      AIRBNB EXPERIENCE
+                    </div>
+                    <div style="font-size: 16px; font-weight: 700; color: #222222; line-height: 1.35; margin-bottom: 6px;">
+                      ${listingTitle}
+                    </div>
+                    <div style="font-size: 13px; color: #FF385C; font-weight: 600; margin-bottom: 4px;">
+                      ${packageTitle}
+                    </div>
+                    <div style="font-size: 12.5px; color: #717171;">
+                      Hosted by <strong style="color: #222222;">${hostName}</strong>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Confirmation Code Box -->
+          <tr>
+            <td style="padding: 0 40px 28px 40px;">
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f7f7f7; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px 20px;">
+                <tr>
+                  <td>
+                    <div style="font-size: 11px; font-weight: 700; color: #717171; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px;">
+                      CONFIRMATION CODE
+                    </div>
+                    <div style="font-size: 22px; font-weight: 800; color: #222222; letter-spacing: 1.5px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                      ${bookingCode}
+                    </div>
+                  </td>
+                  <td align="right" valign="middle">
+                    <span style="display: inline-block; background-color: #ffffff; border: 1px solid #d1d5db; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; color: #374151;">
+                      📎 PDF Attached
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Reservation Details (Airbnb Specs) -->
+          <tr>
+            <td style="padding: 0 40px 24px 40px;">
+              <h2 style="font-size: 18px; font-weight: 700; color: #222222; margin: 0 0 16px 0;">
+                Reservation details
+              </h2>
+              
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 12px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; color: #717171;" width="35%">Date</td>
+                  <td style="padding: 12px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; font-weight: 600; color: #222222;">${formattedDate}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; color: #717171;">Time slot</td>
+                  <td style="padding: 12px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; font-weight: 600; color: #222222;">${bookingTime}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; color: #717171;">Guests</td>
+                  <td style="padding: 12px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; font-weight: 600; color: #222222;">${guestsCount} guest${guestsCount > 1 ? 's' : ''}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; color: #717171;">Starting location</td>
+                  <td style="padding: 12px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; font-weight: 600; color: #222222;">${location}</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Payment Breakdown & Receipt -->
+          <tr>
+            <td style="padding: 0 40px 28px 40px;">
+              <h2 style="font-size: 18px; font-weight: 700; color: #222222; margin: 0 0 16px 0;">
+                Payment details
+              </h2>
+
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 10px 0; font-size: 14px; color: #484848;">${packageTitle} (${guestsCount} guest${guestsCount > 1 ? 's' : ''})</td>
+                  <td align="right" style="padding: 10px 0; font-size: 14px; font-weight: 600; color: #222222;">${totalAmount}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px 0; font-size: 14px; color: #717171;">Taxes & Airbnb Service fees</td>
+                  <td align="right" style="padding: 10px 0; font-size: 14px; color: #222222;">₹0</td>
+                </tr>
+                <tr>
+                  <td colspan="2" style="padding: 4px 0;"><hr style="border: none; border-top: 1px solid #ebebeb; margin: 0;"></td>
+                </tr>
+                <tr>
+                  <td style="padding: 14px 0 6px 0; font-size: 16px; font-weight: 800; color: #222222;">Total (INR)</td>
+                  <td align="right" style="padding: 14px 0 6px 0; font-size: 18px; font-weight: 800; color: #222222;">${totalAmount}</td>
+                </tr>
+                <tr>
+                  <td style="font-size: 12.5px; color: #717171;">Payment via Razorpay</td>
+                  <td align="right" style="font-size: 12.5px; font-family: monospace; color: #717171;">${paymentId}</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- CTA Button -->
+          <tr>
+            <td style="padding: 0 40px 32px 40px; text-align: center;">
+              <a href="http://localhost:5173/booking-confirmed/${bookingCode}" style="display: block; background: #FF385C; color: #ffffff; font-size: 15px; font-weight: 700; text-align: center; text-decoration: none; padding: 14px 24px; border-radius: 8px; box-shadow: 0 2px 8px rgba(255, 56, 92, 0.25);">
+                View your itinerary
+              </a>
+            </td>
+          </tr>
+
+          <!-- Aircover & Cancellation Policy Note -->
+          <tr>
+            <td style="padding: 0 40px 32px 40px;">
+              <div style="background-color: #fafafa; border-radius: 8px; padding: 16px 20px; font-size: 13px; color: #717171; line-height: 1.5;">
+                <strong style="color: #222222;">Free cancellation:</strong> Cancel up to 24 hours before your start time for a full refund. Every booking includes AirCover protection.
+              </div>
+            </td>
+          </tr>
+
+          <!-- Subtle Divider -->
+          <tr>
+            <td style="padding: 0 40px;">
+              <hr style="border: none; border-top: 1px solid #ebebeb; margin: 0;">
+            </td>
+          </tr>
+
+          <!-- Official Airbnb Footer -->
+          <tr>
+            <td style="padding: 28px 40px 36px 40px;">
+              <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td align="left" valign="middle">
+                    <svg width="24" height="27" viewBox="0 0 32 32" fill="#717171" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+                      <path d="M16 1c2.008 0 3.463.963 4.751 3.269l.533.993c2.428 4.604 5.385 10.428 6.438 12.875 1.188 2.76 1.778 5.161 1.778 7.238 0 3.738-2.887 6.625-6.625 6.625-2.478 0-4.636-1.285-5.875-3.328-1.239 2.043-3.397 3.328-5.875 3.328-3.738 0-6.625-2.887-6.625-6.625 0-2.077.59-4.478 1.778-7.238 1.053-2.447 4.01-8.271 6.438-12.875l.533-.993C10.537 1.963 11.992 1 16 1zm0 3c-2.446 0-3.411 1.042-4.484 2.969l-.534.993c-2.396 4.545-5.327 10.32-6.368 12.739-1.04 2.417-1.614 4.582-1.614 6.424 0 2.222 1.778 4 4 4 1.838 0 3.407-1.218 3.876-2.991l.124-.551c.362-1.849 1.488-5.382 5-5.382s4.638 3.533 5 5.382l.124.551c.469 1.773 2.038 2.991 3.876 2.991 2.222 0 4-1.778 4-4 0-1.842-.574-4.007-1.614-6.424-1.041-2.419-3.972-8.194-6.368-12.739l-.534-.993C19.411 5.042 18.446 4 16 4zm0 14c-1.657 0-3 1.343-3 3 0 1.258.775 2.336 1.874 2.766l.376.119.375-.119c1.099-.43 1.875-1.508 1.875-2.766 0-1.657-1.343-3-3-3z"/>
+                    </svg>
+                  </td>
+                  <td align="right" valign="middle">
+                    <span style="font-size: 11px; color: #717171;">
+                      Airbnb Ireland UC  •  Dublin 2, Ireland
+                    </span>
+                  </td>
+                </tr>
+              </table>
+              <div style="margin-top: 16px; font-size: 11.5px; color: #717171; line-height: 1.5;">
+                Sent from Airbnb, Inc. • <a href="http://localhost:5173/help" style="color: #717171; text-decoration: underline;">Help Center</a> • <a href="http://localhost:5173/account-settings" style="color: #717171; text-decoration: underline;">Account Settings</a>
+              </div>
+            </td>
+          </tr>
+
+        </table>
+      </body>
+      </html>
+    `,
+  };
+
+  try {
+    const info = await mailTransporter.sendMail(mailOptions);
+    console.log(`✅ Real Booking Confirmation Email + PDF sent to ${toEmail}. MessageId: ${info.messageId}`);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error(`❌ Failed to send Booking Confirmation email to ${toEmail}:`, error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Send Airbnb Listing Created / Published Email to Host Gmail
+ * Covers: Stays, Experiences, Services
+ */
+export async function sendListingCreatedEmail(toEmail, listingData) {
+  if (!toEmail) return { success: false, error: 'No recipient email provided' };
+
+  const title = listingData.title || 'Your new Airbnb Listing';
+  const type = listingData.type || 'Stay';
+  const category = listingData.category || 'Listing';
+  const city = listingData.city || 'India';
+  const price = listingData.price ? Number(listingData.price).toLocaleString('en-IN') : '0';
+  const hostName = listingData.host_name || 'Host';
+  const coverImg = listingData.cover_img || (Array.isArray(listingData.photos) && listingData.photos[0]) || 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80';
+  const listingId = listingData.id || '';
+  const now = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  // Distinguish badge color & label by type/category
+  const isStay = (type || '').toLowerCase().includes('stay') || (type || '').toLowerCase().includes('entire') || (type || '').toLowerCase().includes('room') || (category || '').toLowerCase().includes('home');
+  const isService = (type || '').toLowerCase().includes('service') || (category || '').toLowerCase().includes('service');
+  const badgeLabel = isService ? 'SERVICE' : (isStay ? 'STAY / HOME' : 'EXPERIENCE');
+  const badgeColor = isService ? '#059669' : (isStay ? '#E51D53' : '#6366F1');
+
+  const mailOptions = {
+    from: process.env.SMTP_FROM || '"Airbnb" <zeeshandivanextechnologies@gmail.com>',
+    to: toEmail,
+    subject: `🎉 Congratulations ${hostName}! Your ${badgeLabel.toLowerCase()} is live on Airbnb`,
+    html: `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Listing Published - Airbnb</title>
+      </head>
+      <body style="margin: 0; padding: 24px 12px; background-color: #f7f7f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+        <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e8e8e8; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 18px rgba(0,0,0,0.06);">
+          
+          <!-- Header with Bélo Logo -->
+          <tr>
+            <td style="padding: 32px 40px 24px 40px; border-bottom: 1px solid #f0f0f0;">
+              <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td>
+                    <svg width="34" height="38" viewBox="0 0 32 32" fill="#FF385C" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+                      <path d="M16 1c2.008 0 3.463.963 4.751 3.269l.533.993c2.428 4.604 5.385 10.428 6.438 12.875 1.188 2.76 1.778 5.161 1.778 7.238 0 3.738-2.887 6.625-6.625 6.625-2.478 0-4.636-1.285-5.875-3.328-1.239 2.043-3.397 3.328-5.875 3.328-3.738 0-6.625-2.887-6.625-6.625 0-2.077.59-4.478 1.778-7.238 1.053-2.447 4.01-8.271 6.438-12.875l.533-.993C10.537 1.963 11.992 1 16 1zm0 3c-2.446 0-3.411 1.042-4.484 2.969l-.534.993c-2.396 4.545-5.327 10.32-6.368 12.739-1.04 2.417-1.614 4.582-1.614 6.424 0 2.222 1.778 4 4 4 1.838 0 3.407-1.218 3.876-2.991l.124-.551c.362-1.849 1.488-5.382 5-5.382s4.638 3.533 5 5.382l.124.551c.469 1.773 2.038 2.991 3.876 2.991 2.222 0 4-1.778 4-4 0-1.842-.574-4.007-1.614-6.424-1.041-2.419-3.972-8.194-6.368-12.739l-.534-.993C19.411 5.042 18.446 4 16 4zm0 14c-1.657 0-3 1.343-3 3 0 1.258.775 2.336 1.874 2.766l.376.119.375-.119c1.099-.43 1.875-1.508 1.875-2.766 0-1.657-1.343-3-3-3z"/>
+                    </svg>
+                  </td>
+                  <td align="right">
+                    <span style="display: inline-block; background-color: ${badgeColor}; color: #ffffff; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; padding: 4px 10px; border-radius: 12px; text-transform: uppercase;">
+                      ${badgeLabel}
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Main Greeting -->
+          <tr>
+            <td style="padding: 32px 40px 16px 40px;">
+              <h1 style="margin: 0 0 10px 0; font-size: 24px; font-weight: 700; color: #222222; line-height: 1.25;">
+                Your listing is officially published, ${hostName}! 🌟
+              </h1>
+              <p style="margin: 0; font-size: 15px; color: #717171; line-height: 1.5;">
+                Guests around the world can now discover and book your <strong>${badgeLabel.toLowerCase()}</strong> on Airbnb. Here are your listing details:
+              </p>
+            </td>
+          </tr>
+
+          <!-- Listing Preview Card -->
+          <tr>
+            <td style="padding: 12px 40px 24px 40px;">
+              <div style="border: 1px solid #e0e0e0; border-radius: 14px; overflow: hidden; background: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                <img src="${coverImg}" alt="${title}" style="width: 100%; height: 220px; object-fit: cover; display: block;" />
+                <div style="padding: 20px;">
+                  <div style="font-size: 18px; font-weight: 700; color: #222222; margin-bottom: 6px;">
+                    ${title}
+                  </div>
+                  <div style="font-size: 14px; color: #717171; margin-bottom: 12px;">
+                    📍 ${city} • ${type}
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f0f0f0; padding-top: 12px;">
+                    <div>
+                      <span style="font-size: 18px; font-weight: 700; color: #222222;">₹${price}</span>
+                      <span style="font-size: 13px; color: #717171;"> / night or guest</span>
+                    </div>
+                    <span style="font-size: 12px; color: #059669; font-weight: 700; background: #ecfdf5; padding: 4px 8px; border-radius: 6px;">
+                      ● ACTIVE NOW
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Summary Table -->
+          <tr>
+            <td style="padding: 0 40px 24px 40px;">
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fafafa; border-radius: 10px; padding: 14px 18px; font-size: 13.5px; color: #222222;">
+                <tr>
+                  <td style="padding: 6px 0; color: #717171;">Listing Type:</td>
+                  <td align="right" style="padding: 6px 0; font-weight: 600;">${type} (${category})</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #717171;">Published On:</td>
+                  <td align="right" style="padding: 6px 0; font-weight: 600;">${now}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #717171;">Host Name:</td>
+                  <td align="right" style="padding: 6px 0; font-weight: 600;">${hostName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #717171;">Listing ID:</td>
+                  <td align="right" style="padding: 6px 0; font-weight: 600;">#${listingId || 'NEW'}</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Action Button -->
+          <tr>
+            <td style="padding: 0 40px 32px 40px;">
+              <a href="http://localhost:5173/hosting/listings" style="display: block; background: #FF385C; color: #ffffff; font-size: 15px; font-weight: 700; text-align: center; text-decoration: none; padding: 14px 24px; border-radius: 8px; box-shadow: 0 2px 8px rgba(255, 56, 92, 0.25);">
+                Manage your listing in Host Dashboard
+              </a>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 40px 32px 40px; border-top: 1px solid #ebebeb; text-align: center; font-size: 12px; color: #717171; line-height: 1.5;">
+              Airbnb, Inc. • You received this email because you created a listing on Airbnb.<br/>
+              Need help? Visit our <a href="http://localhost:5173/help" style="color: #222222; text-decoration: underline;">Host Help Center</a>.
+            </td>
+          </tr>
+
+        </table>
+      </body>
+      </html>
+    `,
+  };
+
+  try {
+    const info = await mailTransporter.sendMail(mailOptions);
+    console.log(`✅ Listing Created Email sent to ${toEmail}. MessageId: ${info.messageId}`);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error(`❌ Failed to send Listing Created email to ${toEmail}:`, error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Send Airbnb Listing Removed / Deleted Alert Email to Host Gmail
+ * Covers: Stays, Experiences, Services
+ */
+export async function sendListingDeletedEmail(toEmail, listingData) {
+  if (!toEmail) return { success: false, error: 'No recipient email provided' };
+
+  const title = listingData.title || 'Your Airbnb Listing';
+  const type = listingData.type || 'Stay';
+  const category = listingData.category || 'Listing';
+  const city = listingData.city || 'India';
+  const hostName = listingData.host_name || 'Host';
+  const listingId = listingData.id || '';
+  const now = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+  const mailOptions = {
+    from: process.env.SMTP_FROM || '"Airbnb" <zeeshandivanextechnologies@gmail.com>',
+    to: toEmail,
+    subject: `Notice: Your listing "${title}" has been removed from Airbnb`,
+    html: `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Listing Removed - Airbnb</title>
+      </head>
+      <body style="margin: 0; padding: 24px 12px; background-color: #f7f7f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+        <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e8e8e8; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 18px rgba(0,0,0,0.06);">
+          
+          <!-- Header with Bélo Logo -->
+          <tr>
+            <td style="padding: 32px 40px 24px 40px; border-bottom: 1px solid #f0f0f0;">
+              <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td>
+                    <svg width="34" height="38" viewBox="0 0 32 32" fill="#717171" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+                      <path d="M16 1c2.008 0 3.463.963 4.751 3.269l.533.993c2.428 4.604 5.385 10.428 6.438 12.875 1.188 2.76 1.778 5.161 1.778 7.238 0 3.738-2.887 6.625-6.625 6.625-2.478 0-4.636-1.285-5.875-3.328-1.239 2.043-3.397 3.328-5.875 3.328-3.738 0-6.625-2.887-6.625-6.625 0-2.077.59-4.478 1.778-7.238 1.053-2.447 4.01-8.271 6.438-12.875l.533-.993C10.537 1.963 11.992 1 16 1zm0 3c-2.446 0-3.411 1.042-4.484 2.969l-.534.993c-2.396 4.545-5.327 10.32-6.368 12.739-1.04 2.417-1.614 4.582-1.614 6.424 0 2.222 1.778 4 4 4 1.838 0 3.407-1.218 3.876-2.991l.124-.551c.362-1.849 1.488-5.382 5-5.382s4.638 3.533 5 5.382l.124.551c.469 1.773 2.038 2.991 3.876 2.991 2.222 0 4-1.778 4-4 0-1.842-.574-4.007-1.614-6.424-1.041-2.419-3.972-8.194-6.368-12.739l-.534-.993C19.411 5.042 18.446 4 16 4zm0 14c-1.657 0-3 1.343-3 3 0 1.258.775 2.336 1.874 2.766l.376.119.375-.119c1.099-.43 1.875-1.508 1.875-2.766 0-1.657-1.343-3-3-3z"/>
+                    </svg>
+                  </td>
+                  <td align="right">
+                    <span style="display: inline-block; background-color: #ef4444; color: #ffffff; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; padding: 4px 10px; border-radius: 12px; text-transform: uppercase;">
+                      REMOVED
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Main Notice -->
+          <tr>
+            <td style="padding: 32px 40px 16px 40px;">
+              <h1 style="margin: 0 0 10px 0; font-size: 22px; font-weight: 700; color: #222222; line-height: 1.25;">
+                Listing Deletion Confirmation
+              </h1>
+              <p style="margin: 0; font-size: 15px; color: #717171; line-height: 1.5;">
+                Hello <strong>${hostName}</strong>, this email confirms that your listing has been permanently deleted from Airbnb as requested.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Details Box -->
+          <tr>
+            <td style="padding: 12px 40px 24px 40px;">
+              <div style="background-color: #fef2f2; border: 1px solid #fee2e2; border-radius: 12px; padding: 18px 20px;">
+                <div style="font-size: 16px; font-weight: 700; color: #991b1b; margin-bottom: 6px;">
+                  ${title}
+                </div>
+                <div style="font-size: 13.5px; color: #7f1d1d; line-height: 1.4;">
+                  Type: <strong>${type}</strong> (${category})<br/>
+                  Location: <strong>${city}</strong><br/>
+                  Listing ID: <strong>#${listingId || 'N/A'}</strong><br/>
+                  Deleted At: <strong>${now}</strong>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Reassurance Note -->
+          <tr>
+            <td style="padding: 0 40px 24px 40px;">
+              <p style="margin: 0; font-size: 14px; color: #717171; line-height: 1.5;">
+                Guests will no longer be able to find or book this listing. Any existing completed bookings and transaction records remain securely saved in your payout and earnings history.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Action Button -->
+          <tr>
+            <td style="padding: 0 40px 32px 40px;">
+              <a href="http://localhost:5173/hosting/listings" style="display: block; background: #222222; color: #ffffff; font-size: 15px; font-weight: 700; text-align: center; text-decoration: none; padding: 14px 24px; border-radius: 8px;">
+                View your active listings
+              </a>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 40px 32px 40px; border-top: 1px solid #ebebeb; text-align: center; font-size: 12px; color: #717171; line-height: 1.5;">
+              Airbnb, Inc. • If you did not perform this action, please contact <a href="http://localhost:5173/help" style="color: #222222; text-decoration: underline;">Airbnb Support</a> immediately.
+            </td>
+          </tr>
+
+        </table>
+      </body>
+      </html>
+    `,
+  };
+
+  try {
+    const info = await mailTransporter.sendMail(mailOptions);
+    console.log(`✅ Listing Deleted Email sent to ${toEmail}. MessageId: ${info.messageId}`);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error(`❌ Failed to send Listing Deleted email to ${toEmail}:`, error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+

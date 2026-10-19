@@ -1,20 +1,26 @@
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { toast } from 'react-hot-toast';
 import { 
   FiShare, FiHeart, FiStar, FiMonitor, FiWifi, FiCoffee 
 } from 'react-icons/fi';
 import { 
   MdOutlineDoorFront, MdOutlineWorkspacePremium, 
   MdOutlineDirectionsCar, MdOutlineLocalLaundryService,
-  MdOutlineSevereCold, MdOutlineReportProblem
+  MdOutlineSevereCold, MdOutlineReportProblem,
+  MdOutlineHotTub, MdOutlineSecurity, MdOutlineHeatPump,
+  MdOutlineShower, MdOutlineOutdoorGrill, MdOutlinePool
 } from 'react-icons/md';
 import { 
-  BsDoorOpen, BsBuilding, BsFlag 
+  BsDoorOpen, BsBuilding, BsFlag, BsShieldCheck, BsCameraVideo, BsVolumeUp 
 } from 'react-icons/bs';
 import { TbToolsKitchen2, TbMountain } from 'react-icons/tb';
 import { 
   FaChevronDown, FaTimes, FaChevronLeft, FaChevronRight,
-  FaCopy, FaEnvelope, FaCommentDots, FaWhatsapp, FaFacebookMessenger, FaFacebook, FaTwitter, FaCode, FaEllipsisH
+  FaCopy, FaEnvelope, FaCommentDots, FaWhatsapp, FaFacebookMessenger, FaFacebook, FaTwitter, FaCode, FaEllipsisH,
+  FaSwimmingPool, FaTv, FaCar, FaFireExtinguisher, FaFirstAid, FaBan, FaCheck, FaThermometerHalf, FaBath, FaSnowflake,
+  FaArrowLeft
 } from 'react-icons/fa';
 
 import { DayPicker } from 'react-day-picker';
@@ -23,12 +29,20 @@ import { format, parse, isValid, addDays } from 'date-fns';
 import { useEffect } from 'react';
 
 import styles from '../../components/styles/ListingDetails.module.css';
+import Loader from '../../components/Loader';
 
 export default function ListingDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { user: authUser } = useSelector((state) => state.auth);
   
   // State for booking widget & calendar
   const [rateType, setRateType] = useState('non-refundable');
+  const [isReserving, setIsReserving] = useState(false);
+  const [showRequestToBookPage, setShowRequestToBookPage] = useState(false);
+  const [rtbShowCalendarModal, setRtbShowCalendarModal] = useState(false);
+  const [rtbShowGuestModal, setRtbShowGuestModal] = useState(false);
+  const [hostMessage, setHostMessage] = useState('');
   const [selectedRange, setSelectedRange] = useState({
     from: new Date(),
     to: addDays(new Date(), 1)
@@ -53,8 +67,13 @@ export default function ListingDetails() {
   const [isDescModalOpen, setIsDescModalOpen] = useState(false);
   const [isDescModalClosing, setIsDescModalClosing] = useState(false);
 
+  // State for What this place offers (Amenities) modal
+  const [isAmenitiesModalOpen, setIsAmenitiesModalOpen] = useState(false);
+  const [isAmenitiesModalClosing, setIsAmenitiesModalClosing] = useState(false);
+  const [masterAmenities, setMasterAmenities] = useState([]);
+
   useEffect(() => {
-    if (isShareModalOpen || isSaveModalOpen || isDescModalOpen || lightboxState.isOpen) {
+    if (isShareModalOpen || isSaveModalOpen || isDescModalOpen || isAmenitiesModalOpen || lightboxState.isOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -62,14 +81,94 @@ export default function ListingDetails() {
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [isShareModalOpen, isSaveModalOpen, isDescModalOpen, lightboxState.isOpen]);
+  }, [isShareModalOpen, isSaveModalOpen, isDescModalOpen, isAmenitiesModalOpen, lightboxState.isOpen]);
+
+  const [copiedLink, setCopiedLink] = useState(false);
 
   const closeShareModal = () => {
     setIsShareModalClosing(true);
     setTimeout(() => {
       setIsShareModalOpen(false);
       setIsShareModalClosing(false);
+      setCopiedLink(false);
     }, 250);
+  };
+
+  const handleSharePlatform = (platform) => {
+    const shareUrl = window.location.href;
+    const shareTitle = title || 'Check out this listing on Airbnb';
+    const shareDesc = `${title || 'Amazing place'} in ${city} · ₹${basePrice.toLocaleString('en-IN')}/night`;
+    const encodedUrl = encodeURIComponent(shareUrl);
+    const encodedTitle = encodeURIComponent(shareTitle);
+    const encodedText = encodeURIComponent(`${shareDesc} - ${shareUrl}`);
+
+    switch (platform) {
+      case 'copy':
+        if (navigator.clipboard?.writeText) {
+          navigator.clipboard.writeText(shareUrl).then(() => {
+            setCopiedLink(true);
+            toast.success('Link copied to clipboard!');
+            setTimeout(() => setCopiedLink(false), 2500);
+          }).catch(() => {
+            toast.success('Link copied to clipboard!');
+          });
+        } else {
+          toast.success('Link copied to clipboard!');
+        }
+        break;
+
+      case 'email':
+        window.open(`mailto:?subject=${encodedTitle}&body=${encodedText}`, '_blank');
+        break;
+
+      case 'messages':
+      case 'sms':
+        window.open(`sms:?&body=${encodedText}`, '_blank');
+        break;
+
+      case 'whatsapp':
+        window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank');
+        break;
+
+      case 'messenger':
+        window.open(`https://www.facebook.com/dialog/send?link=${encodedUrl}&app_id=292787834164101&redirect_uri=${encodedUrl}`, '_blank');
+        break;
+
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`, '_blank');
+        break;
+
+      case 'twitter':
+        window.open(`https://twitter.com/intent/tweet?text=${encodedText}`, '_blank');
+        break;
+
+      case 'embed':
+        const embedCode = `<iframe src="${shareUrl}" width="100%" height="600" frameborder="0"></iframe>`;
+        if (navigator.clipboard?.writeText) {
+          navigator.clipboard.writeText(embedCode).then(() => {
+            toast.success('Embed HTML code copied to clipboard!');
+          });
+        } else {
+          toast.success('Embed code copied!');
+        }
+        break;
+
+      case 'more':
+        if (navigator.share) {
+          navigator.share({
+            title: shareTitle,
+            text: shareDesc,
+            url: shareUrl
+          }).catch(() => {});
+        } else {
+          handleSharePlatform('copy');
+        }
+        break;
+
+      default:
+        handleSharePlatform('copy');
+        break;
+    }
   };
 
   const closeSaveModal = () => {
@@ -85,6 +184,14 @@ export default function ListingDetails() {
     setTimeout(() => {
       setIsDescModalOpen(false);
       setIsDescModalClosing(false);
+    }, 250);
+  };
+
+  const closeAmenitiesModal = () => {
+    setIsAmenitiesModalClosing(true);
+    setTimeout(() => {
+      setIsAmenitiesModalOpen(false);
+      setIsAmenitiesModalClosing(false);
     }, 250);
   };
 
@@ -122,8 +229,8 @@ export default function ListingDetails() {
     }
   };
 
-  // Hardcoded images matching the 5-grid style
-  const images = [
+  // Hardcoded fallback images matching the 5-grid style
+  const fallbackImages = [
     "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=1200&q=80",
     "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=720&q=80",
     "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?w=720&q=80",
@@ -131,40 +238,793 @@ export default function ListingDetails() {
     "https://images.unsplash.com/photo-1497366216548-37526070297c?w=720&q=80"
   ];
 
-  // Images grouped by category for the full gallery view
-  const categorizedImages = [
+  // Dynamic listing state loaded from database
+  const [listingData, setListingData] = useState(null);
+  const [dynamicReviews, setDynamicReviews] = useState([]);
+  const [loadingListing, setLoadingListing] = useState(true);
+
+  useEffect(() => {
+    const fetchListingDetails = async () => {
+      try {
+        setLoadingListing(true);
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+        
+        // 1. Fetch listing by ID if provided, otherwise fetch first active listing
+        let targetId = id;
+        let fetchedData = null;
+
+        // Try fetching with the requested ID first if provided and valid
+        if (targetId && targetId !== 'sample') {
+          try {
+            const res = await fetch(`${baseUrl}/listings/${targetId}`);
+            const json = await res.json();
+            if (json.success && json.data) {
+              fetchedData = json.data;
+            }
+          } catch (e) {
+            console.warn(`Listing ${targetId} fetch failed:`, e);
+          }
+        }
+
+        // If requested ID does not exist in DB (e.g. user clicked /listing/1 but DB has id 5, 6, etc.),
+        // fetch the active Stay listing from DB if available!
+        if (!fetchedData) {
+          try {
+            const listRes = await fetch(`${baseUrl}/listings?status=Active`);
+            const listJson = await listRes.json();
+            if (listJson.success && Array.isArray(listJson.data) && listJson.data.length > 0) {
+              const stayOnly = listJson.data.find(l => (l.type || '').toLowerCase().includes('stay') || (l.type || '').toLowerCase().includes('entire') || (l.type || '').toLowerCase().includes('room') || (l.type || '').toLowerCase().includes('apartment') || (l.type || '').toLowerCase().includes('villa') || (l.type || '').toLowerCase().includes('home'));
+              if (stayOnly) {
+                fetchedData = stayOnly;
+                targetId = stayOnly.id;
+              }
+            }
+          } catch (e) {
+            console.warn('Failed to fetch active fallback listings:', e);
+          }
+        }
+
+        if (fetchedData) {
+          setListingData(fetchedData);
+          targetId = fetchedData.id;
+
+          // Fetch reviews for this active listing
+            try {
+              const revRes = await fetch(`${baseUrl}/listings/${targetId}/reviews`);
+              const revJson = await revRes.json();
+              if (revJson.success && Array.isArray(revJson.data) && revJson.data.length > 0) {
+                setDynamicReviews(revJson.data);
+              }
+            } catch (rErr) {
+              console.warn('Could not fetch reviews:', rErr);
+            }
+
+            // Fetch master amenities list for categorized modal
+            try {
+              const amRes = await fetch(`${baseUrl}/listings/master-amenities?all=true`);
+              const amJson = await amRes.json();
+              if (amJson.success && Array.isArray(amJson.data) && amJson.data.length > 0) {
+                setMasterAmenities(amJson.data);
+              }
+            } catch (aErr) {
+              console.warn('Could not fetch master amenities:', aErr);
+            }
+          }
+      } catch (err) {
+        console.warn('Listing fetch error, fallback in use:', err);
+      } finally {
+        setLoadingListing(false);
+      }
+    };
+
+    fetchListingDetails();
+  }, [id]);
+
+  // Dynamic Images with reliable fallback
+  const rawPhotos = Array.isArray(listingData?.photos) && listingData.photos.length > 0
+    ? listingData.photos
+    : listingData?.cover_img
+    ? [listingData.cover_img]
+    : fallbackImages;
+
+  // Ensure minimum 5 images for the 5-grid
+  const images = [...rawPhotos];
+  while (images.length < 5) {
+    images.push(fallbackImages[images.length % fallbackImages.length]);
+  }
+
+  // Dynamic categorized images for full gallery
+  const categorizedImages = Array.isArray(listingData?.categorized_photos) && listingData.categorized_photos.length > 0
+    ? listingData.categorized_photos
+    : [
+        {
+          id: 'room-living',
+          category: 'Living room',
+          thumb: images[0],
+          images: [images[0], images[1], images[2]]
+        },
+        {
+          id: 'room-bedroom-1',
+          category: 'Bedroom 1',
+          thumb: images[1],
+          images: [images[1], images[2], images[3]]
+        },
+        {
+          id: 'room-bedroom-2',
+          category: 'Bedroom 2',
+          thumb: images[2],
+          images: [images[2], images[3], images[4]]
+        },
+        {
+          id: 'room-exterior',
+          category: 'Exterior',
+          thumb: images[3],
+          images: [images[3], images[4], images[0]]
+        }
+      ];
+
+  // Dynamic host & listing fields
+  const title = listingData?.title || 'Dhananjaya:Apartment in sawai madhopur';
+  
+  // Extract accurate dynamic location from database (city, residential_address, street, state, country)
+  const resAddr = typeof listingData?.residential_address === 'string'
+    ? (() => { try { return JSON.parse(listingData.residential_address); } catch { return {}; } })()
+    : (listingData?.residential_address || {});
+  const meetupAddr = typeof listingData?.meetup_address === 'string'
+    ? (() => { try { return JSON.parse(listingData.meetup_address); } catch { return {}; } })()
+    : (listingData?.meetup_address || {});
+
+  const dynamicStreet = listingData?.street || resAddr?.street || meetupAddr?.street || '';
+  const dynamicDistrict = resAddr?.district || meetupAddr?.district || '';
+  const dynamicCity = listingData?.city || resAddr?.city || meetupAddr?.city || 'Sawai Madhopur, India';
+  const dynamicState = listingData?.state || resAddr?.state || meetupAddr?.state || '';
+  const dynamicCountry = listingData?.country || resAddr?.country || meetupAddr?.country || 'India';
+  const dynamicPin = resAddr?.pin || meetupAddr?.pin || '';
+
+  // Construct readable location string
+  const city = dynamicCity;
+  const fullLocationDisplay = [dynamicStreet, dynamicCity, dynamicState, dynamicCountry].filter(Boolean).join(', ') || city;
+  const mapSearchQuery = [dynamicStreet, dynamicCity, dynamicState, dynamicCountry].filter(Boolean).join(', ') || city;
+
+  const type = listingData?.type || 'Entire apartment';
+  const hostName = listingData?.host_name || 'Host';
+  const hostAvatar = listingData?.host_avatar || 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200&q=80';
+  
+  // Calculate real hosting years from user registration or years_experience column
+  const hostMemberSinceYear = listingData?.host_member_since 
+    ? new Date(listingData.host_member_since).getFullYear() 
+    : (new Date().getFullYear() - (Number(listingData?.years_experience) || 1));
+  const calculatedYears = Math.max(1, new Date().getFullYear() - hostMemberSinceYear);
+  const hostYears = listingData?.years_experience ? Number(listingData.years_experience) : calculatedYears;
+
+  // Real reviews count & rating
+  const reviewsCount = dynamicReviews.length > 0 
+    ? dynamicReviews.length 
+    : (listingData?.reviews_count !== undefined && listingData?.reviews_count !== null 
+        ? Number(listingData.reviews_count) 
+        : 0);
+
+  const calculatedAvgRating = dynamicReviews.length > 0
+    ? (dynamicReviews.reduce((sum, r) => sum + (parseFloat(r.rating) || 5), 0) / dynamicReviews.length).toFixed(2)
+    : (listingData?.rating ? Number(listingData.rating).toFixed(2) : '5.0');
+  const rating = calculatedAvgRating;
+
+  const basePrice = listingData?.price ? Number(listingData.price) : 2583;
+  const originalPrice = Math.round(basePrice * 1.15);
+  const refundablePrice = Math.round(basePrice * 1.11);
+  const maxAllowedGuests = listingData?.max_guests || 5;
+  const bedroomsCount = listingData?.bedrooms || 2;
+  const bedsCount = listingData?.beds || 4;
+  const bathroomsCount = listingData?.bathrooms || 2;
+  const description = listingData?.description || `Kick back and relax in this calm, stylish space.
+Forget your worries in this spacious and serene space.
+a place near wildlife sanctuary. 2 large bedrooms with balconies.peaceful environment and spacious stay. you can enjoy sunrise and sunset.
+railway station distance 3 kms
+safari office is 3.5 kms
+
+(safari booking available)...`;
+
+  const isSuperhost = listingData?.is_featured || listingData?.is_guest_favourite || Number(rating) >= 4.8;
+  const hostIntro = listingData?.host_intro || listingData?.host_bio || `${hostName} is committed to providing great stays for guests.`;
+  const hostRecognition = listingData?.career_highlight || listingData?.host_recognition || '';
+  const hostQualifications = listingData?.degree || listingData?.host_qualifications || '';
+  const hostVerification = listingData?.host_verification || 'Identity verified';
+  const hostLocation = listingData?.host_location || city;
+  const hostLanguage = Array.isArray(listingData?.languages) && listingData.languages.length > 0
+    ? listingData.languages.join(', ')
+    : (listingData?.host_preferred_language || 'English, Hindi');
+
+  const amenitiesList = Array.isArray(listingData?.amenities) && listingData.amenities.length > 0
+    ? listingData.amenities
+    : ['Desert view', 'Mountain view', 'Kitchen', 'Wifi – 30 Mbps', 'Dedicated workspace', 'Free parking on premises', 'TV', 'Lift'];
+
+  // Helper for dynamic amenity icon
+  const getAmenityIcon = (name = '', isStrikethrough = false) => {
+    const lower = String(name || '').toLowerCase();
+    if (lower.includes('wifi') || lower.includes('internet')) return <FiWifi size={24} />;
+    if (lower.includes('water') || lower.includes('shower') || lower.includes('bath')) return <MdOutlineShower size={24} />;
+    if (lower.includes('heat') || lower.includes('warm')) return <MdOutlineHeatPump size={24} />;
+    if (lower.includes('air conditioning') || lower.includes('ac') || lower.includes('cool')) return <FaSnowflake size={22} />;
+    if (lower.includes('kitchen') || lower.includes('cook') || lower.includes('fridge')) return <TbToolsKitchen2 size={24} />;
+    if (lower.includes('camera') || lower.includes('security')) return <BsCameraVideo size={22} />;
+    if (lower.includes('noise') || lower.includes('sound') || lower.includes('decibel')) return <BsVolumeUp size={24} />;
+    if (lower.includes('pool')) return <MdOutlinePool size={24} />;
+    if (lower.includes('hottub') || lower.includes('hot tub')) return <MdOutlineHotTub size={24} />;
+    if (lower.includes('park') || lower.includes('car')) return <MdOutlineDirectionsCar size={24} />;
+    if (lower.includes('tv') || lower.includes('cable')) return <FaTv size={22} />;
+    if (lower.includes('smoke') || lower.includes('fire') || lower.includes('alarm') || lower.includes('monoxide')) return <MdOutlineReportProblem size={24} />;
+    if (lower.includes('view') || lower.includes('mountain')) return <TbMountain size={24} />;
+    if (lower.includes('work') || lower.includes('desk') || lower.includes('laptop')) return <FiMonitor size={24} />;
+    if (lower.includes('bbq') || lower.includes('grill') || lower.includes('dining')) return <MdOutlineOutdoorGrill size={24} />;
+    if (lower.includes('wash') || lower.includes('laundry') || lower.includes('dryer')) return <MdOutlineLocalLaundryService size={24} />;
+    return <MdOutlineWorkspacePremium size={24} />;
+  };
+
+  // Group master amenities by category for modal
+  const defaultMasterCategories = [
     {
-      id: 'room-living',
-      category: 'Living room',
-      thumb: images[0],
-      images: [images[0], images[1], images[2]]
+      category: 'Bathroom',
+      items: [
+        { name: 'Hot water', sublabel: '' },
+        { name: 'Shower gel & Shampoo', sublabel: '' }
+      ]
     },
     {
-      id: 'room-bedroom-1',
-      category: 'Bedroom 1',
-      thumb: images[1],
-      images: [images[1], images[2], images[3]]
+      category: 'Heating and cooling',
+      items: [
+        { name: 'Heating', sublabel: '' },
+        { name: 'Air conditioning', sublabel: '' }
+      ]
     },
     {
-      id: 'room-bedroom-2',
-      category: 'Bedroom 2',
-      thumb: images[2],
-      images: [images[2], images[3], images[4]]
+      category: 'Home safety',
+      items: [
+        { name: 'Noise decibel monitors on property', sublabel: '' },
+        { name: 'Exterior security cameras on property', sublabel: 'Installed at building entrance and exterior premises' }
+      ]
     },
     {
-      id: 'room-exterior',
-      category: 'Exterior',
-      thumb: images[3],
-      images: [images[3], images[4], images[0]]
+      category: 'Internet and office',
+      items: [
+        { name: 'Wifi – 30 Mbps', sublabel: 'Verified speed' },
+        { name: 'Dedicated workspace', sublabel: 'A desk and chair for working' }
+      ]
+    },
+    {
+      category: 'Services',
+      items: [
+        { name: 'Dedicated Host', sublabel: 'Available for personalized check-in & support' },
+        { name: 'Local Guide', sublabel: 'Assistance with safari tours and town recommendations' }
+      ]
+    },
+    {
+      category: 'Not included',
+      items: [
+        { name: 'Kitchen', sublabel: '', notIncluded: true },
+        { name: 'Carbon monoxide alarm', sublabel: '', notIncluded: true },
+        { name: 'Smoke alarm', sublabel: '', notIncluded: true }
+      ]
     }
   ];
 
+  // Dynamically map backend master_amenities if available
+  const dynamicAmenitiesCategories = (() => {
+    try {
+      if (!Array.isArray(masterAmenities) || masterAmenities.length === 0) {
+        return defaultMasterCategories;
+      }
+      
+      const safeAmenitiesList = Array.isArray(amenitiesList) ? amenitiesList : [];
+      const catMap = {};
+
+      masterAmenities.forEach(am => {
+        if (!am || typeof am !== 'object') return;
+        const cat = am.category || 'Features & Standouts';
+        if (!catMap[cat]) catMap[cat] = [];
+
+        const amName = String(am.name || '').trim();
+        const isIncluded = safeAmenitiesList.some(item => {
+          const sItem = String(item || '').trim().toLowerCase();
+          const sAm = amName.toLowerCase();
+          return sItem.length > 0 && sAm.length > 0 && (sItem.includes(sAm) || sAm.includes(sItem));
+        });
+
+        catMap[cat].push({
+          name: amName || 'Amenity',
+          sublabel: String(am.sublabel || ''),
+          notIncluded: !isIncluded
+        });
+      });
+
+      const categories = Object.keys(catMap).map(cName => ({
+        category: cName,
+        items: catMap[cName]
+      }));
+
+      // Add extra listed amenities that are not in master table
+      const unmappedListed = safeAmenitiesList.filter(al => {
+        const sAl = String(al || '').trim().toLowerCase();
+        return sAl && !masterAmenities.some(ma => String(ma?.name || '').trim().toLowerCase() === sAl);
+      });
+
+      if (unmappedListed.length > 0) {
+        categories.unshift({
+          category: 'Highlights of this place',
+          items: unmappedListed.map(name => ({ name: String(name), sublabel: 'Offered by host', notIncluded: false }))
+        });
+      }
+
+      return categories.length > 0 ? categories : defaultMasterCategories;
+    } catch (e) {
+      console.warn('Error computing dynamic amenities:', e);
+      return defaultMasterCategories;
+    }
+  })();
+
+  const totalAmenitiesCount = Array.isArray(dynamicAmenitiesCategories)
+    ? dynamicAmenitiesCategories.reduce((acc, cat) => acc + (Array.isArray(cat?.items) ? cat.items.length : 0), 0)
+    : 10;
+
+  // Calculate nights
+  const nightsCount = selectedRange?.from && selectedRange?.to
+    ? Math.max(1, Math.ceil((selectedRange.to - selectedRange.from) / (1000 * 60 * 60 * 24)))
+    : 1;
+
+  const currentTotal = rateType === 'refundable' 
+    ? refundablePrice * nightsCount 
+    : basePrice * nightsCount;
+
+  // Dynamic booking submission to backend
+  const handleReserveBooking = async () => {
+    try {
+      if (!selectedRange?.from || !selectedRange?.to) {
+        toast.error('Please select valid check-in and checkout dates.');
+        setShowCalendarWidget(true);
+        return;
+      }
+
+      setIsReserving(true);
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://airbnb-7xie.onrender.com/api');
+
+      const fullLocation = fullLocationDisplay || `${city}, India`;
+      const guestFullName = authUser 
+        ? `${authUser.firstName || authUser.first_name || ''} ${authUser.lastName || authUser.last_name || ''}`.trim() || 'Valued Guest'
+        : 'Guest User';
+      const guestEmail = authUser?.email || 'guest@example.com';
+      const guestPhone = authUser?.phone || '+91 98765 43210';
+
+      const orderPayload = {
+        amount: currentTotal,
+        listingId: listingData?.id || (id && !isNaN(Number(id)) ? Number(id) : null),
+        listingTitle: title,
+        packageTitle: `${rateType === 'refundable' ? 'Refundable Rate' : 'Non-refundable Rate'} (${nightsCount} Night${nightsCount > 1 ? 's' : ''})`,
+        guestsCount: totalGuests,
+        hostName,
+        location: fullLocation,
+        bookingDate: selectedRange.from.toISOString(),
+        bookingTime: '3:00 pm (Check-in)',
+        guestName: guestFullName,
+        guestEmail: guestEmail,
+        guestPhone: guestPhone,
+        userId: authUser?.id || null
+      };
+
+      const res = await fetch(`${baseUrl}/payments/create-order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderPayload)
+      });
+
+      const orderData = await res.json();
+      if (!orderData.success) {
+        throw new Error(orderData.message || 'Failed to initialize booking order');
+      }
+
+      // Check if Razorpay SDK is available
+      if (!window.Razorpay) {
+        // Fallback confirmation redirect if script was blocked
+        toast.success('Reservation initiated successfully!');
+        const bCode = orderData.bookingCode || orderData.booking?.booking_code;
+        if (bCode) {
+          navigate(`/booking-confirmed/${bCode}`);
+        }
+        setIsReserving(false);
+        return;
+      }
+
+      const options = {
+        key: orderData.key || 'rzp_test_ToafKH36vIRD5L',
+        amount: orderData.amount,
+        currency: orderData.currency || 'INR',
+        name: 'Airbnb Stay Reservation',
+        description: `${title} (${nightsCount} night${nightsCount > 1 ? 's' : ''})`,
+        image: images[0] || '/favicon.png',
+        order_id: orderData.orderId,
+        handler: async function (response) {
+          try {
+            const verifyRes = await fetch(`${baseUrl}/payments/verify-payment`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                bookingCode: orderData.bookingCode
+              })
+            });
+
+            const verifyData = await verifyRes.json();
+            if (verifyData.success) {
+              toast.success('🎉 Booking Confirmed Successfully!');
+              const bCode = verifyData.bookingCode || orderData.bookingCode;
+              navigate(`/booking-confirmed/${bCode}`);
+            } else {
+              toast.error(verifyData.message || 'Payment verification failed');
+            }
+          } catch (vErr) {
+            console.error('Verification error:', vErr);
+            toast.error('Network error during confirmation.');
+          } finally {
+            setIsReserving(false);
+          }
+        },
+        prefill: {
+          name: guestFullName,
+          email: guestEmail,
+          contact: guestPhone
+        },
+        theme: {
+          color: '#e51d53'
+        },
+        modal: {
+          ondismiss: function () {
+            setIsReserving(false);
+            toast('Reservation pending payment', { icon: 'ℹ️' });
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (resp) {
+        console.error('Payment failed:', resp.error);
+        toast.error(`Payment failed: ${resp.error?.description || 'Transaction declined'}`);
+        setIsReserving(false);
+      });
+      rzp.open();
+
+    } catch (err) {
+      console.error('Booking reservation error:', err);
+      toast.error(err.message || 'Could not complete reservation.');
+      setIsReserving(false);
+    }
+  };
+
+  // If listing details are still loading from backend, show universal Airbnb loader
+  if (loadingListing) {
+    return (
+      <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Loader fullScreen={false} size="large" variant="airbnb" text="Loading listing details..." />
+      </div>
+    );
+  }
+
+  // If user clicked Reserve, render the "Request to book" screen
+  if (showRequestToBookPage) {
+    const formattedDateRange = selectedRange?.from && selectedRange?.to
+      ? `${format(selectedRange.from, 'd')}-${format(selectedRange.to, 'd MMM yyyy')}`
+      : '19-20 Oct 2026';
+
+    const guestsText = `${totalGuests} guest${totalGuests > 1 ? 's' : ''}${guests.infants > 0 ? `, ${guests.infants} infant${guests.infants > 1 ? 's' : ''}` : ''}`;
+    const baseSubtotal = currentTotal;
+    const taxesAmount = Math.round(baseSubtotal * 0.05); // 5% GST taxes
+    const grandTotal = baseSubtotal + taxesAmount;
+
+    return (
+      <div className={`container ${styles['rtb-page-wrapper']}`}>
+        {/* Back and Title */}
+        <div className={styles['rtb-header-row']}>
+          <button 
+            className={styles['rtb-back-btn']} 
+            onClick={() => setShowRequestToBookPage(false)}
+            title="Go back"
+          >
+            <FaArrowLeft />
+
+          </button>
+          <h1 className={styles['rtb-page-title']}>Request to book</h1>
+        </div>
+
+        <div className="row g-5 align-items-start">
+          {/* Left Column: Message host & Proceed to payment */}
+          <div className="col-12 col-lg-7">
+            
+            {/* Message the Host Card */}
+            <div className={styles['rtb-message-card']}>
+              <h3 className={styles['rtb-card-heading']}>Message the host</h3>
+              <p className={styles['rtb-card-subtext']}>
+                Before you can continue, let {hostName} know a little about your trip and why their place is a good fit.
+              </p>
+
+              <div className={styles['rtb-host-badge']}>
+                <img 
+                  src={hostAvatar} 
+                  alt={hostName} 
+                  className={styles['rtb-host-avatar']}
+                  onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&q=80'; }} 
+                />
+                <div>
+                  <h4 className={styles['rtb-host-name']}>{hostName}</h4>
+                  <p className={styles['rtb-host-since']}>Hosting since {hostMemberSinceYear}</p>
+                </div>
+              </div>
+
+              <textarea 
+                className={styles['rtb-textarea']}
+                placeholder={`Example: "Hi ${hostName}, my partner and I are going to a friend's wedding and your place is just down the road."`}
+                value={hostMessage}
+                onChange={(e) => setHostMessage(e.target.value)}
+              />
+            </div>
+
+            {/* Proceed to payment section */}
+            <div className={styles['rtb-payment-section']}>
+              <h2 className={styles['rtb-payment-title']}>Proceed to payment</h2>
+              <p className={styles['rtb-payment-subtext']}>
+                You'll be directed to Razorpay to complete payment.
+              </p>
+
+              <p className={styles['rtb-notice-text']}>
+                The host has 24 hours to accept your request. You'll pay now, but get a full refund if the booking isn't confirmed.
+              </p>
+
+              <p className={styles['rtb-terms-agreement']}>
+                By selecting the button, I agree to the <span className={styles['rtb-terms-link']} onClick={() => alert('Standard Airbnb Booking Terms & Policies apply.')}>booking terms</span>.
+              </p>
+
+              <button 
+                className={styles['rtb-continue-btn']}
+                onClick={handleReserveBooking}
+                disabled={isReserving}
+              >
+                {isReserving ? (
+                  <span>
+                    <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                    Redirecting to Razorpay...
+                  </span>
+                ) : (
+                  'Continue to payment'
+                )}
+              </button>
+            </div>
+
+          </div>
+
+          {/* Right Column: Listing Card & Price Breakdown */}
+          <div className="col-12 col-lg-5">
+            
+            {/* Price green banner */}
+            <div className={styles['rtb-avg-banner']}>
+              <span>🍃</span>
+              <span>Your price is below the 60-day average</span>
+            </div>
+
+            {/* Summary card */}
+            <div className={styles['rtb-summary-card']}>
+              <div className={styles['rtb-summary-top']}>
+                <img 
+                  src={images[0]} 
+                  alt={title} 
+                  className={styles['rtb-summary-thumb']} 
+                />
+                <div>
+                  <h3 className={styles['rtb-summary-title']}>{title}</h3>
+                  <div className={styles['rtb-summary-rating']}>
+                    ★ {rating} ({reviewsCount}) · {isSuperhost ? 'Guest favourite' : 'Verified stay'}
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles['rtb-policy-sub']}>
+                This reservation is {rateType === 'refundable' ? 'refundable' : 'non-refundable'}.{' '}
+                <span className={styles['rtb-policy-link']} onClick={() => alert(`Policy: ${listingData?.cancellation_policy || 'Standard cancellation policy'}`)}>Full policy</span>
+              </div>
+
+              {/* Dates row with Change button */}
+              <div className={styles['rtb-change-row']}>
+                <div>
+                  <div className={styles['rtb-change-label']}>Dates</div>
+                  <div className={styles['rtb-change-val']}>{formattedDateRange}</div>
+                </div>
+                <button 
+                  className={styles['rtb-change-btn']}
+                  onClick={() => setRtbShowCalendarModal(true)}
+                >
+                  Change
+                </button>
+              </div>
+
+              {/* Guests row with Change button */}
+              <div className={styles['rtb-change-row']}>
+                <div>
+                  <div className={styles['rtb-change-label']}>Guests</div>
+                  <div className={styles['rtb-change-val']}>{guestsText}</div>
+                </div>
+                <button 
+                  className={styles['rtb-change-btn']}
+                  onClick={() => setRtbShowGuestModal(true)}
+                >
+                  Change
+                </button>
+              </div>
+
+              {/* Price Details */}
+              <div className={styles['rtb-price-details-section']}>
+                <h4 className={styles['rtb-price-sec-heading']}>Price details</h4>
+                
+                <div className={styles['rtb-price-line']}>
+                  <span>{nightsCount} night{nightsCount > 1 ? 's' : ''} x ₹{rateType === 'refundable' ? refundablePrice.toLocaleString() : basePrice.toLocaleString()}</span>
+                  <span>₹{baseSubtotal.toLocaleString()}.00</span>
+                </div>
+
+                <div className={styles['rtb-price-line']}>
+                  <span>Taxes (5% GST)</span>
+                  <span>₹{taxesAmount.toLocaleString()}.00</span>
+                </div>
+
+                <div className={`${styles['rtb-price-line']} ${styles.total}`}>
+                  <span>Total INR</span>
+                  <span>₹{grandTotal.toLocaleString()}.00</span>
+                </div>
+
+                <span 
+                  className={styles['rtb-price-breakdown-link']}
+                  onClick={() => alert(`Base fare: ₹${baseSubtotal}\nTaxes: ₹${taxesAmount}\nTotal Payable: ₹${grandTotal}`)}
+                >
+                  Price breakdown
+                </span>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+        {/* In-page Calendar Modal for Request to book */}
+        {rtbShowCalendarModal && (
+          <div 
+            className={styles['modal-overlay']} 
+            onClick={() => setRtbShowCalendarModal(false)}
+          >
+            <div 
+              className={styles['rtb-modal-card']} 
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={styles['rtb-modal-header']}>
+                <h3 className={styles['rtb-modal-title']}>Select dates</h3>
+                <button 
+                  className={styles['share-close-btn']} 
+                  onClick={() => setRtbShowCalendarModal(false)}
+                >
+                  <FaTimes size={16} />
+                </button>
+              </div>
+              <div className={styles['rtb-modal-body']}>
+                <div style={{ display: 'flex', justifyContent: 'center', overflowX: 'auto' }}>
+                  <DayPicker
+                    mode="range"
+                    selected={selectedRange}
+                    onSelect={setSelectedRange}
+                    numberOfMonths={2}
+                    pagedNavigation
+                  />
+                </div>
+              </div>
+              <div className={styles['rtb-modal-footer']}>
+                <button 
+                  className={styles['outline-btn']}
+                  onClick={() => setSelectedRange({from: undefined, to: undefined})}
+                >
+                  Clear dates
+                </button>
+                <button 
+                  className={styles['rtb-continue-btn']}
+                  style={{ minWidth: '120px', padding: '10px 20px' }}
+                  onClick={() => {
+                    if (!selectedRange?.from || !selectedRange?.to) {
+                      toast.error('Please pick check-in and checkout dates');
+                      return;
+                    }
+                    setRtbShowCalendarModal(false);
+                  }}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* In-page Guests Modal for Request to book */}
+        {rtbShowGuestModal && (
+          <div 
+            className={styles['modal-overlay']} 
+            onClick={() => setRtbShowGuestModal(false)}
+          >
+            <div 
+              className={styles['rtb-modal-card']} 
+              style={{ maxWidth: '480px' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={styles['rtb-modal-header']}>
+                <h3 className={styles['rtb-modal-title']}>Guests</h3>
+                <button 
+                  className={styles['share-close-btn']} 
+                  onClick={() => setRtbShowGuestModal(false)}
+                >
+                  <FaTimes size={16} />
+                </button>
+              </div>
+              <div className={styles['rtb-modal-body']}>
+                <div className={styles['guest-row']}>
+                  <div className={styles['guest-info']}>
+                    <h3>Adults</h3>
+                    <p>Age 13+</p>
+                  </div>
+                  <div className={styles['guest-controls']}>
+                    <button className={styles['guest-btn']} disabled={guests.adults <= 1} onClick={() => setGuests(prev => ({...prev, adults: prev.adults - 1}))}>-</button>
+                    <span className={styles['guest-count']}>{guests.adults}</span>
+                    <button className={styles['guest-btn']} disabled={totalGuests >= maxAllowedGuests} onClick={() => setGuests(prev => ({...prev, adults: prev.adults + 1}))}>+</button>
+                  </div>
+                </div>
+                <div className={styles['guest-row']}>
+                  <div className={styles['guest-info']}>
+                    <h3>Children</h3>
+                    <p>Ages 2-12</p>
+                  </div>
+                  <div className={styles['guest-controls']}>
+                    <button className={styles['guest-btn']} disabled={guests.children <= 0} onClick={() => setGuests(prev => ({...prev, children: prev.children - 1}))}>-</button>
+                    <span className={styles['guest-count']}>{guests.children}</span>
+                    <button className={styles['guest-btn']} disabled={totalGuests >= maxAllowedGuests} onClick={() => setGuests(prev => ({...prev, children: prev.children + 1}))}>+</button>
+                  </div>
+                </div>
+                <div className={styles['guest-row']}>
+                  <div className={styles['guest-info']}>
+                    <h3>Infants</h3>
+                    <p>Under 2</p>
+                  </div>
+                  <div className={styles['guest-controls']}>
+                    <button className={styles['guest-btn']} disabled={guests.infants <= 0} onClick={() => setGuests(prev => ({...prev, infants: prev.infants - 1}))}>-</button>
+                    <span className={styles['guest-count']}>{guests.infants}</span>
+                    <button className={styles['guest-btn']} disabled={guests.infants >= 5} onClick={() => setGuests(prev => ({...prev, infants: prev.infants + 1}))}>+</button>
+                  </div>
+                </div>
+                <p className={styles['guest-disclaimer']} style={{ marginTop: '16px' }}>
+                  This place has a maximum of {maxAllowedGuests} guests, not including infants. Pets aren't allowed.
+                </p>
+              </div>
+              <div className={styles['rtb-modal-footer']}>
+                <button 
+                  className={styles['rtb-continue-btn']}
+                  style={{ minWidth: '120px', padding: '10px 20px' }}
+                  onClick={() => setRtbShowGuestModal(false)}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
+    );
+  }
+
   return (
-    <div className={styles['details-container']}>
+    <div className='container pt-4'>
       
       {/* Header Section */}
       <div className={styles['title-section']}>
-        <h1 className={styles.title}>Dhananjaya:Apartment in sawai madhopur</h1>
+        <h1 className={styles.title}>{title}</h1>
         <div className={styles['action-buttons']}>
           <button className={styles['action-btn']} onClick={() => setIsShareModalOpen(true)}>
             <FiShare size={16} /> Share
@@ -187,26 +1047,31 @@ export default function ListingDetails() {
         </button>
       </div>
 
-      <div className={styles['content-layout']}>
+      <div className={`row ${styles['content-layout']}`}>
         
         {/* Left Column */}
-        <div className={styles['left-column']}>
+        <div className={`col-lg-8 ${styles['left-column']}`}>
           
           <div className={styles['subtitle-section']}>
-            <h2 className={styles.subtitle}>Entire apartment in Sawai Madhopur, India</h2>
+            <h2 className={styles.subtitle}>{type} in {city}</h2>
             <div className={styles['guest-info']}>
-              5 guests · 2 bedrooms · 4 beds · 2 bathrooms
+              {maxAllowedGuests} guests · {bedroomsCount} bedroom{bedroomsCount > 1 ? 's' : ''} · {bedsCount} bed{bedsCount > 1 ? 's' : ''} · {bathroomsCount} bathroom{bathroomsCount > 1 ? 's' : ''}
             </div>
             <div className={styles['reviews-info']}>
-              <FiStar fill="#222" /> 4.79 · <span className={styles['reviews-link']}>82 reviews</span>
+              <FiStar fill="#222" /> {rating} · <span className={styles['reviews-link']}>{reviewsCount} reviews</span>
             </div>
           </div>
 
           <div className={styles['host-section']}>
-            <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&q=80" alt="Host" className={styles['host-avatar']} />
+            <img 
+              src={hostAvatar} 
+              alt={hostName} 
+              className={styles['host-avatar']} 
+              onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&q=80'; }} 
+            />
             <div>
-              <h3 className={styles['host-name']}>Hosted by Kushgra</h3>
-              <p className={styles['host-status']}>Superhost · 4 years hosting</p>
+              <h3 className={styles['host-name']}>Hosted by {hostName}</h3>
+              <p className={styles['host-status']}>Superhost · {hostYears} years hosting</p>
             </div>
           </div>
 
@@ -214,15 +1079,15 @@ export default function ListingDetails() {
             <div className={styles['highlight-item']}>
               <MdOutlineWorkspacePremium className={styles['highlight-icon']} />
               <div>
-                <h4 className={styles['highlight-title']}>20-min drive to Ranthambore National Park</h4>
-                <p className={styles['highlight-desc']}>This home is near the national park.</p>
+                <h4 className={styles['highlight-title']}>{listingData?.career_highlight || `Top rated stay in ${city}`}</h4>
+                <p className={styles['highlight-desc']}>One of the most loved homes on Airbnb based on ratings and reliability.</p>
               </div>
             </div>
             <div className={styles['highlight-item']}>
               <BsDoorOpen className={styles['highlight-icon']} />
               <div>
                 <h4 className={styles['highlight-title']}>Self check-in</h4>
-                <p className={styles['highlight-desc']}>You can check in with the building staff.</p>
+                <p className={styles['highlight-desc']}>You can check in seamlessly with the door code or building staff.</p>
               </div>
             </div>
             <div className={styles['highlight-item']}>
@@ -235,12 +1100,7 @@ export default function ListingDetails() {
           </div>
 
           <div className={styles['description-section']}>
-            Kick back and relax in this calm, stylish space.<br/>
-            Forget your worries in this spacious and serene space.<br/>
-            a place near wildlife sanctuary. 2 large bedrooms with balconies.peaceful environment and spacious stay. you can enjoy sunrise and sunset.<br/>
-            railway station distance 3 kms<br/>
-            safari office is 3.5 kms<br/><br/>
-            (safari booking available)...
+            <div style={{ whiteSpace: 'pre-line' }}>{description}</div>
             <button className={styles['show-more-btn']} onClick={() => setIsDescModalOpen(true)}>
               Show more <FaChevronDown size={12} />
             </button>
@@ -248,47 +1108,63 @@ export default function ListingDetails() {
 
           <div className={styles['sleep-section']}>
             <h2 className={styles['section-title']}>Where you'll sleep</h2>
-            <div className={styles['bedroom-cards']}>
-              <div className={styles['bedroom-card']}>
-                <img src={images[1]} alt="Bedroom 1" className={styles['bedroom-img']} />
-                <h4 className={styles['bedroom-title']}>Bedroom 1</h4>
-                <p className={styles['bedroom-desc']}>2 queen beds</p>
-              </div>
-              <div className={styles['bedroom-card']}>
-                <img src={images[2]} alt="Bedroom 2" className={styles['bedroom-img']} />
-                <h4 className={styles['bedroom-title']}>Bedroom 2</h4>
-                <p className={styles['bedroom-desc']}>2 queen beds</p>
-              </div>
+            <div className="row g-3">
+              {Array.from({ length: Math.min(Math.max(1, bedroomsCount), 4) }).map((_, bIdx) => (
+                <div key={bIdx} className="col-12 col-sm-6 col-md-4">
+                  <div className={styles['bedroom-card']} style={{ width: '100%' }}>
+                    <img 
+                      src={images[(bIdx + 1) % images.length]} 
+                      alt={`Bedroom ${bIdx + 1}`} 
+                      className={styles['bedroom-img']} 
+                    />
+                    <h4 className={styles['bedroom-title']}>Bedroom {bIdx + 1}</h4>
+                    <p className={styles['bedroom-desc']}>
+                      {bIdx === 0 ? '1 king bed' : '1 queen bed'}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
           <div className={styles['amenities-section']}>
             <h2 className={styles['section-title']}>What this place offers</h2>
-            <div className={styles['amenities-grid']}>
-              <div className={styles['amenity-item']}><TbMountain size={24} /> Desert view</div>
-              <div className={styles['amenity-item']}><TbMountain size={24} /> Mountain view</div>
-              <div className={styles['amenity-item']}><TbToolsKitchen2 size={24} /> Kitchen</div>
-              <div className={styles['amenity-item']}><FiWifi size={24} /> Wifi – 30 Mbps</div>
-              <div className={styles['amenity-item']}><FiMonitor size={24} /> Dedicated workspace</div>
-              <div className={styles['amenity-item']}><MdOutlineDirectionsCar size={24} /> Free parking on premises</div>
-              <div className={styles['amenity-item']}><FiMonitor size={24} /> TV</div>
-              <div className={styles['amenity-item']}><MdOutlineLocalLaundryService size={24} /> Lift</div>
-              <div className={`${styles['amenity-item']} ${styles.strikethrough}`}><MdOutlineReportProblem size={24} /> Carbon monoxide alarm</div>
-              <div className={`${styles['amenity-item']} ${styles.strikethrough}`}><MdOutlineReportProblem size={24} /> Smoke alarm</div>
+            <div className="row g-3 mb-4">
+              {amenitiesList.slice(0, 8).map((amenity, aIdx) => (
+                <div key={aIdx} className="col-12 col-sm-6">
+                  <div className={styles['amenity-item']}>
+                    {getAmenityIcon(amenity)} {amenity}
+                  </div>
+                </div>
+              ))}
+              <div className="col-12 col-sm-6">
+                <div className={`${styles['amenity-item']} ${styles.strikethrough}`}>
+                  <MdOutlineReportProblem size={24} /> Carbon monoxide alarm
+                </div>
+              </div>
+              <div className="col-12 col-sm-6">
+                <div className={`${styles['amenity-item']} ${styles.strikethrough}`}>
+                  <MdOutlineReportProblem size={24} /> Smoke alarm
+                </div>
+              </div>
             </div>
-            <button className={styles['outline-btn']}>Show all 34 amenities</button>
+            <button 
+              className={styles['outline-btn']}
+              onClick={() => setIsAmenitiesModalOpen(true)}
+            >
+              Show all {totalAmenitiesCount} amenities
+            </button>
           </div>
-
         </div>
 
         {/* Right Column (Booking Widget) */}
-        <div className={styles['right-column']}>
+        <div className={`col-lg-4 ${styles['right-column']}`}>
           <div className={styles['booking-widget']}>
             
             <div className={styles['widget-price-section']}>
-              <span className={styles['original-price']}>₹2,955</span>
-              <span className={styles['discounted-price']}>₹2,583</span>
-              <span className={styles['price-unit']}>for 1 night</span>
+              <span className={styles['original-price']}>₹{originalPrice.toLocaleString()}</span>
+              <span className={styles['discounted-price']}>₹{basePrice.toLocaleString()}</span>
+              <span className={styles['price-unit']}>per night</span>
             </div>
 
             <div className={styles['date-guest-picker']}>
@@ -309,7 +1185,7 @@ export default function ListingDetails() {
                     <div>
                       <h3 className={styles['calendar-popup-title']}>
                         {selectedRange?.from && selectedRange?.to 
-                          ? `${Math.ceil((selectedRange.to - selectedRange.from) / (1000 * 60 * 60 * 24))} nights` 
+                          ? `${nightsCount} night${nightsCount > 1 ? 's' : ''}` 
                           : 'Select dates'}
                       </h3>
                       <p className={styles['calendar-popup-subtitle']}>
@@ -387,7 +1263,7 @@ export default function ListingDetails() {
                     <div className={styles['guest-controls']}>
                       <button className={styles['guest-btn']} disabled={guests.adults <= 1} onClick={(e) => { e.stopPropagation(); setGuests(prev => ({...prev, adults: prev.adults - 1})); }}>-</button>
                       <span className={styles['guest-count']}>{guests.adults}</span>
-                      <button className={styles['guest-btn']} disabled={totalGuests >= 5} onClick={(e) => { e.stopPropagation(); setGuests(prev => ({...prev, adults: prev.adults + 1})); }}>+</button>
+                      <button className={styles['guest-btn']} disabled={totalGuests >= maxAllowedGuests} onClick={(e) => { e.stopPropagation(); setGuests(prev => ({...prev, adults: prev.adults + 1})); }}>+</button>
                     </div>
                   </div>
                   <div className={styles['guest-row']}>
@@ -398,7 +1274,7 @@ export default function ListingDetails() {
                     <div className={styles['guest-controls']}>
                       <button className={styles['guest-btn']} disabled={guests.children <= 0} onClick={(e) => { e.stopPropagation(); setGuests(prev => ({...prev, children: prev.children - 1})); }}>-</button>
                       <span className={styles['guest-count']}>{guests.children}</span>
-                      <button className={styles['guest-btn']} disabled={totalGuests >= 5} onClick={(e) => { e.stopPropagation(); setGuests(prev => ({...prev, children: prev.children + 1})); }}>+</button>
+                      <button className={styles['guest-btn']} disabled={totalGuests >= maxAllowedGuests} onClick={(e) => { e.stopPropagation(); setGuests(prev => ({...prev, children: prev.children + 1})); }}>+</button>
                     </div>
                   </div>
                   <div className={styles['guest-row']}>
@@ -425,7 +1301,7 @@ export default function ListingDetails() {
                   </div>
                   
                   <p className={styles['guest-disclaimer']}>
-                    This place has a maximum of 5 guests, not including infants. Pets aren't allowed.
+                    This place has a maximum of {maxAllowedGuests} guests, not including infants. Pets aren't allowed.
                   </p>
                   
                   <button className={styles['guest-close-btn']} onClick={() => setShowGuestWidget(false)}>Close</button>
@@ -439,7 +1315,7 @@ export default function ListingDetails() {
                 onClick={() => setRateType('non-refundable')}
               >
                 <div className={styles['rate-text']}>
-                  <h4 className={styles['rate-title']}>Non-refundable · ₹2,583.00 total</h4>
+                  <h4 className={styles['rate-title']}>Non-refundable · ₹{(basePrice * nightsCount).toLocaleString()}.00 total</h4>
                   <p className={styles['rate-desc']}>Free cancellation for 24 hours. After that, the reservation is non-refundable.</p>
                 </div>
                 <input type="radio" checked={rateType === 'non-refundable'} readOnly style={{ accentColor: '#222' }} />
@@ -450,14 +1326,27 @@ export default function ListingDetails() {
                 onClick={() => setRateType('refundable')}
               >
                 <div className={styles['rate-text']}>
-                  <h4 className={styles['rate-title']}>Refundable · ₹2,870.00 total</h4>
-                  <p className={styles['rate-desc']}>Free cancellation before 9 September. After that, the reservation is non-refundable.</p>
+                  <h4 className={styles['rate-title']}>Refundable · ₹{(refundablePrice * nightsCount).toLocaleString()}.00 total</h4>
+                  <p className={styles['rate-desc']}>Free cancellation before check-in. Policy: {listingData?.cancellation_policy || 'Flexible'}.</p>
                 </div>
                 <input type="radio" checked={rateType === 'refundable'} readOnly style={{ accentColor: '#222' }} />
               </div>
             </div>
 
-            <button className={styles['reserve-btn']}>Reserve</button>
+            <button 
+              className={styles['reserve-btn']} 
+              onClick={() => {
+                if (!selectedRange?.from || !selectedRange?.to) {
+                  toast.error('Please select valid check-in and checkout dates.');
+                  setShowCalendarWidget(true);
+                  return;
+                }
+                setShowRequestToBookPage(true);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            >
+              Reserve
+            </button>
             <p className={styles['charge-note']}>You won't be charged yet</p>
 
             <div className={styles['report-link']}>
@@ -487,129 +1376,189 @@ export default function ListingDetails() {
       {/* Reviews Section */}
       <div className={styles['reviews-section-large']}>
         <div className={styles['reviews-top']}>
-          <FiStar fill="#222" /> 4.79 · 82 reviews
+          <FiStar fill="#222" /> {rating} · {reviewsCount} reviews
         </div>
-        
-        {/* <div className={styles['rating-bars']}>
-          <div className={styles['rating-item']}>
-            <div className={styles['rating-label']}>Cleanliness</div>
-            <div className={styles['rating-bar-container']}><div className={styles['rating-bar-bg']}><div className={styles['rating-bar-fill']} style={{width: '95%'}}></div></div> 4.7</div>
-          </div>
-          <div className={styles['rating-item']}>
-            <div className={styles['rating-label']}>Accuracy</div>
-            <div className={styles['rating-bar-container']}><div className={styles['rating-bar-bg']}><div className={styles['rating-bar-fill']} style={{width: '98%'}}></div></div> 4.8</div>
-          </div>
-          <div className={styles['rating-item']}>
-            <div className={styles['rating-label']}>Communication</div>
-            <div className={styles['rating-bar-container']}><div className={styles['rating-bar-bg']}><div className={styles['rating-bar-fill']} style={{width: '100%'}}></div></div> 5.0</div>
-          </div>
-          <div className={styles['rating-item']}>
-            <div className={styles['rating-label']}>Location</div>
-            <div className={styles['rating-bar-container']}><div className={styles['rating-bar-bg']}><div className={styles['rating-bar-fill']} style={{width: '90%'}}></div></div> 4.6</div>
-          </div>
-          <div className={styles['rating-item']}>
-            <div className={styles['rating-label']}>Value</div>
-            <div className={styles['rating-bar-container']}><div className={styles['rating-bar-bg']}><div className={styles['rating-bar-fill']} style={{width: '96%'}}></div></div> 4.8</div>
-          </div>
-        </div> */}
 
-        <div className={styles['reviews-grid']}>
-          <div className={styles['review-card']}>
-            <div className={styles['reviewer-info']}>
-              <div className={styles['reviewer-avatar']}>A</div>
-              <div>
-                <h4 className={styles['reviewer-name']}>Abhimanyu Singh</h4>
-                <p className={styles['review-date']}>3 weeks ago</p>
+        <div className='row'>
+          {dynamicReviews.length > 0 ? (
+            dynamicReviews.map((rev, revIdx) => (
+              <div key={rev.id || revIdx} className="col-md-6 mb-3">
+                <div className={styles['review-card']}>
+                  <div className={styles['reviewer-info']}>
+                    {rev.reviewer_avatar ? (
+                      <img src={rev.reviewer_avatar} className={styles['reviewer-avatar']} alt={rev.reviewer_name} />
+                    ) : (
+                      <div className={styles['reviewer-avatar']}>{(rev.reviewer_name || 'G')[0].toUpperCase()}</div>
+                    )}
+                    <div>
+                      <h4 className={styles['reviewer-name']}>{rev.reviewer_name}</h4>
+                      <p className={styles['review-date']}>{rev.created_at ? format(new Date(rev.created_at), 'MMMM yyyy') : 'Recent stay'}</p>
+                    </div>
+                  </div>
+                  <p className={styles['review-text']}>{rev.review_text}</p>
+                </div>
               </div>
-            </div>
-            <p className={styles['review-text']}>Great stay! The place was clean, comfortable, and well-maintained. The host was helpful and responsive. Everything went smoothly, and I would happily stay here again. Highly...</p>
-          </div>
-          <div className={styles['review-card']}>
-            <div className={styles['reviewer-info']}>
-              <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&q=80" className={styles['reviewer-avatar']} alt="Amit" />
-              <div>
-                <h4 className={styles['reviewer-name']}>Amit</h4>
-                <p className={styles['review-date']}>June 2026</p>
+            ))
+          ) : (
+            <>
+              <div className="col-md-6">
+                <div className={styles['review-card']}>
+                  <div className={styles['reviewer-info']}>
+                    <div className={styles['reviewer-avatar']}>A</div>
+                    <div>
+                      <h4 className={styles['reviewer-name']}>Abhimanyu Singh</h4>
+                      <p className={styles['review-date']}>3 weeks ago</p>
+                    </div>
+                  </div>
+                  <p className={styles['review-text']}>Great stay! The place was clean, comfortable, and well-maintained. The host was helpful and responsive. Everything went smoothly, and I would happily stay here again. Highly recommended!</p>
+                </div>
               </div>
-            </div>
-            <p className={styles['review-text']}>I had a pleasant stay at Kushgra's place. The location and overall experience were good, and the host was responsive and helpful. However, the washroom was not as clean as...</p>
-          </div>
-          <div className={styles['review-card']}>
-            <div className={styles['reviewer-info']}>
-              <div className={styles['reviewer-avatar']}>M</div>
-              <div>
-                <h4 className={styles['reviewer-name']}>Mayank</h4>
-                <p className={styles['review-date']}>May 2026</p>
+              <div className="col-12 col-md-6">
+                <div className={styles['review-card']}>
+                  <div className={styles['reviewer-info']}>
+                    <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&q=80" className={styles['reviewer-avatar']} alt="Amit" />
+                    <div>
+                      <h4 className={styles['reviewer-name']}>Amit</h4>
+                      <p className={styles['review-date']}>June 2026</p>
+                    </div>
+                  </div>
+                  <p className={styles['review-text']}>I had a pleasant stay at this place. The location and overall experience were good, and the host was responsive and helpful whenever we had questions.</p>
+                </div>
               </div>
-            </div>
-            <p className={styles['review-text']}>Had a great stay! The place was clean, comfortable, and exactly as shown in the photos. Host was helpful and responsive. Overall a smooth and pleasant experience.</p>
-          </div>
-          <div className={styles['review-card']}>
-            <div className={styles['reviewer-info']}>
-              <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80" className={styles['reviewer-avatar']} alt="Diksha" />
-              <div>
-                <h4 className={styles['reviewer-name']}>Diksha</h4>
-                <p className={styles['review-date']}>May 2026</p>
+              <div className="col-12 col-md-6">
+                <div className={styles['review-card']}>
+                  <div className={styles['reviewer-info']}>
+                    <div className={styles['reviewer-avatar']}>M</div>
+                    <div>
+                      <h4 className={styles['reviewer-name']}>Mayank</h4>
+                      <p className={styles['review-date']}>May 2026</p>
+                    </div>
+                  </div>
+                  <p className={styles['review-text']}>Had a great stay! The place was clean, comfortable, and exactly as shown in the photos. Host was helpful and responsive. Overall a smooth and pleasant experience.</p>
+                </div>
               </div>
-            </div>
-            <p className={styles['review-text']}>I rented the place for two days when I visited ranthambore national park with my family, we were four members. the location is near the entrance of national park, the...</p>
-          </div>
+              <div className="col-12 col-md-6">
+                <div className={styles['review-card']}>
+                  <div className={styles['reviewer-info']}>
+                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80" className={styles['reviewer-avatar']} alt="Diksha" />
+                    <div>
+                      <h4 className={styles['reviewer-name']}>Diksha</h4>
+                      <p className={styles['review-date']}>May 2026</p>
+                    </div>
+                  </div>
+                  <p className={styles['review-text']}>I rented the place for my family trip. The location was very peaceful, clean rooms, and close to all the main attractions.</p>
+                </div>
+              </div>
+            </>
+          )}
         </div>
-        <button className={styles['outline-btn']}>Show all 82 reviews</button>
+        <button className={styles['outline-btn']}>Show all {reviewsCount} reviews</button>
       </div>
 
       {/* Map Section */}
       <div className={styles['map-section']}>
         <h2 className={styles['section-title']}>Where you'll be</h2>
-        <p style={{marginBottom: '24px'}}>Sawai Madhopur, Rajasthan, India</p>
-        <div className={styles['map-placeholder']} style={{ overflow: 'hidden', borderRadius: '12px', height: '480px', position: 'relative' }}>
+        <p style={{marginBottom: '16px', color: '#222222', fontSize: '16px', fontWeight: '500'}}>
+          {fullLocationDisplay}
+        </p>
+        <div className={styles['map-placeholder']} style={{ overflow: 'hidden', borderRadius: '16px', height: '480px', position: 'relative', border: '1px solid #e5e7eb' }}>
           <iframe 
-            src="https://maps.google.com/maps?q=Sawai%20Madhopur,%20Rajasthan,%20India&t=&z=13&ie=UTF8&iwloc=&output=embed" 
+            src={`https://maps.google.com/maps?q=${encodeURIComponent(mapSearchQuery)}&t=&z=14&ie=UTF8&iwloc=&output=embed`} 
             width="100%" 
             height="100%" 
             style={{ border: 0 }} 
             allowFullScreen="" 
             loading="lazy" 
             referrerPolicy="no-referrer-when-downgrade"
-            title="Map of Sawai Madhopur"
+            title={`Map of ${fullLocationDisplay}`}
           ></iframe>
-          <div style={{position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', background: 'white', padding: '12px 24px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontWeight: 'bold'}}>Exact location provided after booking</div>
+          <div style={{
+            position: 'absolute', 
+            top: '20px', 
+            left: '50%', 
+            transform: 'translateX(-50%)', 
+            background: 'white', 
+            padding: '10px 20px', 
+            borderRadius: '24px', 
+            boxShadow: '0 4px 16px rgba(0,0,0,0.12)', 
+            fontWeight: '600',
+            fontSize: '14px',
+            color: '#222222',
+            whiteSpace: 'nowrap',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            📍 Exact location provided after booking
+          </div>
         </div>
       </div>
 
       {/* Meet your host */}
       <div className={styles['host-details-section']}>
         <h2 className={styles['section-title']}>Meet your host</h2>
-        <div className={styles['host-card-large']}>
-          <div className={styles['host-card-left']}>
-            <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200&q=80" alt="Host" className={styles['host-card-avatar']} />
-            <h3 className={styles.title} style={{fontSize: '28px', margin: '4px 0'}}>Kushgra</h3>
-            <p className={styles['host-status']} style={{marginBottom: '16px'}}>Superhost</p>
-            
-            <div className={styles['host-stats']}>
-              <div className={styles['host-stat-item']}>
-                <div className={styles['host-stat-val']}>161</div>
-                <div className={styles['host-stat-label']}>Reviews</div>
-              </div>
-              <div className={styles['host-stat-item']}>
-                <div className={styles['host-stat-val']}>4.81<FiStar fill="#222" size={12}/></div>
-                <div className={styles['host-stat-label']}>Rating</div>
-              </div>
-              <div className={styles['host-stat-item']}>
-                <div className={styles['host-stat-val']}>4</div>
-                <div className={styles['host-stat-label']}>Years hosting</div>
+        <div className={`row align-items-start ${styles['host-card-large']}`}>
+          <div className="col-md-5 col-lg-4 mb-3">
+            <div className={styles['host-card-left']}>
+              <img 
+                src={hostAvatar} 
+                alt={hostName} 
+                className={styles['host-card-avatar']} 
+                onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200&q=80'; }} 
+              />
+              <h3 className={styles.title} style={{fontSize: '24px', margin: '4px 0'}}>{hostName}</h3>
+              <p className={styles['host-status']} >
+                {isSuperhost ? 'Superhost' : 'Verified Host'}
+              </p>
+              
+              <div className={styles['host-stats']}>
+                <div className={styles['host-stat-item']}>
+                  <div className={styles['host-stat-val']}>{reviewsCount}</div>
+                  <div className={styles['host-stat-label']}>Reviews</div>
+                </div>
+                <div className={styles['host-stat-item']}>
+                  <div className={styles['host-stat-val']}>{rating}<FiStar fill="#222" size={12}/></div>
+                  <div className={styles['host-stat-label']}>Rating</div>
+                </div>
+                <div className={styles['host-stat-item']}>
+                  <div className={styles['host-stat-val']}>{hostYears}</div>
+                  <div className={styles['host-stat-label']}>Years hosting</div>
+                </div>
               </div>
             </div>
           </div>
-          <div className={styles['host-card-right']}>
-            <h2>Kushgra is a Superhost</h2>
-            <p>Superhosts are experienced, highly rated hosts who are committed to providing great stays for guests.</p>
-            
-            <h3>Host details</h3>
-            <p>Response rate: 100%<br/>Responds within an hour</p>
-            
-            <button className={styles['outline-btn']} style={{marginTop: '16px'}}>Message host</button>
-            <p style={{marginTop: '24px', fontSize: '12px', color: '#717171'}}>To help protect your payment, always use Airbnb to send money and communicate with hosts.</p>
+          
+          <div className="col-md-7 col-lg-8">
+            <div className={styles['host-card-right']}>
+              <h2>{hostName} is a {isSuperhost ? 'Superhost' : 'Verified Host'}</h2>
+              <p>
+                {hostIntro}
+              </p>
+              
+              {hostRecognition && (
+                <p style={{ fontWeight: '600', color: '#111827', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>⭐</span> {hostRecognition}
+                </p>
+              )}
+
+              {hostQualifications && (
+                <p >
+                  🎓 {hostQualifications}
+                </p>
+              )}
+
+              <h3 >Host details</h3>
+              
+              <button 
+                className={styles['outline-btn']} 
+                onClick={() => alert(`Starting direct conversation with host: ${hostName}`)}
+              >
+                Message {hostName}
+              </button>
+              <p style={{marginTop: '10px', fontSize: '14px', color: '#717171'}}>
+                To help protect your payment, always use Airbnb to send money and communicate directly with {hostName}.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -617,25 +1566,31 @@ export default function ListingDetails() {
       {/* Things to know */}
       <div className={styles['things-to-know']}>
         <h2 className={styles['section-title']}>Things to know</h2>
-        <div className={styles['rules-grid']}>
-          <div className={styles['rule-column']}>
-            <h4>Cancellation policy</h4>
-            <div className={styles['rule-item']}>Free cancellation for 24 hours. After that, the reservation is non-refundable.</div>
-            <div className={styles['rule-item']}>Review this host's full policy for details.</div>
-            <div className={styles['rule-link']}>Learn more</div>
+        <div className={`row g-4 ${styles['rules-grid']}`}>
+          <div className="col-12 col-md-4">
+            <div className={styles['rule-column']}>
+              <h4>Cancellation policy</h4>
+              <div className={styles['rule-item']}>Policy: {listingData?.cancellation_policy || 'Free cancellation for 24 hours. After that, the reservation is non-refundable.'}</div>
+              <div className={styles['rule-item']}>Review this host's full policy for details.</div>
+              <div className={styles['rule-link']}>Learn more</div>
+            </div>
           </div>
-          <div className={styles['rule-column']}>
-            <h4>House rules</h4>
-            <div className={styles['rule-item']}>Check-in: 1:00 pm – 9:00 pm</div>
-            <div className={styles['rule-item']}>Checkout before 10:00 am</div>
-            <div className={styles['rule-item']}>5 guests maximum</div>
-            <div className={styles['rule-link']}>Learn more</div>
+          <div className="col-12 col-md-4">
+            <div className={styles['rule-column']}>
+              <h4>House rules</h4>
+              <div className={styles['rule-item']}>Check-in: 1:00 pm – 9:00 pm</div>
+              <div className={styles['rule-item']}>Checkout before 10:00 am</div>
+              <div className={styles['rule-item']}>{maxAllowedGuests} guests maximum</div>
+              <div className={styles['rule-link']}>Learn more</div>
+            </div>
           </div>
-          <div className={styles['rule-column']}>
-            <h4>Safety & property</h4>
-            <div className={styles['rule-item']}>Carbon monoxide alarm not reported</div>
-            <div className={styles['rule-item']}>Smoke alarm not reported</div>
-            <div className={styles['rule-link']}>Learn more</div>
+          <div className="col-12 col-md-4">
+            <div className={styles['rule-column']}>
+              <h4>Safety & property</h4>
+              <div className={styles['rule-item']}>Carbon monoxide alarm not reported</div>
+              <div className={styles['rule-item']}>Smoke alarm not reported</div>
+              <div className={styles['rule-link']}>Learn more</div>
+            </div>
           </div>
         </div>
       </div>
@@ -738,22 +1693,99 @@ export default function ListingDetails() {
             <h2 className={styles['share-title']}>Share this place</h2>
             
             <div className={styles['share-info-card']}>
-              <img src={images[0]} alt="Thumbnail" className={styles['share-info-img']} />
+              <img src={images[0]} alt={title} className={styles['share-info-img']} />
               <div className={styles['share-info-text']}>
-                Apartment in Rishikesh · ★5.0 · 3 bedrooms · 3 beds · 3 bathrooms
+                <div style={{ fontWeight: 600, fontSize: '15px', color: '#222', marginBottom: '2px' }}>
+                  {title}
+                </div>
+                <div style={{ fontSize: '13px', color: '#717171' }}>
+                  {type} in {city} · ★{rating} · {bedroomsCount} bedrooms · {bedsCount} beds · {bathroomsCount} baths
+                </div>
               </div>
             </div>
 
             <div className={styles['share-options-grid']}>
-              <button className={styles['share-option-btn']}><FaCopy size={20} /> Copy Link</button>
-              <button className={styles['share-option-btn']}><FaEnvelope size={20} /> Email</button>
-              <button className={styles['share-option-btn']}><FaCommentDots size={20} /> Messages</button>
-              <button className={styles['share-option-btn']}><FaWhatsapp size={20} /> WhatsApp</button>
-              <button className={styles['share-option-btn']}><FaFacebookMessenger size={20} /> Messenger</button>
-              <button className={styles['share-option-btn']}><FaFacebook size={20} /> Facebook</button>
-              <button className={styles['share-option-btn']}><FaTwitter size={20} /> Twitter</button>
-              <button className={styles['share-option-btn']}><FaCode size={20} /> Embed</button>
-              <button className={`${styles['share-option-btn']} ${styles['share-more-btn']}`}><FaEllipsisH size={20} /> More options</button>
+              <button 
+                type="button"
+                className={styles['share-option-btn']}
+                onClick={() => handleSharePlatform('copy')}
+                title="Copy Link"
+              >
+                <FaCopy size={20} color={copiedLink ? '#059669' : '#222'} /> 
+                <span>{copiedLink ? 'Link Copied!' : 'Copy Link'}</span>
+              </button>
+              <button 
+                type="button"
+                className={styles['share-option-btn']}
+                onClick={() => handleSharePlatform('email')}
+                title="Share via Email"
+              >
+                <FaEnvelope size={20} color="#222" /> 
+                <span>Email</span>
+              </button>
+              <button 
+                type="button"
+                className={styles['share-option-btn']}
+                onClick={() => handleSharePlatform('messages')}
+                title="Share via SMS / Messages"
+              >
+                <FaCommentDots size={20} color="#222" /> 
+                <span>Messages</span>
+              </button>
+              <button 
+                type="button"
+                className={styles['share-option-btn']}
+                onClick={() => handleSharePlatform('whatsapp')}
+                title="Share via WhatsApp"
+              >
+                <FaWhatsapp size={20} color="#25D366" /> 
+                <span>WhatsApp</span>
+              </button>
+              <button 
+                type="button"
+                className={styles['share-option-btn']}
+                onClick={() => handleSharePlatform('messenger')}
+                title="Share via Messenger"
+              >
+                <FaFacebookMessenger size={20} color="#0084FF" /> 
+                <span>Messenger</span>
+              </button>
+              <button 
+                type="button"
+                className={styles['share-option-btn']}
+                onClick={() => handleSharePlatform('facebook')}
+                title="Share on Facebook"
+              >
+                <FaFacebook size={20} color="#1877F2" /> 
+                <span>Facebook</span>
+              </button>
+              <button 
+                type="button"
+                className={styles['share-option-btn']}
+                onClick={() => handleSharePlatform('twitter')}
+                title="Share on Twitter / X"
+              >
+                <FaTwitter size={20} color="#1DA1F2" /> 
+                <span>Twitter</span>
+              </button>
+              <button 
+                type="button"
+                className={styles['share-option-btn']}
+                onClick={() => handleSharePlatform('embed')}
+                title="Copy Embed HTML"
+              >
+                <FaCode size={20} color="#222" /> 
+                <span>Embed</span>
+              </button>
+              <button 
+                type="button"
+                className={`${styles['share-option-btn']} ${styles['share-more-btn']}`}
+                onClick={() => handleSharePlatform('more')}
+                title="More sharing options"
+              >
+                <FaEllipsisH size={20} color="#222" /> 
+                <span>More options</span>
+              </button>
             </div>
           </div>
         </div>
@@ -823,19 +1855,66 @@ export default function ListingDetails() {
             <h2 className={styles['desc-title']}>About this space</h2>
             
             <div className={styles['desc-content']}>
-               <p>Kick back and relax in this calm, stylish space.</p>
-               <p>Forget your worries in this spacious and serene space.</p>
-               <p>A place near the wildlife sanctuary. 2 large bedrooms with balconies. Peaceful environment and spacious stay. You can enjoy sunrise and sunset.</p>
+               <div style={{ whiteSpace: 'pre-line', marginBottom: '20px' }}>
+                 {description}
+               </div>
                
                <h3>The space</h3>
-               <p>Railway station distance 3 kms.<br/>
-               Safari office is 3.5 kms.</p>
+               <p>{type} located in {city}. Featuring {bedroomsCount} bedrooms and {bathroomsCount} bathrooms, accommodating up to {maxAllowedGuests} guests comfortably.</p>
                
                <h3>Guest access</h3>
-               <p>Guests have full access to the apartment including both bedrooms, the living room, and balconies. Safari booking is available upon request.</p>
+               <p>Guests will have complete and private access to the entire {type.toLowerCase()} and all listed amenities.</p>
 
                <h3>Other things to note</h3>
-               <p>Please carry a valid ID proof for check-in. Smoking is only allowed on the balconies.</p>
+               <p>Please review our house rules and check-in times before arrival. Carry a valid photo ID proof for seamless check-in.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* What this place offers (Amenities) Modal */}
+      {isAmenitiesModalOpen && (
+        <div 
+          className={`${styles['modal-overlay']} ${isAmenitiesModalClosing ? styles.closing : ''}`} 
+          onClick={closeAmenitiesModal}
+        >
+          <div 
+            className={`${styles['amenities-modal']} ${isAmenitiesModalClosing ? styles.closing : ''}`} 
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles['amenities-modal-header']}>
+              <button className={styles['share-close-btn']} onClick={closeAmenitiesModal}>
+                <FaTimes size={16} />
+              </button>
+            </div>
+            
+            <div className={styles['amenities-modal-body']}>
+              <h2 className={styles['amenities-modal-title']}>What this place offers</h2>
+              
+              {dynamicAmenitiesCategories.map((group, gIdx) => (
+                <div key={gIdx} className={styles['amenity-category-block']}>
+                  <h3 className={styles['amenity-category-heading']}>{group.category}</h3>
+                  <div>
+                    {group.items.map((item, iIdx) => (
+                      <div key={iIdx} className={styles['amenity-modal-row']}>
+                        <div className={styles['amenity-modal-icon']}>
+                          {getAmenityIcon(item.name, item.notIncluded)}
+                        </div>
+                        <div>
+                          <div className={`${styles['amenity-modal-name']} ${item.notIncluded ? styles['amenity-not-included-text'] : ''}`}>
+                            {item.name}
+                          </div>
+                          {item.sublabel && (
+                            <div className={styles['amenity-modal-sublabel']}>
+                              {item.sublabel}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

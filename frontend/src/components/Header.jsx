@@ -73,9 +73,11 @@ export default function Header() {
   const [selectedCurrency, setSelectedCurrency] = useState(
     localStorage.getItem('airbnb_preferred_currency') || 'INR'
   );
-  const [automaticTranslation, setAutomaticTranslation] = useState(true);
-  const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [selectedDestination, setSelectedDestination] = useState('');
+
+  // Dynamic Destinations state from Backend API (Home Destinations & popular cities)
+  const [backendDestinations, setBackendDestinations] = useState([]);
+  const [loadingDestinations, setLoadingDestinations] = useState(false);
 
   // Sync user profile settings (language, currency, translation) from Backend
   useEffect(() => {
@@ -114,6 +116,43 @@ export default function Header() {
 
     fetchUserSettings();
   }, [isLoggedIn, user?.id, user?.email]);
+
+  const [automaticTranslation, setAutomaticTranslation] = useState(true);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+
+  useEffect(() => {
+    const fetchDestinations = async () => {
+      try {
+        setLoadingDestinations(true);
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+        const res = await fetch(`${baseUrl}/listings/home-destinations`);
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setBackendDestinations(json.data);
+        }
+      } catch (e) {
+        console.warn('Failed to load home destinations for header dropdown:', e);
+      } finally {
+        setLoadingDestinations(false);
+      }
+    };
+    fetchDestinations();
+  }, []);
+
+  const handleSearchNavigation = (destParam) => {
+    const targetLoc = destParam || selectedDestination;
+    setShowLocationDropdown(false);
+    setShowDatesDropdown(false);
+    setShowGuestsDropdown(false);
+    setIsSearchExpanded(false);
+
+    if (targetLoc && targetLoc.trim()) {
+      const cleanLoc = targetLoc.trim();
+      navigate(`/search/${encodeURIComponent(cleanLoc)}`);
+    } else {
+      navigate('/search/all');
+    }
+  };
 
   const handleLanguageSelect = async (langName, region) => {
     setSelectedLanguage(langName);
@@ -189,10 +228,52 @@ export default function Header() {
   const [checkInDate, setCheckInDate] = useState(null);
   const [checkOutDate, setCheckOutDate] = useState(null);
   const [selectedFlexibleMonths, setSelectedFlexibleMonths] = useState([]);
-  const [adultsCount, setAdultsCount] = useState(0);
-  const [childrenCount, setChildrenCount] = useState(0);
-  const [infantsCount, setInfantsCount] = useState(0);
-  const [petsCount, setPetsCount] = useState(0);
+  const [adultsCount, setAdultsCount] = useState(() => {
+    const val = localStorage.getItem('airbnb_search_adults');
+    return val !== null ? Number(val) : 0;
+  });
+  const [childrenCount, setChildrenCount] = useState(() => {
+    const val = localStorage.getItem('airbnb_search_children');
+    return val !== null ? Number(val) : 0;
+  });
+  const [infantsCount, setInfantsCount] = useState(() => {
+    const val = localStorage.getItem('airbnb_search_infants');
+    return val !== null ? Number(val) : 0;
+  });
+  const [petsCount, setPetsCount] = useState(() => {
+    const val = localStorage.getItem('airbnb_search_pets');
+    return val !== null ? Number(val) : 0;
+  });
+
+  // Keep Header guest states synchronized across components
+  useEffect(() => {
+    const handleGuestsSync = (e) => {
+      if (e.detail) {
+        setAdultsCount(e.detail.adults);
+        setChildrenCount(e.detail.children);
+        setInfantsCount(e.detail.infants);
+        setPetsCount(e.detail.pets);
+      }
+    };
+    window.addEventListener("airbnb_search_guests_updated", handleGuestsSync);
+    return () => window.removeEventListener("airbnb_search_guests_updated", handleGuestsSync);
+  }, []);
+
+  const updateHeaderGuests = (newAdults, newChildren, newInfants, newPets) => {
+    setAdultsCount(newAdults);
+    setChildrenCount(newChildren);
+    setInfantsCount(newInfants);
+    setPetsCount(newPets);
+    try {
+      localStorage.setItem('airbnb_search_adults', newAdults);
+      localStorage.setItem('airbnb_search_children', newChildren);
+      localStorage.setItem('airbnb_search_infants', newInfants);
+      localStorage.setItem('airbnb_search_pets', newPets);
+      window.dispatchEvent(new CustomEvent('airbnb_search_guests_updated', {
+        detail: { adults: newAdults, children: newChildren, infants: newInfants, pets: newPets }
+      }));
+    } catch (e) {}
+  };
 
   const getGuestsText = () => {
     let guests = adultsCount + childrenCount;
@@ -445,11 +526,11 @@ export default function Header() {
               setIsSearchExpanded(true);
             }}
           >
-            <span className={styles['compact-text']}>Anywhere</span>
+            <span className={styles['compact-text']}>{selectedDestination || 'Anywhere'}</span>
             <span className={styles['compact-divider']}></span>
-            <span className={styles['compact-text']}>Anytime</span>
+            <span className={styles['compact-text']}>{getDatesText()}</span>
             <span className={styles['compact-divider']}></span>
-            <span className={`${styles['compact-text']} ${styles.light}`}>Add guests</span>
+            <span className={`${styles['compact-text']} ${(adultsCount > 0 || childrenCount > 0 || infantsCount > 0 || petsCount > 0) ? '' : styles.light}`}>{getGuestsText()}</span>
             <div className={styles['compact-search-icon']}>
               <FaSearch size={12} />
             </div>
@@ -461,7 +542,7 @@ export default function Header() {
           {isLoggedIn ? (
             <button 
               className={styles['host-link']} 
-              onClick={() => navigate(isHostMode ? '/' : '/host')}
+              onClick={() => navigate(isHostMode ? '/' : '/hosting/listings')}
             >
               {isHostMode ? 'Switch to travelling' : 'Switch to hosting'}
             </button>
@@ -641,6 +722,11 @@ export default function Header() {
               placeholder="Search destinations"
               value={selectedDestination}
               onChange={(e) => setSelectedDestination(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearchNavigation(selectedDestination);
+                }
+              }}
             />
             {selectedDestination && (
               <div 
@@ -652,35 +738,115 @@ export default function Header() {
             )}
           </div>
 
-          {/* Location Dropdown */}
+          {/* Location Dropdown - Dynamic from Backend */}
           {showLocationDropdown && (
             <div className={styles['location-dropdown']}>
-              <div className={styles['loc-dropdown-title']}>Suggested destinations</div>
+              <div className={styles['loc-dropdown-header']}>
+                <span className={styles['loc-dropdown-title']}>Suggested destinations</span>
+                <button 
+                  type="button"
+                  className={styles['loc-close-btn']}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowLocationDropdown(false);
+                  }}
+                  title="Close"
+                  aria-label="Close destinations"
+                >
+                  <FaTimes size={11} />
+                </button>
+              </div>
               <div className={styles['loc-list']}>
-                {[
-                  { name: "Nearby", desc: "Find what's around you", icon: <FiNavigation />, iconClass: 'loc-icon-nav' },
-                  { name: "Jaipur, Rajasthan", desc: "For sights like Amber Fort", icon: <BsBuildings />, iconClass: 'loc-icon-city' },
-                  { name: "North Goa, Goa", desc: "Popular beach destination", icon: <TbBeach />, iconClass: 'loc-icon-beach' },
-                  { name: "Udaipur, Rajasthan", desc: "For its stunning architecture", icon: <BsBuildings />, iconClass: 'loc-icon-city' },
-                  { name: "Dubai, United Arab Emirates", desc: "For its bustling nightlife", icon: <BsBuildings />, iconClass: 'loc-icon-city2' },
-                  { name: "Gurgaon District, Haryana", desc: "Popular with travellers near you", icon: <TbBeach />, iconClass: 'loc-icon-beach' },
-                  { name: "Mumbai, Maharashtra", desc: "For sights like Gateway of India", icon: <BsBuildings />, iconClass: 'loc-icon-city2' }
-                ].map((item, idx) => (
-                  <div 
-                    key={idx} 
-                    className={styles['loc-item']}
-                    onClick={() => {
-                      setSelectedDestination(item.name);
-                      setShowLocationDropdown(false);
-                    }}
-                  >
-                    <div className={`${styles['loc-icon']} ${styles[item.iconClass]}`}>{item.icon}</div>
-                    <div className={styles['loc-text']}>
-                      <div className={styles['loc-name']}>{item.name}</div>
-                      <div className={styles['loc-desc']}>{item.desc}</div>
-                    </div>
+                {/* Nearby option */}
+                <div 
+                  className={styles['loc-item']}
+                  onClick={() => {
+                    setSelectedDestination('Nearby');
+                    handleSearchNavigation('Nearby');
+                  }}
+                >
+                  <div className={`${styles['loc-icon']} ${styles['loc-icon-nav']}`}>
+                    <FiNavigation />
                   </div>
-                ))}
+                  <div className={styles['loc-text']}>
+                    <div className={styles['loc-name']}>Nearby</div>
+                    <div className={styles['loc-desc']}>Find what's around you</div>
+                  </div>
+                </div>
+
+                {/* Dynamic destinations from Backend (home_destinations / listings) */}
+                {backendDestinations && backendDestinations.length > 0 ? (
+                  backendDestinations
+                    .filter(item => {
+                      if (!selectedDestination || !selectedDestination.trim()) return true;
+                      const q = selectedDestination.toLowerCase();
+                      return (
+                        (item.country || '').toLowerCase().includes(q) ||
+                        (item.title || '').toLowerCase().includes(q) ||
+                        (item.city || '').toLowerCase().includes(q)
+                      );
+                    })
+                    .map((item, idx) => {
+                      const displayName = item.country || item.city || item.name;
+                      const desc = item.title || item.desc || 'Popular destination';
+                      const isBeach = desc.toLowerCase().includes('beach') || desc.toLowerCase().includes('coastal') || desc.toLowerCase().includes('island') || desc.toLowerCase().includes('paradise');
+                      const isCity = desc.toLowerCase().includes('urban') || desc.toLowerCase().includes('nightlife') || desc.toLowerCase().includes('sight');
+                      const iconClass = isBeach ? 'loc-icon-beach' : isCity ? 'loc-icon-city2' : 'loc-icon-city';
+                      const IconComp = isBeach ? <TbBeach /> : <BsBuildings />;
+
+                      return (
+                        <div 
+                          key={item.id || idx} 
+                          className={styles['loc-item']}
+                          onClick={() => {
+                            setSelectedDestination(displayName);
+                            handleSearchNavigation(displayName);
+                          }}
+                        >
+                          {item.image ? (
+                            <img 
+                              src={item.image} 
+                              alt={displayName} 
+                              className={styles['loc-icon']} 
+                              style={{ objectFit: 'cover' }} 
+                            />
+                          ) : (
+                            <div className={`${styles['loc-icon']} ${styles[iconClass]}`}>
+                              {IconComp}
+                            </div>
+                          )}
+                          <div className={styles['loc-text']}>
+                            <div className={styles['loc-name']}>{displayName}</div>
+                            <div className={styles['loc-desc']}>{desc}</div>
+                          </div>
+                        </div>
+                      );
+                    })
+                ) : (
+                  [
+                    { name: "Jaipur, Rajasthan", desc: "For sights like Amber Fort", icon: <BsBuildings />, iconClass: 'loc-icon-city' },
+                    { name: "North Goa, Goa", desc: "Popular beach destination", icon: <TbBeach />, iconClass: 'loc-icon-beach' },
+                    { name: "Udaipur, Rajasthan", desc: "For its stunning architecture", icon: <BsBuildings />, iconClass: 'loc-icon-city' },
+                    { name: "Dubai, United Arab Emirates", desc: "For its bustling nightlife", icon: <BsBuildings />, iconClass: 'loc-icon-city2' },
+                    { name: "Gurgaon District, Haryana", desc: "Popular with travellers near you", icon: <TbBeach />, iconClass: 'loc-icon-beach' },
+                    { name: "Mumbai, Maharashtra", desc: "For sights like Gateway of India", icon: <BsBuildings />, iconClass: 'loc-icon-city2' }
+                  ].map((item, idx) => (
+                    <div 
+                      key={idx} 
+                      className={styles['loc-item']}
+                      onClick={() => {
+                        setSelectedDestination(item.name);
+                        handleSearchNavigation(item.name);
+                      }}
+                    >
+                      <div className={`${styles['loc-icon']} ${styles[item.iconClass]}`}>{item.icon}</div>
+                      <div className={styles['loc-text']}>
+                        <div className={styles['loc-name']}>{item.name}</div>
+                        <div className={styles['loc-desc']}>{item.desc}</div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -823,7 +989,10 @@ export default function Header() {
             {(adultsCount > 0 || childrenCount > 0 || infantsCount > 0 || petsCount > 0) && (
               <div 
                 className={styles['clear-btn']} 
-                onClick={(e) => { e.stopPropagation(); setAdultsCount(0); setChildrenCount(0); setInfantsCount(0); setPetsCount(0); }}
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  updateHeaderGuests(0, 0, 0, 0);
+                }}
               >
                 <FaTimes size={10} />
               </div>
@@ -839,9 +1008,20 @@ export default function Header() {
                     <div className={styles['guest-subtitle']}>Ages 13 or above</div>
                   </div>
                   <div className={styles['guest-controls']}>
-                    <button className={styles['guest-ctrl-btn']} disabled={adultsCount === 0} onClick={() => setAdultsCount(prev => prev - 1)}><FiMinus size={14}/></button>
+                    <button 
+                      className={styles['guest-ctrl-btn']} 
+                      disabled={adultsCount === 0} 
+                      onClick={() => updateHeaderGuests(Math.max(0, adultsCount - 1), childrenCount, infantsCount, petsCount)}
+                    >
+                      <FiMinus size={14}/>
+                    </button>
                     <span className={styles['guest-count']}>{adultsCount}</span>
-                    <button className={styles['guest-ctrl-btn']} onClick={() => setAdultsCount(prev => prev + 1)}><FiPlus size={14}/></button>
+                    <button 
+                      className={styles['guest-ctrl-btn']} 
+                      onClick={() => updateHeaderGuests(adultsCount + 1, childrenCount, infantsCount, petsCount)}
+                    >
+                      <FiPlus size={14}/>
+                    </button>
                   </div>
                 </div>
 
@@ -851,9 +1031,23 @@ export default function Header() {
                     <div className={styles['guest-subtitle']}>Ages 2-12</div>
                   </div>
                   <div className={styles['guest-controls']}>
-                    <button className={styles['guest-ctrl-btn']} disabled={childrenCount === 0} onClick={() => setChildrenCount(prev => prev - 1)}><FiMinus size={14}/></button>
+                    <button 
+                      className={styles['guest-ctrl-btn']} 
+                      disabled={childrenCount === 0} 
+                      onClick={() => updateHeaderGuests(adultsCount, Math.max(0, childrenCount - 1), infantsCount, petsCount)}
+                    >
+                      <FiMinus size={14}/>
+                    </button>
                     <span className={styles['guest-count']}>{childrenCount}</span>
-                    <button className={styles['guest-ctrl-btn']} onClick={() => { setChildrenCount(prev => prev + 1); if(adultsCount === 0) setAdultsCount(1); }}><FiPlus size={14}/></button>
+                    <button 
+                      className={styles['guest-ctrl-btn']} 
+                      onClick={() => { 
+                        const newAdults = adultsCount === 0 ? 1 : adultsCount;
+                        updateHeaderGuests(newAdults, childrenCount + 1, infantsCount, petsCount); 
+                      }}
+                    >
+                      <FiPlus size={14}/>
+                    </button>
                   </div>
                 </div>
 
@@ -863,9 +1057,23 @@ export default function Header() {
                     <div className={styles['guest-subtitle']}>Under 2</div>
                   </div>
                   <div className={styles['guest-controls']}>
-                    <button className={styles['guest-ctrl-btn']} disabled={infantsCount === 0} onClick={() => setInfantsCount(prev => prev - 1)}><FiMinus size={14}/></button>
+                    <button 
+                      className={styles['guest-ctrl-btn']} 
+                      disabled={infantsCount === 0} 
+                      onClick={() => updateHeaderGuests(adultsCount, childrenCount, Math.max(0, infantsCount - 1), petsCount)}
+                    >
+                      <FiMinus size={14}/>
+                    </button>
                     <span className={styles['guest-count']}>{infantsCount}</span>
-                    <button className={styles['guest-ctrl-btn']} onClick={() => { setInfantsCount(prev => prev + 1); if(adultsCount === 0) setAdultsCount(1); }}><FiPlus size={14}/></button>
+                    <button 
+                      className={styles['guest-ctrl-btn']} 
+                      onClick={() => { 
+                        const newAdults = adultsCount === 0 ? 1 : adultsCount;
+                        updateHeaderGuests(newAdults, childrenCount, infantsCount + 1, petsCount); 
+                      }}
+                    >
+                      <FiPlus size={14}/>
+                    </button>
                   </div>
                 </div>
 
@@ -875,9 +1083,23 @@ export default function Header() {
                     <div className={styles['guest-subtitle-link']}>Bringing a service animal?</div>
                   </div>
                   <div className={styles['guest-controls']}>
-                    <button className={styles['guest-ctrl-btn']} disabled={petsCount === 0} onClick={() => setPetsCount(prev => prev - 1)}><FiMinus size={14}/></button>
+                    <button 
+                      className={styles['guest-ctrl-btn']} 
+                      disabled={petsCount === 0} 
+                      onClick={() => updateHeaderGuests(adultsCount, childrenCount, infantsCount, Math.max(0, petsCount - 1))}
+                    >
+                      <FiMinus size={14}/>
+                    </button>
                     <span className={styles['guest-count']}>{petsCount}</span>
-                    <button className={styles['guest-ctrl-btn']} onClick={() => { setPetsCount(prev => prev + 1); if(adultsCount === 0) setAdultsCount(1); }}><FiPlus size={14}/></button>
+                    <button 
+                      className={styles['guest-ctrl-btn']} 
+                      onClick={() => { 
+                        const newAdults = adultsCount === 0 ? 1 : adultsCount;
+                        updateHeaderGuests(newAdults, childrenCount, infantsCount, petsCount + 1); 
+                      }}
+                    >
+                      <FiPlus size={14}/>
+                    </button>
                   </div>
                 </div>
 
@@ -885,7 +1107,14 @@ export default function Header() {
             )}
           </div>
           <div className={styles['search-btn-container']}>
-            <button className={styles['search-btn']} aria-label="Search">
+            <button 
+              className={styles['search-btn']} 
+              aria-label="Search"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSearchNavigation(selectedDestination);
+              }}
+            >
               <FaSearch size={14} />
             </button>
           </div>

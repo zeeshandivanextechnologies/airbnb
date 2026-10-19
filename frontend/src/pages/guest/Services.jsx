@@ -1,12 +1,67 @@
 import { useState, useEffect } from 'react';
 import { Splide, SplideSlide, SplideTrack } from '@splidejs/react-splide';
 import '@splidejs/react-splide/css';
-import { FaHeart, FaStar, FaChevronLeft, FaChevronRight, FaArrowRight } from 'react-icons/fa';
+import { FaHeart, FaStar, FaChevronLeft, FaChevronRight, FaArrowRight, FaTimes } from 'react-icons/fa';
 import styles from '../../components/styles/Services.module.css';
 import { NavLink } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { getStoredWishlists, addWishlist, isItemInAnyWishlist, removeItemFromWishlists } from '../../utils/wishlistStorage';
 
 export default function Services() {
   const [dynamicListings, setDynamicListings] = useState([]);
+  const [isWishlistModalOpen, setIsWishlistModalOpen] = useState(false);
+  const [wishlistName, setWishlistName] = useState('');
+  const [selectedListingForWishlist, setSelectedListingForWishlist] = useState(null);
+  const [savedWishlistVersion, setSavedWishlistVersion] = useState(0);
+
+  useEffect(() => {
+    const handleWishlistUpdate = () => {
+      setSavedWishlistVersion(v => v + 1);
+    };
+    window.addEventListener('airbnb_wishlists_updated', handleWishlistUpdate);
+    return () => window.removeEventListener('airbnb_wishlists_updated', handleWishlistUpdate);
+  }, []);
+
+  const handleHeartClick = (e, listing, category) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const alreadySaved = isItemInAnyWishlist(listing.id, listing.title, category);
+
+    if (alreadySaved) {
+      // Remove from wishlist directly
+      removeItemFromWishlists(listing.id, listing.title, category);
+      toast.success('Removed from wishlist');
+    } else {
+      // Open Create Wishlist modal with default suggestion matching the category
+      setSelectedListingForWishlist({ ...listing, category });
+      setWishlistName(category && category !== 'Featured Services' ? category : 'My Wishlist');
+      setIsWishlistModalOpen(true);
+    }
+  };
+
+  const closeWishlistModal = () => {
+    setIsWishlistModalOpen(false);
+    setSelectedListingForWishlist(null);
+    setWishlistName('');
+  };
+
+  const handleCreateWishlist = () => {
+    if (!wishlistName.trim()) return;
+
+    const initialItem = selectedListingForWishlist ? {
+      id: selectedListingForWishlist.id || `item-${Date.now()}`,
+      title: selectedListingForWishlist.title,
+      category: selectedListingForWishlist.category || 'Services',
+      host: selectedListingForWishlist.host || 'Airbnb Host',
+      image: selectedListingForWishlist.image,
+      price: selectedListingForWishlist.price
+    } : null;
+
+    addWishlist(wishlistName.trim(), initialItem);
+    toast.success(`Saved to "${wishlistName.trim()}"!`);
+    closeWishlistModal();
+  };
 
   useEffect(() => {
     const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
@@ -119,19 +174,61 @@ export default function Services() {
     }
   ];
 
-  // Merge dynamic backend listings with static demo rows
-  const dynamicServiceRow = dynamicListings.length > 0 ? {
-    category: "Featured Services & Experiences",
-    listings: dynamicListings.map(item => ({
-      title: item.title,
-      rating: item.rating ? Number(item.rating).toFixed(2) : "4.95",
-      subtitle: item.is_guest_favourite ? "Guest favourite" : (item.city || "Available now"),
-      price: `₹${Number(item.price).toLocaleString('en-IN')}`,
-      image: item.cover_img || photoImages[0]
-    }))
-  } : null;
+  // Format raw listing object for Splide slider card
+  const formatListingCard = (item) => ({
+    id: item.id,
+    title: item.title,
+    category: item.category || 'Services',
+    rating: item.rating ? Number(item.rating).toFixed(2) : "4.95",
+    subtitle: item.is_guest_favourite ? "Guest favourite" : (item.city || "Available now"),
+    price: `₹${Number(item.price).toLocaleString('en-IN')}`,
+    image: item.cover_img || (Array.isArray(item.photos) && item.photos[0]) || photoImages[0]
+  });
 
-  const displayRows = dynamicServiceRow ? [dynamicServiceRow, ...rowsData] : rowsData;
+  // Group dynamic services by category
+  const dynamicByCategory = {};
+  dynamicListings.forEach(item => {
+    // Determine category name
+    const rawCat = (item.category || '').trim();
+    const catName = rawCat && rawCat !== 'Services' && rawCat !== 'Service' ? rawCat : 'Featured Services';
+    if (!dynamicByCategory[catName]) {
+      dynamicByCategory[catName] = [];
+    }
+    dynamicByCategory[catName].push(formatListingCard(item));
+  });
+
+  // Map predefined static demo rows, augmenting with any matching dynamic services
+  const matchedCategories = new Set();
+  const enhancedStaticRows = rowsData.map((r, rIdx) => {
+    // Check if dynamic listings match this row's category
+    const matchingDynamic = dynamicByCategory[r.category] || [];
+    if (matchingDynamic.length > 0) {
+      matchedCategories.add(r.category);
+    }
+    return {
+      category: r.category,
+      listings: [
+        ...matchingDynamic,
+        ...r.listings.map((item, idx) => ({
+          ...item,
+          category: r.category,
+          // Give each demo card an independent unique ID so saving one does not affect others
+          id: `demo-${rIdx}-${idx}`
+        }))
+      ]
+    };
+  });
+
+  // Create rows for dynamic categories not present in static rows
+  const newDynamicRows = Object.keys(dynamicByCategory)
+    .filter(cat => !matchedCategories.has(cat))
+    .map(cat => ({
+      category: cat,
+      listings: dynamicByCategory[cat]
+    }));
+
+  // Put newly published dynamic category rows at the top so they are immediately visible
+  const displayRows = [...newDynamicRows, ...enhancedStaticRows];
 
   return (
     <div className={styles['home-container']}>
@@ -175,56 +272,132 @@ export default function Services() {
               </div>
 
               <SplideTrack>
-              {row.listings.map((listing, index) => (
-                <SplideSlide key={index}>
-                  <NavLink to={`/service/${index}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                    <div className={styles['listing-card']}>
-                      
-                      {/* Image Container with Badges */}
-                      <div className={styles['image-container']}>
-                        <img 
-                          src={listing.image} 
-                          alt={listing.title}
-                          className={styles['listing-image']}
-                        />
+              {row.listings.map((listing, index) => {
+                const isSaved = isItemInAnyWishlist(listing.id, listing.title, row.category);
+
+                return (
+                  <SplideSlide key={index}>
+                    <NavLink to={`/service/${listing.id || index}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                      <div className={styles['listing-card']}>
                         
-                        {/* Guest Favourite Pill */}
-                        {listing.subtitle && (
-                          <div className={styles['guest-favourite']}>
-                            {listing.subtitle}
+                        {/* Image Container with Badges */}
+                        <div className={styles['image-container']}>
+                          <img 
+                            src={listing.image} 
+                            alt={listing.title}
+                            className={styles['listing-image']}
+                          />
+                          
+                          {/* Guest Favourite Pill */}
+                          {listing.subtitle && (
+                            <div className={styles['guest-favourite']}>
+                              {listing.subtitle}
+                            </div>
+                          )}
+                          
+                          {/* Heart Button */}
+                          <button 
+                            type="button"
+                            className={styles['heart-btn']}
+                            onClick={(e) => handleHeartClick(e, listing, row.category)}
+                            title={isSaved ? "Remove from wishlist" : "Save to wishlist"}
+                          >
+                            <FaHeart 
+                              size={24} 
+                              className={`${styles['heart-icon']} ${isSaved ? styles['heart-icon-active'] : ''}`} 
+                            />
+                          </button>
+                        </div>
+                        
+                        {/* Listing Details */}
+                        <div className={styles['listing-info']}>
+                          <h3 className={styles['listing-title']}>
+                            {listing.title}
+                          </h3>
+                          <div className={styles['listing-details']}>
+                            <span className={styles.price}>{listing.price}</span> 
+                            <span className={styles.duration}>per service</span>
+                            <span className={styles['rating-container']}>
+                              <FaStar size={10} className={styles['star-icon']} />
+                              {listing.rating}
+                            </span>
                           </div>
-                        )}
+                        </div>
                         
-                        {/* Heart Button */}
-                        <div className={styles['heart-btn']}>
-                          <FaHeart size={24} className={styles['heart-icon']} />
-                        </div>
                       </div>
-                      
-                      {/* Listing Details */}
-                      <div className={styles['listing-info']}>
-                        <h3 className={styles['listing-title']}>
-                          {listing.title}
-                        </h3>
-                        <div className={styles['listing-details']}>
-                          <span className={styles.price}>{listing.price}</span> 
-                          <span className={styles.duration}>per service</span>
-                          <span className={styles['rating-container']}>
-                            <FaStar size={10} className={styles['star-icon']} />
-                            {listing.rating}
-                          </span>
-                        </div>
-                      </div>
-                      
-                    </div>
-                  </NavLink>
-                </SplideSlide>
-              ))}
+                    </NavLink>
+                  </SplideSlide>
+                );
+              })}
               </SplideTrack>
             </Splide>
           </div>
         ))}
       </main>
+
+      {/* Create Wishlist Modal */}
+      {isWishlistModalOpen && (
+        <div className={styles.wishlistModalOverlay} onClick={closeWishlistModal}>
+          <div className={styles.wishlistModalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.wishlistModalHeader}>
+              <h2 className={styles.wishlistModalTitle}>Create wishlist</h2>
+              <button 
+                type="button" 
+                className={styles.wishlistCloseBtn} 
+                onClick={closeWishlistModal}
+                aria-label="Close"
+              >
+                <FaTimes size={15} />
+              </button>
+            </div>
+
+            <div className={styles.wishlistModalBody}>
+              <div className={styles.wishlistInputWrapper}>
+                <div className={styles.wishlistLabel}>Name</div>
+                <input 
+                  type="text" 
+                  className={styles.wishlistInputField}
+                  value={wishlistName}
+                  onChange={(e) => {
+                    if (e.target.value.length <= 50) {
+                      setWishlistName(e.target.value);
+                    }
+                  }}
+                  autoFocus
+                  maxLength={50}
+                  placeholder="e.g. Summer Vacation, Jaipur Trips"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && wishlistName.trim()) {
+                      handleCreateWishlist();
+                    }
+                  }}
+                />
+              </div>
+              <div className={styles.wishlistCharCount}>
+                {wishlistName.length}/50 characters
+              </div>
+            </div>
+
+            <div className={styles.wishlistModalFooter}>
+              <button 
+                type="button" 
+                className={styles.wishlistCancelBtn} 
+                onClick={closeWishlistModal}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                className={styles.wishlistCreateBtn} 
+                disabled={!wishlistName.trim()}
+                onClick={handleCreateWishlist}
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

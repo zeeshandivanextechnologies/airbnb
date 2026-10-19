@@ -330,7 +330,8 @@
   height: 104px;
   border-radius: 50%;
   object-fit: cover;
-  margin-bottom: 16px;
+ margin: 10px auto;
+
 }
 
 .hostName {

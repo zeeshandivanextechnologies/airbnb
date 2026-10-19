@@ -11,6 +11,54 @@ import styles from '../../components/styles/ExperienceDetails.module.css';
 export default function ExperienceDetails() {
   const { id } = useParams();
 
+  // Dynamic backend experience data state
+  const [experienceData, setExperienceData] = useState(null);
+  const [loadingExperience, setLoadingExperience] = useState(true);
+
+  useEffect(() => {
+    const fetchExperience = async () => {
+      try {
+        setLoadingExperience(true);
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+        let targetId = id;
+        let fetched = null;
+
+        if (targetId) {
+          try {
+            const res = await fetch(`${baseUrl}/listings/${targetId}`);
+            const json = await res.json();
+            if (json.success && json.data) fetched = json.data;
+          } catch (e) {
+            console.warn('Failed to fetch specific experience by ID:', e);
+          }
+        }
+
+        // If not found or invalid id, fetch first active experience from backend
+        if (!fetched) {
+          try {
+            const res = await fetch(`${baseUrl}/listings?type=Experience&status=Active`);
+            const json = await res.json();
+            if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+              fetched = json.data[0];
+            }
+          } catch (e) {
+            console.warn('Failed to fetch active fallback experience:', e);
+          }
+        }
+
+        if (fetched) {
+          setExperienceData(fetched);
+        }
+      } catch (err) {
+        console.error('Error in fetchExperience:', err);
+      } finally {
+        setLoadingExperience(false);
+      }
+    };
+
+    fetchExperience();
+  }, [id]);
+
   const [showPackageModal, setShowPackageModal] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
@@ -145,11 +193,40 @@ export default function ExperienceDetails() {
      { day: "Tuesday, 13 October", time: "9:00 am – 4:00 pm", price: 2000 }
   ];
 
+  // Derive dynamic properties from backend experienceData with fallbacks
+  const expTitle = experienceData?.title || "Hike/Trek/Nature Walk with sunrise views & Birding";
+  const expCity = experienceData?.city || "Jaipur";
+  const expCategory = experienceData?.category || "Outdoors";
+  const expHostName = experienceData?.host_name || "Harshit";
+  const expHostIntro = experienceData?.host_intro || experienceData?.description || "Professional Guide & Local Host";
+  const expDescription = experienceData?.description || "Hike through the local trails, finding breathtaking views, and rare experiences.";
+  const expPriceNum = Number(experienceData?.price) || 2000;
+  const expRatingNum = Number(experienceData?.rating) || 4.95;
+  const expReviewsCount = Number(experienceData?.reviews_count) || 46;
+  const expPhotos = Array.isArray(experienceData?.photos) && experienceData.photos.length > 0 
+    ? experienceData.photos 
+    : [
+        "https://picsum.photos/seed/hike1/600/800",
+        "https://picsum.photos/seed/hike2/600/800",
+        "https://picsum.photos/seed/hike3/600/800",
+        "https://picsum.photos/seed/hike4/600/800"
+      ];
+
+  const dynamicTimelinePackages = (Array.isArray(experienceData?.itinerary) && experienceData.itinerary.length > 0)
+    ? experienceData.itinerary.map((it, idx) => ({
+        id: idx + 1,
+        title: it.title || `Activity ${idx + 1}`,
+        img: it.photo || expPhotos[idx % expPhotos.length] || "https://picsum.photos/seed/pkg1/400/400",
+        desc: it.desc || "Experience activity led by host.",
+        meta: it.duration ? `${it.duration} mins` : "45 mins"
+      }))
+    : timelinePackages;
+
   const guests = adultCount;
   const setGuests = setAdultCount;
-  const selectedPkg = timelinePackages[clickedIndex] || timelinePackages[0];
+  const selectedPkg = dynamicTimelinePackages[clickedIndex] || dynamicTimelinePackages[0];
   const selectedTimePill = timeSlots[selectedSlot !== null ? selectedSlot : 0];
-  const minPrice = "₹" + (guests * 2000).toLocaleString();
+  const minPrice = "₹" + (guests * expPriceNum).toLocaleString();
 
   if (showConfirmPayPage) {
     return (
@@ -344,24 +421,24 @@ export default function ExperienceDetails() {
         <div className="col-lg-6 mb-4 mb-lg-0">
           <div className={styles['photo-grid-2x2']}>
             <img 
-              src="https://picsum.photos/seed/hike1/600/800" 
-              alt="Hike sunrise" 
+              src={expPhotos[0] || "https://picsum.photos/seed/hike1/600/800"} 
+              alt="Experience main photo" 
               className={`${styles['grid-img']} ${styles['grid-img-1']}`} 
             />
             <img 
-              src="https://picsum.photos/seed/hike2/600/800" 
-              alt="Fort view" 
+              src={expPhotos[1] || expPhotos[0] || "https://picsum.photos/seed/hike2/600/800"} 
+              alt="Experience photo 2" 
               className={`${styles['grid-img']} ${styles['grid-img-2']}`} 
             />
             <img 
-              src="https://picsum.photos/seed/hike3/600/800" 
-              alt="Fort sunset" 
+              src={expPhotos[2] || expPhotos[0] || "https://picsum.photos/seed/hike3/600/800"} 
+              alt="Experience photo 3" 
               className={`${styles['grid-img']} ${styles['grid-img-3']}`} 
             />
             <div className={`${styles['grid-img-wrapper']} ${styles['grid-img-4']}`}>
               <img 
-                src="https://picsum.photos/seed/hike4/600/800" 
-                alt="Nature walk" 
+                src={expPhotos[3] || expPhotos[0] || "https://picsum.photos/seed/hike4/600/800"} 
+                alt="Experience photo 4" 
                 className={`${styles['grid-img']} ${styles['grid-img-4']}`} 
               />
               <div className={styles['show-all-photos-btn']}>
@@ -375,24 +452,24 @@ export default function ExperienceDetails() {
         <div className="col-lg-6 d-flex flex-column align-items-center justify-content-center pt-lg-5">
           <div className={styles['details-wrapper']}>
             
-            <h1 className="fw-bold text-center mb-3" style={{ fontSize: '32px', lineHeight: '1.1' }}>
-              Hike/Trek/Nature Walk<br />with sunrise views & Birding
+            <h1 className="fw-bold text-center mb-3" style={{ fontSize: '32px', lineHeight: '1.2' }}>
+              {expTitle}
             </h1>
             
             <p className="text-center text-muted mb-4" style={{ fontSize: '15px' }}>
-              Hike through the Aravali ranges, finding breathtaking<br />views, and rare wildlife.
+              {expDescription}
             </p>
             
             <div className="d-flex justify-content-center align-items-center gap-1 mb-1" style={{ fontSize: '13px', fontWeight: '600' }}>
-              <FaStar size={12} /> 4.91
+              <FaStar size={12} /> {expRatingNum.toFixed(2)}
               <span className="mx-1">·</span>
-              <span className="text-decoration-underline">46 ratings</span>
+              <span className="text-decoration-underline">{expReviewsCount} ratings</span>
             </div>
             
             <div className="d-flex justify-content-center gap-1 mb-4 text-muted" style={{ fontSize: '13px' }}>
-              <span>Jaipur</span>
+              <span>{expCity}</span>
               <span className="mx-1">·</span>
-              <span>Outdoors</span>
+              <span>{expCategory}</span>
             </div>
             
             <div className="d-flex justify-content-center gap-4 mb-5">
@@ -403,10 +480,10 @@ export default function ExperienceDetails() {
             {/* List Items */}
             <div className="d-flex flex-column gap-4">
               <div className="d-flex align-items-center gap-3">
-                <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Host" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} />
+                <img src={experienceData?.host_avatar || "https://randomuser.me/api/portraits/men/32.jpg"} alt="Host" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} />
                 <div>
-                  <div className="fw-bold" style={{ fontSize: '15px' }}>Hosted by Harshit</div>
-                  <div className="text-muted" style={{ fontSize: '13px' }}>Professional Trek Leader</div>
+                  <div className="fw-bold" style={{ fontSize: '15px' }}>Hosted by {expHostName}</div>
+                  <div className="text-muted" style={{ fontSize: '13px' }}>{expHostIntro}</div>
                 </div>
               </div>
               
@@ -415,8 +492,8 @@ export default function ExperienceDetails() {
                   <FiMapPin size={20} />
                 </div>
                 <div>
-                  <div className="fw-bold" style={{ fontSize: '15px' }}>Jaipur</div>
-                  <div className="text-muted" style={{ fontSize: '13px' }}>Rajasthan</div>
+                  <div className="fw-bold" style={{ fontSize: '15px' }}>{expCity}</div>
+                  <div className="text-muted" style={{ fontSize: '13px' }}>India</div>
                 </div>
               </div>
               
@@ -425,7 +502,7 @@ export default function ExperienceDetails() {
                   <FaRegClock size={20} />
                 </div>
                 <div>
-                  <div className="fw-bold" style={{ fontSize: '15px' }}>Around 2 hrs experience</div>
+                  <div className="fw-bold" style={{ fontSize: '15px' }}>Experience Session</div>
                   <div className="text-muted" style={{ fontSize: '13px' }}>Hosted in English, Hindi</div>
                 </div>
               </div>
@@ -436,7 +513,11 @@ export default function ExperienceDetails() {
                 </div>
                 <div>
                   <div className="fw-bold" style={{ fontSize: '15px' }}>What's included</div>
-                  <div className="text-muted" style={{ fontSize: '13px' }}>Light bites</div>
+                  <div className="text-muted" style={{ fontSize: '13px' }}>
+                    {Array.isArray(experienceData?.amenities) && experienceData.amenities.length > 0
+                      ? experienceData.amenities.join(', ')
+                      : 'Equipment & Host guidance'}
+                  </div>
                 </div>
               </div>
             </div>
@@ -450,8 +531,8 @@ export default function ExperienceDetails() {
         <div className="col-lg-7 pe-lg-5">
           <h2 className="mb-4 fw-bold" style={{ fontSize: '22px' }}>What you'll do</h2>
           <div className={styles.packagesContainer}>
-            {timelinePackages.map((pkg, index) => (
-              <div key={pkg.id} className={styles.packageCard} onClick={() => openPackageModal(index)}>
+            {dynamicTimelinePackages.map((pkg, index) => (
+              <div key={pkg.id || index} className={styles.packageCard} onClick={() => openPackageModal(index)}>
                  <img src={pkg.img} alt={pkg.title} className={styles.packageImg} />
                  <div className={styles.packageDetails}>
                     <h4 className={styles.packageTitle}>{pkg.title}</h4>
@@ -537,12 +618,12 @@ export default function ExperienceDetails() {
              <div className="row mt-4">
                 <div className="col-md-5 mb-4 mb-md-0 d-flex flex-column align-items-center">
                    <div className={styles.hostCard}>
-                      <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Host" className={styles.hostCardImg} />
-                      <div className={styles.hostCardName}>Juber</div>
-                      <div className={styles.hostCardTagline}>Ride, Discover & Hear Jaipur's Tales.</div>
+                      <img src={experienceData?.host_avatar || "https://randomuser.me/api/portraits/men/32.jpg"} alt="Host" className={styles.hostCardImg} />
+                      <div className={styles.hostCardName}>{expHostName}</div>
+                      <div className={styles.hostCardTagline}>{expHostIntro}</div>
                    </div>
                    
-                   <button className={styles.messageHostBtn}>Message Juber</button>
+                   <button className={styles.messageHostBtn}>Message {expHostName}</button>
                    
                    <p className={styles.protectionText}>
                      To help protect your payment, always use Airbnb to send money and<br/>communicate with hosts.
@@ -551,9 +632,7 @@ export default function ExperienceDetails() {
                 
                 <div className="col-md-7 ps-md-4">
                    <div className={styles.hostBio}>
-                      Hello traveler! Salam I'm Juber<br />
-                      I love showing my clients the beauty of Jaipur city from a local's perspective. My tour is focused to make sure you have the best possible experience in Jaipur, and I customize each tour based on your interests and preferences.<br /><br />
-                      Whether you want to see the most popular Jaipur sites, learn about Mughal history, take Instagram-worthy pictures, eat or drink in some of the city's hidden gems, explore,shop to find local Jaipur treasures, or something else entirely, I am here and excited to host you around each experience!Thank you for considering Juber Tours! I hope to be able to show you beautiful Jaipur city soon
+                      {experienceData?.host_intro || experienceData?.description || "Hello traveler! I love showing my clients the beauty of our local culture and spots from an authentic perspective. I am excited to host you and make sure you have the best possible experience!"}
                    </div>
                 </div>
              </div>
@@ -567,7 +646,7 @@ export default function ExperienceDetails() {
             <div className="d-flex justify-content-between align-items-start mb-4">
               <div>
                 <div className={styles.bookingPrice}>
-                  From <span className="text-decoration-underline fw-bold">₹4,200</span> <span className="text-muted fw-normal" style={{fontSize:'14px'}}>/ guest</span>
+                  From <span className="text-decoration-underline fw-bold">₹{expPriceNum.toLocaleString('en-IN')}</span> <span className="text-muted fw-normal" style={{fontSize:'14px'}}>/ guest</span>
                 </div>
                 <div className={styles.bookingFreeCancel}>Free cancellation</div>
               </div>

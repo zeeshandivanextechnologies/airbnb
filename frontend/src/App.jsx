@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Layout from './components/Layout';
 import Home from './pages/guest/Home';
@@ -23,6 +23,7 @@ import Notification from './pages/guest/Notification';
 import Profile from './pages/guest/Profile';
 import EditMode from './pages/guest/EditMode';
 import Trips from './pages/guest/Trips';
+import BookingConfirmation from './pages/guest/BookingConfirmation';
 import Wishlists from './pages/guest/Wishlists';
 import WishlistDetail from './pages/guest/WishlistDetail';
 import AccountSettings from './pages/guest/AccountSettings';
@@ -31,6 +32,7 @@ import HostExperience from './pages/host/HostExperience';
 import HostToday from './pages/host/HostToday';
 import HostListings from './pages/host/HostListings';
 import HostListingEditor from './pages/host/HostListingEditor';
+import HostAllPhotos from './pages/host/HostAllPhotos';
 import HostMessage from './pages/host/HostMessage';
 import IntroToHost from './pages/host/IntroToHost';
 import { useLocation } from 'react-router-dom';
@@ -70,11 +72,11 @@ function App() {
             <Route path='/search/:location' element={<SearchResults />} />
             <Route path='/profile' element={<Profile />} /> 
             <Route path='/find-cost-host' element={<FindCostHost />} />   
-           
             <Route path='/become-host' element={<BecomeHost />} />   
             <Route path='/notification' element={<Notification />} />   
             <Route path='/edit-mode' element={<EditMode />} />   
             <Route path='/trips' element={<Trips />} />    
+            <Route path='/booking-confirmed/:code' element={<BookingConfirmation />} />    
             <Route path='/wishlists' element={<Wishlists />} />    
             <Route path='/wishlists/:id' element={<WishlistDetail />} />    
             <Route path='/account-settings' element={<AccountSettings />} />    
@@ -85,14 +87,22 @@ function App() {
           <Route path="step2" element={<HostStep2 />} />
           <Route path="step3" element={<HostStep3 />} />
 
-          <Route path="/hosting"  element={<HostLayout />}>
+          <Route path="/hosting" element={<HostLayout />}>
+            <Route index element={<Navigate to="/hosting/listings" replace />} />
             <Route path="today" element={<HostToday />} />
             <Route path="calendar" element={<HostCalendar />} />
             <Route path="listings" element={<HostListings />} />
             <Route path="listing-editor" element={<HostListingEditor />} />
+            <Route path="listing-editor/:id" element={<HostListingEditor />} />
+            <Route path="listing-editor/all-photos" element={<HostAllPhotos />} />
+            <Route path="listing-editor/:id/all-photos" element={<HostAllPhotos />} />
+            <Route path="all-photos" element={<HostAllPhotos />} />
+            <Route path="all-photos/:id" element={<HostAllPhotos />} />
             <Route path="messages" element={<HostMessage />} />
             <Route path="intro-to-host" element={<IntroToHost />} />
             <Route path='refer' element={<Refer />} />   
+            <Route path="profile" element={<Profile />} />
+            <Route path="edit-mode" element={<EditMode />} />
           </Route>
 
           <Route path="/hosting"  element={<HostLayoutSecond />}>

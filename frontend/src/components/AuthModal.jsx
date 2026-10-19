@@ -147,6 +147,18 @@ export default function AuthModal({ show, onClose }) {
   };
 
   const handleResetOtpChange = (index, value) => {
+    const cleanDigits = value.replace(/\D/g, "");
+    if (cleanDigits.length > 1) {
+      const updated = [...resetOtp];
+      for (let i = 0; i < cleanDigits.length && index + i < 6; i++) {
+        updated[index + i] = cleanDigits[i];
+      }
+      setResetOtp(updated);
+      const nextFocus = Math.min(index + cleanDigits.length, 5);
+      resetOtpRefs.current[nextFocus]?.focus();
+      return;
+    }
+
     if (value.length > 1) value = value.slice(-1);
     const updated = [...resetOtp];
     updated[index] = value;
@@ -154,6 +166,21 @@ export default function AuthModal({ show, onClose }) {
     if (value && index < 5 && resetOtpRefs.current[index + 1]) {
       resetOtpRefs.current[index + 1].focus();
     }
+  };
+
+  const handleResetOtpPaste = (e) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text").trim().replace(/\D/g, "").slice(0, 6);
+    if (!pastedData) return;
+
+    const updated = [...resetOtp];
+    for (let i = 0; i < pastedData.length; i++) {
+      updated[i] = pastedData[i];
+    }
+    setResetOtp(updated);
+
+    const focusIndex = Math.min(pastedData.length, 5);
+    resetOtpRefs.current[focusIndex]?.focus();
   };
 
   const handleResetOtpKeyDown = (index, e) => {
@@ -220,6 +247,19 @@ export default function AuthModal({ show, onClose }) {
   }, [show, dispatch]);
 
   const handleOtpChange = (index, value) => {
+    // If multiple characters are entered/pasted directly into the input
+    const cleanDigits = value.replace(/\D/g, "");
+    if (cleanDigits.length > 1) {
+      const newOtp = [...otp];
+      for (let i = 0; i < cleanDigits.length && index + i < 6; i++) {
+        newOtp[index + i] = cleanDigits[i];
+      }
+      setOtp(newOtp);
+      const nextFocus = Math.min(index + cleanDigits.length, 5);
+      otpRefs.current[nextFocus]?.focus();
+      return;
+    }
+
     if (value.length > 1) value = value.slice(-1);
     const newOtp = [...otp];
     newOtp[index] = value;
@@ -228,6 +268,21 @@ export default function AuthModal({ show, onClose }) {
     if (value !== "" && index < 5) {
       otpRefs.current[index + 1]?.focus();
     }
+  };
+
+  const handleOtpPaste = (e) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text").trim().replace(/\D/g, "").slice(0, 6);
+    if (!pastedData) return;
+
+    const newOtp = [...otp];
+    for (let i = 0; i < pastedData.length; i++) {
+      newOtp[i] = pastedData[i];
+    }
+    setOtp(newOtp);
+
+    const focusIndex = Math.min(pastedData.length, 5);
+    otpRefs.current[focusIndex]?.focus();
   };
 
   const handleOtpKeyDown = (index, e) => {
@@ -416,6 +471,7 @@ export default function AuthModal({ show, onClose }) {
                           value={digit}
                           onChange={(e) => handleOtpChange(i, e.target.value)}
                           onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                          onPaste={handleOtpPaste}
                           className={`text-center border-0 p-0 m-0 fw-bold ${styles.otpInput}`}
                           placeholder="-"
                           autoFocus={i === 0}
@@ -544,6 +600,7 @@ export default function AuthModal({ show, onClose }) {
                               value={digit}
                               onChange={(e) => handleResetOtpChange(i, e.target.value)}
                               onKeyDown={(e) => handleResetOtpKeyDown(i, e)}
+                              onPaste={handleResetOtpPaste}
                               className={`text-center border-0 p-0 m-0 fw-bold ${styles.otpInput}`}
                               placeholder="-"
                               autoFocus={i === 0}

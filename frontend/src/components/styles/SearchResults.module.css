@@ -8,14 +8,37 @@
 .imageContainer {
   position: relative;
   width: 100%;
+  aspect-ratio: 16 / 11;
   border-radius: 12px;
+  overflow: hidden;
+  background-color: #f7f7f7;
+}
+
+.imageContainer :global(.splide) {
+  width: 100%;
+  height: 100%;
+}
+
+.imageContainer :global(.splide__track) {
+  width: 100%;
+  height: 100%;
+}
+
+.imageContainer :global(.splide__list) {
+  height: 100%;
+}
+
+.imageContainer :global(.splide__slide) {
+  height: 100%;
   overflow: hidden;
 }
 
 .hotelImage {
   width: 100%;
   height: 100%;
+  aspect-ratio: 16 / 11;
   object-fit: cover;
+  display: block;
   transition: transform 0.3s ease;
 }
 
@@ -206,4 +229,591 @@
 .imageContainer :global(.splide__pagination__page.is-active) {
   background: white !important;
   transform: scale(1.2) !important;
+}
+
+/* -------------------------------------------------------------
+   Dynamic Leaflet Map with Airbnb Price Pins & Popups
+-------------------------------------------------------------- */
+.mapFrame {
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  background-color: #e5e3df;
+}
+
+@keyframes pulseLiveRing {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  70% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+/* Hide default leaflet popup wrapper styles for pure Airbnb card look */
+.mapContainer :global(.leaflet-popup-content-wrapper) {
+  padding: 0 !important;
+  background: transparent !important;
+  border-radius: 16px !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.mapContainer :global(.leaflet-popup-content) {
+  margin: 0 !important;
+  line-height: normal !important;
+  width: auto !important;
+}
+
+.mapContainer :global(.leaflet-popup-tip-container) {
+  display: none !important;
+}
+
+.mapContainer :global(.leaflet-container) {
+  font-family: inherit !important;
+}
+
+/* Floating Map Controls on top-right (Airbnb style) */
+.mapControlsOverlay {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mapControlBtn {
+  width: 40px;
+  height: 40px;
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #222;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mapControlBtn:hover {
+  background: #f7f7f7;
+  transform: scale(1.04);
+}
+
+.mapZoomGroup {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.mapZoomBtn {
+  width: 40px;
+  height: 40px;
+  background: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #222;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.mapZoomBtn:hover {
+  background: #f7f7f7;
+}
+
+.mapZoomDivider {
+  height: 1px;
+  background: #ebebeb;
+  width: 100%;
+}
+
+/* Airbnb Interactive Map Popup Card matching user image */
+.mapPopupCard {
+  width: 290px;
+  background: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+  cursor: pointer;
+  animation: popupFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+@keyframes popupFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.mapPopupImageWrap {
+  position: relative;
+  width: 100%;
+  height: 175px;
+  background: #f0f0f0;
+}
+
+.mapPopupImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mapPopupCloseBtn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #222;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  transition: transform 0.15s, background-color 0.15s;
+  z-index: 10;
+}
+
+.mapPopupCloseBtn:hover {
+  background: #ffffff;
+  transform: scale(1.08);
+}
+
+.mapPopupHeartBtn {
+  position: absolute;
+  top: 10px;
+  right: 44px;
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #222;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  transition: transform 0.15s;
+  z-index: 10;
+}
+
+.mapPopupHeartBtn:hover {
+  transform: scale(1.08);
+}
+
+.mapPopupNavBtn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.92);
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #222;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10;
+  opacity: 0;
+}
+
+.mapPopupCard:hover .mapPopupNavBtn {
+  opacity: 1;
+}
+
+.mapPopupNavBtn:hover {
+  background: #ffffff;
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.mapPopupNavPrev {
+  left: 10px;
+}
+
+.mapPopupNavNext {
+  right: 10px;
+}
+
+.mapPopupDots {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 5px;
+  z-index: 10;
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
+  backdrop-filter: blur(2px);
+}
+
+.mapPopupDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mapPopupDot:hover {
+  transform: scale(1.2);
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.mapPopupDotActive {
+  background: #ffffff;
+  transform: scale(1.25);
+}
+
+.mapPopupContent {
+  padding: 12px 14px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+}
+
+.mapPopupRowTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.mapPopupCity {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #222;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mapPopupRating {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #222;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.mapPopupTitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: #484848;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mapPopupDetails {
+  font-size: 12px;
+  color: #717171;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mapPopupPriceRow {
+  margin-top: 4px;
+  font-size: 13.5px;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.mapPopupPrice {
+  font-weight: 700;
+  color: #222;
+}
+
+.mapPopupDuration {
+  color: #717171;
+  font-size: 12px;
+}
+
+/* Wishlist Heart Active State */
+.heartBtnActive {
+  color: #ff385c !important;
+  -webkit-text-stroke: 0 !important;
+}
+
+.mapPopupHeartBtnActive {
+  color: #ff385c !important;
+}
+
+/* Wishlist Popup Modal - Exact Airbnb Design matching Services */
+.wishlistModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.wishlistModalContent {
+  background: #ffffff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+  animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.wishlistModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  position: relative;
+}
+
+.wishlistModalTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #222222;
+  margin: 0;
+  width: 100%;
+  text-align: center;
+}
+
+.wishlistCloseBtn {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  color: #222222;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease;
+}
+
+.wishlistCloseBtn:hover {
+  background-color: #f7f7f7;
+}
+
+.wishlistModalBody {
+  padding: 24px 24px 16px 24px;
+}
+
+.wishlistInputWrapper {
+  border: 1.5px solid #222222;
+  border-radius: 12px;
+  padding: 10px 14px;
+  transition: border-color 0.15s ease;
+  position: relative;
+}
+
+.wishlistLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #717171;
+  margin-bottom: 2px;
+}
+
+.wishlistInputField {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  font-weight: 500;
+  color: #222222;
+  background: transparent;
+  padding: 4px 0 2px;
+}
+
+.wishlistCharCount {
+  font-size: 12px;
+  color: #717171;
+  margin-top: 8px;
+  font-weight: 500;
+}
+
+.wishlistModalFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px 20px 24px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.wishlistCancelBtn {
+  background: transparent;
+  border: none;
+  font-size: 15px;
+  font-weight: 700;
+  color: #222222;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.wishlistCancelBtn:hover {
+  background: #f7f7f7;
+}
+
+.wishlistCreateBtn {
+  background-color: #222222;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.wishlistCreateBtn:hover:not(:disabled) {
+  background-color: #000000;
+  transform: translateY(-1px);
+}
+
+.wishlistCreateBtn:disabled {
+  background-color: #dddddd;
+  color: #888888;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* -------------------------------------------------------------
+   Airbnb Style Pagination for Search Results
+-------------------------------------------------------------- */
+.paginationContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 32px;
+  margin-bottom: 24px;
+  gap: 14px;
+}
+
+.paginationList {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.paginationBtn {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #222222;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.paginationBtn:hover:not(:disabled) {
+  background-color: #f7f7f7;
+  border-color: #dddddd;
+}
+
+.paginationBtnActive {
+  background-color: #222222 !important;
+  color: #ffffff !important;
+  border-color: #222222 !important;
+}
+
+.paginationArrowBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #dddddd;
+  background: #ffffff;
+  color: #222222;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.paginationArrowBtn:hover:not(:disabled) {
+  border-color: #222222;
+  background: #f7f7f7;
+  transform: scale(1.05);
+}
+
+.paginationArrowBtn:disabled {
+  border-color: #eeeeee;
+  color: #cccccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.paginationInfo {
+  font-size: 13.5px;
+  color: #717171;
+  font-weight: 500;
 }

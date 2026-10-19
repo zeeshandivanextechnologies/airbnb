@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FaStar, 
   FaCheck, 
@@ -17,97 +17,14 @@ import {
   FaArrowUp,
   FaFlag
 } from 'react-icons/fa';
+import toast from 'react-hot-toast';
 import styles from './styles/Reviews.module.css';
 
 export default function Reviews() {
-  const initialReviews = [
-    {
-      id: 'REV-501',
-      authorType: 'Guest', // 'Guest' | 'Host'
-      authorName: 'Sneha Patel',
-      authorRole: 'Guest',
-      recipientName: 'Ananya Roy',
-      recipientRole: 'Host',
-      stayTitle: 'Goan Beachfront Eco Cottage',
-      rating: 5,
-      comment: 'Incredible stay! The cottage was right on the beach, pristine clean, and Ananya was an exceptionally warm host. Highly recommended for couples!',
-      date: '10 Oct 2026',
-      status: 'Published', // 'Published' | 'Flagged' | 'Removed'
-      flagReason: ''
-    },
-    {
-      id: 'REV-502',
-      authorType: 'Host',
-      authorName: 'Vikram Rajput',
-      authorRole: 'Host',
-      recipientName: 'Rahul Verma',
-      recipientRole: 'Guest',
-      stayTitle: 'Sunset Hilltop Heritage Homestay',
-      rating: 5,
-      comment: 'Rahul and his family were fantastic guests. They respected house rules, kept the property clean, and communicated proactively.',
-      date: '08 Oct 2026',
-      status: 'Published',
-      flagReason: ''
-    },
-    {
-      id: 'REV-503',
-      authorType: 'Guest',
-      authorName: 'FakeUser992',
-      authorRole: 'Guest',
-      recipientName: 'Mohammad Alvi',
-      recipientRole: 'Host',
-      stayTitle: 'Creative Hair & Styling Studio Stay',
-      rating: 1,
-      comment: 'Worst place ever! Don’t go here, visit my website at discountdeals.biz to get free coupons! Total scam!',
-      date: '11 Oct 2026',
-      status: 'Flagged',
-      flagReason: 'Detected automated spam / promotional link violation.'
-    },
-    {
-      id: 'REV-504',
-      authorType: 'Guest',
-      authorName: 'Karan Malhotra',
-      authorRole: 'Guest',
-      recipientName: 'Priya Sharma',
-      recipientRole: 'Host',
-      stayTitle: 'Travel Sketching in Old Jaipur Courtyard',
-      rating: 5,
-      comment: 'Priya is an authentic artist and a patient teacher. The historical courtyard was breathtaking and sketching tea was delicious.',
-      date: '07 Oct 2026',
-      status: 'Published',
-      flagReason: ''
-    },
-    {
-      id: 'REV-505',
-      authorType: 'Host',
-      authorName: 'Devendra Joshi',
-      authorRole: 'Host',
-      recipientName: 'Rohan Mehra',
-      recipientRole: 'Guest',
-      stayTitle: 'Snow View Wooden Chalet',
-      rating: 2,
-      comment: 'Guest arrived late past midnight without informing and broke two dining glasses without acknowledging.',
-      date: '05 Oct 2026',
-      status: 'Published',
-      flagReason: ''
-    },
-    {
-      id: 'REV-506',
-      authorType: 'Guest',
-      authorName: 'Anonymous_User',
-      authorRole: 'Guest',
-      recipientName: 'Ananya Roy',
-      recipientRole: 'Host',
-      stayTitle: 'Goan Beachfront Eco Cottage',
-      rating: 1,
-      comment: 'Horrible abusive language used by host. She threatened us directly! (Unverified dispute allegation)',
-      date: '03 Oct 2026',
-      status: 'Removed',
-      flagReason: 'Removed by Moderator: Violates policy on defamatory unverified claims.'
-    }
-  ];
+  const baseUrl = 'http://localhost:5000/api';
 
-  const [reviews, setReviews] = useState(initialReviews);
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all'); // 'all' | 'guest' | 'host' | 'flagged' | 'removed'
   const [ratingFilter, setRatingFilter] = useState('all'); // 'all' | '5' | '4' | '1'
@@ -115,13 +32,58 @@ export default function Reviews() {
   // Selected Review for Modal Inspection
   const [inspectReview, setInspectReview] = useState(null);
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'Recent';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const fetchReviews = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${baseUrl}/listings/admin/all-reviews`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        const formatted = data.data.map(item => ({
+          ...item,
+          rating: Number(item.rating) || 5,
+          date: formatDate(item.date),
+          rawDate: item.date
+        }));
+        setReviews(formatted);
+      } else {
+        toast.error('Failed to load reviews');
+      }
+    } catch (err) {
+      console.error('Error fetching admin reviews:', err);
+      toast.error('Network error loading reviews');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReviews();
+  }, []);
+
   // Filtered Logic
   const filteredReviews = reviews.filter((r) => {
+    const authorName = (r.authorName || '').toLowerCase();
+    const recipientName = (r.recipientName || '').toLowerCase();
+    const stayTitle = (r.stayTitle || '').toLowerCase();
+    const comment = (r.comment || '').toLowerCase();
+    const query = searchTerm.toLowerCase();
+
     const matchesSearch = 
-      r.authorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.recipientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.stayTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.comment.toLowerCase().includes(searchTerm.toLowerCase());
+      authorName.includes(query) ||
+      recipientName.includes(query) ||
+      stayTitle.includes(query) ||
+      comment.includes(query);
 
     const matchesTab = 
       activeTab === 'all' ? true :
@@ -137,28 +99,71 @@ export default function Reviews() {
   });
 
   // Action Handlers
-  const handleApprovePublish = (id) => {
-    setReviews(reviews.map(r => r.id === id ? { ...r, status: 'Published', flagReason: '' } : r));
-    if (inspectReview && inspectReview.id === id) {
-      setInspectReview({ ...inspectReview, status: 'Published', flagReason: '' });
+  const handleApprovePublish = async (id) => {
+    try {
+      const res = await fetch(`${baseUrl}/listings/reviews/${id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Published', flagReason: '' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Review published successfully');
+        setReviews(prev => prev.map(r => r.id === id ? { ...r, status: 'Published', flagReason: '' } : r));
+        if (inspectReview && inspectReview.id === id) {
+          setInspectReview({ ...inspectReview, status: 'Published', flagReason: '' });
+        }
+      } else {
+        toast.error(data.message || 'Failed to update review status');
+      }
+    } catch (err) {
+      console.error('Error publishing review:', err);
+      toast.error('Failed to update review status');
     }
   };
 
-  const handleRemoveReview = (id, reason) => {
-    setReviews(reviews.map(r => r.id === id ? { 
-      ...r, 
-      status: 'Removed', 
-      flagReason: reason || 'Removed by Administrator for policy violation.' 
-    } : r));
-    if (inspectReview && inspectReview.id === id) {
-      setInspectReview({ ...inspectReview, status: 'Removed', flagReason: reason || 'Removed by Admin' });
+  const handleRemoveReview = async (id, reason) => {
+    const flagReason = reason || 'Removed by Administrator for policy violation.';
+    try {
+      const res = await fetch(`${baseUrl}/listings/reviews/${id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Removed', flagReason })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Review removed from live site');
+        setReviews(prev => prev.map(r => r.id === id ? { ...r, status: 'Removed', flagReason } : r));
+        if (inspectReview && inspectReview.id === id) {
+          setInspectReview({ ...inspectReview, status: 'Removed', flagReason });
+        }
+      } else {
+        toast.error(data.message || 'Failed to remove review');
+      }
+    } catch (err) {
+      console.error('Error removing review:', err);
+      toast.error('Failed to remove review');
     }
   };
 
-  const handleDeletePermanently = (id) => {
+  const handleDeletePermanently = async (id) => {
     if (window.confirm('Delete this review record permanently?')) {
-      setReviews(reviews.filter(r => r.id !== id));
-      if (inspectReview && inspectReview.id === id) setInspectReview(null);
+      try {
+        const res = await fetch(`${baseUrl}/listings/reviews/${id}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (data.success) {
+          toast.success('Review permanently deleted');
+          setReviews(prev => prev.filter(r => r.id !== id));
+          if (inspectReview && inspectReview.id === id) setInspectReview(null);
+        } else {
+          toast.error(data.message || 'Failed to delete review');
+        }
+      } catch (err) {
+        console.error('Error deleting review:', err);
+        toast.error('Failed to delete review');
+      }
     }
   };
 
@@ -341,7 +346,14 @@ export default function Reviews() {
               </tr>
             </thead>
             <tbody>
-              {filteredReviews.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                    <div className="spinner-border text-danger spinner-border-sm me-2" role="status"></div>
+                    Loading reviews from database...
+                  </td>
+                </tr>
+              ) : filteredReviews.length === 0 ? (
                 <tr>
                   <td colSpan="8" style={{ textAlign: 'center', padding: '36px', color: '#9ca3af' }}>
                     No reviews found matching the selected search or filter criteria.

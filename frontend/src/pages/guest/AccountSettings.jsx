@@ -57,6 +57,36 @@ function AccountSettings() {
   );
   const [isSavingLanguage, setIsSavingLanguage] = useState(false);
 
+  // Helper to format addresses (handles raw JSON strings, objects, or plain text)
+  const formatAddressHelper = (addr) => {
+    if (!addr) return '';
+    if (typeof addr === 'object' && addr !== null) {
+      const parts = [
+        addr.flat ? `Flat ${addr.flat}` : '',
+        addr.street || '',
+        addr.landmark || '',
+        addr.city || addr.district || '',
+        addr.state || '',
+        addr.pin || addr.zip || '',
+        addr.country || ''
+      ].filter(Boolean);
+      return parts.join(', ');
+    }
+    if (typeof addr === 'string') {
+      const trimmed = addr.trim();
+      if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          return formatAddressHelper(parsed);
+        } catch (e) {
+          return trimmed;
+        }
+      }
+      return trimmed;
+    }
+    return String(addr);
+  };
+
   // Dynamic Profile state from Backend PostgreSQL
   const [profileUser, setProfileUser] = useState({
     id: null,
@@ -247,8 +277,8 @@ function AccountSettings() {
       email: profileUser.email || '',
       phone: profileUser.phone || '',
       identityVerificationStatus: profileUser.identityVerificationStatus || 'Not started',
-      residentialAddress: profileUser.residentialAddress || '',
-      postalAddress: profileUser.postalAddress || '',
+      residentialAddress: formatAddressHelper(profileUser.residentialAddress) || '',
+      postalAddress: formatAddressHelper(profileUser.postalAddress) || '',
       emergencyContactName: profileUser.emergencyContactName || '',
       emergencyContactRelationship: profileUser.emergencyContactRelationship || '',
       emergencyContactLanguage: profileUser.emergencyContactLanguage || 'English',
@@ -679,14 +709,14 @@ function AccountSettings() {
     { 
       id: 7, 
       title: 'Residential address', 
-      desc: profileUser.residentialAddress || 'Not provided', 
-      action: profileUser.residentialAddress ? 'Edit' : 'Add' 
+      desc: formatAddressHelper(profileUser.residentialAddress) || 'Not provided', 
+      action: formatAddressHelper(profileUser.residentialAddress) ? 'Edit' : 'Add' 
     },
     { 
       id: 8, 
       title: 'Postal address', 
-      desc: profileUser.postalAddress || 'Not provided', 
-      action: profileUser.postalAddress ? 'Edit' : 'Add' 
+      desc: formatAddressHelper(profileUser.postalAddress) || 'Not provided', 
+      action: formatAddressHelper(profileUser.postalAddress) ? 'Edit' : 'Add' 
     },
     { 
       id: 9, 

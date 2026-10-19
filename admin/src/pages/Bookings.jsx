@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FaCalendarCheck, 
   FaCalendarAlt, 
@@ -17,8 +17,11 @@ import {
   FaTimes, 
   FaShieldAlt,
   FaArrowUp,
-  FaGavel
+  FaGavel,
+  FaSync
 } from 'react-icons/fa';
+import toast from 'react-hot-toast';
+import { adminApiRequest } from '../services/api.js';
 import styles from './styles/Bookings.module.css';
 
 export default function Bookings() {
@@ -111,6 +114,7 @@ export default function Bookings() {
   ];
 
   const [bookings, setBookings] = useState(initialBookings);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all'); // 'all' | 'Upcoming' | 'Completed' | 'Cancelled' | 'Dispute'
   
@@ -122,6 +126,63 @@ export default function Bookings() {
 
   // Dispute resolution text state
   const [disputeSolution, setDisputeSolution] = useState('');
+
+  // Fetch real-time Razorpay bookings from Backend
+  const fetchBackendBookings = async () => {
+    try {
+      setLoading(true);
+      const res = await adminApiRequest('/payments/admin/bookings');
+      if (res && res.success && Array.isArray(res.bookings) && res.bookings.length > 0) {
+        const mapped = res.bookings.map(b => {
+          const amt = Number(b.total_amount) || 0;
+          const airbnbCommission = Math.round(amt * 0.2);
+          const hostNet = amt - airbnbCommission;
+          
+          let displayStatus = 'Upcoming';
+          const upperSt = (b.status || '').toUpperCase();
+          if (upperSt === 'CONFIRMED') displayStatus = 'Upcoming';
+          else if (upperSt === 'COMPLETED') displayStatus = 'Completed';
+          else if (upperSt === 'CANCELLED' || upperSt === 'REFUNDED') displayStatus = 'Cancelled';
+          else if (upperSt === 'DISPUTE') displayStatus = 'Dispute';
+          else displayStatus = 'Upcoming';
+
+          return {
+            id: b.booking_code || `BK-${b.id}`,
+            dbId: b.id,
+            stayTitle: b.listing_title || 'Experience Service',
+            host: b.host_name || 'Host Partner',
+            guestName: b.guest_name || 'Guest User',
+            guestEmail: b.guest_email || 'guest@example.com',
+            guestPhone: b.guest_phone || 'Registered Guest',
+            dates: b.booking_time ? `${new Date(b.check_in || Date.now()).toLocaleDateString('default', { day: 'numeric', month: 'short', year: 'numeric' })} at ${b.booking_time}` : new Date(b.check_in || Date.now()).toLocaleDateString(),
+            amount: amt,
+            airbnbFee: airbnbCommission,
+            hostPayout: hostNet,
+            status: displayStatus,
+            paymentStatus: b.razorpay_payment_id ? 'Paid (Razorpay)' : 'Pending',
+            refundStatus: upperSt === 'REFUNDED' ? `Full Refund Processed (₹${amt})` : 'None',
+            razorpayPaymentId: b.razorpay_payment_id || null,
+            razorpayOrderId: b.razorpay_order_id || null,
+            disputeReason: '',
+            disputeResolution: ''
+          };
+        });
+
+        // Combine live dynamic bookings with standard historical records without duplicates
+        const liveIds = new Set(mapped.map(m => m.id));
+        const filteredInit = initialBookings.filter(init => !liveIds.has(init.id));
+        setBookings([...mapped, ...filteredInit]);
+      }
+    } catch (err) {
+      console.warn('Could not fetch backend bookings:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBackendBookings();
+  }, []);
 
   // Filtered logic
   const filteredBookings = bookings.filter((b) => {
@@ -137,26 +198,59 @@ export default function Bookings() {
     return matchesSearch && matchesTab;
   });
 
-  // Handlers
-  const handleUpdateStatus = (id, newStatus) => {
-    setBookings(bookings.map(b => b.id === id ? { ...b, status: newStatus } : b));
-    setStatusBooking(null);
+  // Handlers with backend sync
+  const handleUpdateStatus = async (bookingItem, newStatus) => {
+    try {
+      if (bookingItem.dbId) {
+        let backendStatus = 'CONFIRMED';
+        if (newStatus === 'Completed') backendStatus = 'COMPLETED';
+        else if (newStatus === 'Cancelled') backendStatus = 'CANCELLED';
+        else if (newStatus === 'Upcoming') backendStatus = 'CONFIRMED';
+
+        await adminApiRequest(`/payments/admin/bookings/${bookingItem.dbId}/status`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: backendStatus })
+        });
+        toast.success(`Booking ${bookingItem.id} marked as ${newStatus}`);
+      } else {
+        toast.success(`Booking ${bookingItem.id} status updated to ${newStatus}`);
+      }
+
+      setBookings(bookings.map(b => b.id === bookingItem.id ? { ...b, status: newStatus } : b));
+      setStatusBooking(null);
+    } catch (e) {
+      toast.error('Failed to update status on server');
+    }
   };
 
-  const handleProcessRefund = (id, refundAmount, reason) => {
-    setBookings(bookings.map(b => {
-      if (b.id === id) {
-        return {
-          ...b,
-          status: 'Cancelled',
-          paymentStatus: 'Refunded',
-          refundStatus: `Refund Processed (₹${refundAmount})`,
-          disputeReason: reason || 'Cancelled with refund'
-        };
+  const handleProcessRefund = async (bookingItem, refundAmount, reason) => {
+    try {
+      if (bookingItem.dbId) {
+        await adminApiRequest(`/payments/admin/bookings/${bookingItem.dbId}/status`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'REFUNDED' })
+        });
+        toast.success(`Refund of ₹${refundAmount} recorded for ${bookingItem.id}`);
+      } else {
+        toast.success(`Refund of ₹${refundAmount} recorded`);
       }
-      return b;
-    }));
-    setRefundBooking(null);
+
+      setBookings(bookings.map(b => {
+        if (b.id === bookingItem.id) {
+          return {
+            ...b,
+            status: 'Cancelled',
+            paymentStatus: 'Refunded',
+            refundStatus: `Refund Processed (₹${refundAmount})`,
+            disputeReason: reason || 'Cancelled with refund'
+          };
+        }
+        return b;
+      }));
+      setRefundBooking(null);
+    } catch (e) {
+      toast.error('Failed to update refund status');
+    }
   };
 
   const handleResolveDispute = (id, decision) => {
@@ -577,7 +671,7 @@ export default function Bookings() {
                       background: statusBooking.status === st ? '#fff1f2' : '#ffffff',
                       color: '#111111'
                     }}
-                    onClick={() => handleUpdateStatus(statusBooking.id, st)}
+                    onClick={() => handleUpdateStatus(statusBooking, st)}
                   >
                     <span style={{ fontWeight: '700' }}>{st}</span>
                     {statusBooking.status === st && <FaCheck color="#ff385c" />}
@@ -701,7 +795,7 @@ export default function Bookings() {
                 onClick={() => {
                   const amt = document.getElementById('refundAmtInput')?.value || refundBooking.amount;
                   const reason = document.getElementById('refundReasonInput')?.value || 'Guest Cancellation';
-                  handleProcessRefund(refundBooking.id, amt, reason);
+                  handleProcessRefund(refundBooking, amt, reason);
                 }}
               >
                 Confirm Refund & Cancel

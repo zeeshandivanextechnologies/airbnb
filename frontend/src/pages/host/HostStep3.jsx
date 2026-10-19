@@ -1,18 +1,312 @@
-import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { FaAirbnb, FaRegCalendarCheck, FaBolt, FaMapMarkerAlt, FaPencilAlt, FaChevronDown, FaChevronUp, FaQuestionCircle, FaCheck } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { NavLink, useNavigate, useSearchParams } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { FaAirbnb, FaRegCalendarCheck, FaBolt, FaMapMarkerAlt, FaPencilAlt, FaChevronDown, FaChevronUp, FaQuestionCircle, FaCheck, FaStar, FaHome } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
 import styles from '../../components/styles/HostStep1.module.css';
 
+const defaultBookingOptions = [
+  {
+    id: 'approve',
+    title: 'Approve your first 5 bookings',
+    badge: 'Recommended',
+    description: 'Start by reviewing reservation requests, then switch to Instant Book so guests can book automatically.',
+    icon: <FaRegCalendarCheck />
+  },
+  {
+    id: 'instant',
+    title: 'Use Instant Book',
+    badge: '',
+    description: 'Let guests book automatically.',
+    icon: <FaBolt />
+  }
+];
+
+const getBookingIcon = (iconName) => {
+  switch (iconName?.toLowerCase()) {
+    case 'calendar':
+    case 'regcalendarcheck':
+    case 'approve':
+      return <FaRegCalendarCheck />;
+    case 'bolt':
+    case 'instant':
+      return <FaBolt />;
+    case 'star':
+      return <FaStar />;
+    case 'home':
+      return <FaHome />;
+    default:
+      return <FaRegCalendarCheck />;
+  }
+};
+
 export default function HostStep3() {
   const navigate = useNavigate();
-  const [step, setStep] = useState(1);
+  const [searchParams] = useSearchParams();
+  const { user } = useSelector((state) => state.auth);
+  const [step, setStep] = useState(() => {
+    const qStep = parseInt(searchParams.get('step'), 10);
+    if (!isNaN(qStep) && qStep >= 1 && qStep <= 6) return qStep;
+    try {
+      const stored = localStorage.getItem('host_step3_data');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.lastStep) return parsed.lastStep;
+      }
+    } catch (e) {}
+    return 1;
+  });
+
+  // Sync step if URL search parameter changes
+  useEffect(() => {
+    const qStep = parseInt(searchParams.get('step'), 10);
+    if (!isNaN(qStep) && qStep >= 1 && qStep <= 6) {
+      setStep(qStep);
+    }
+  }, [searchParams]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingSetting, setBookingSetting] = useState('approve');
+
+  // Dynamic Backend State for Step 2 Booking Settings
+  const [bookingOptionsList, setBookingOptionsList] = useState([]);
+  const [step2BookingSettings, setStep2BookingSettings] = useState({
+    title: 'Pick your booking settings',
+    subtitle: 'You can change this at any time.',
+    learnMoreLink: '#'
+  });
+
+  // Dynamic Backend State for Step 3 Pricing Settings
+  const [step3PricingSettings, setStep3PricingSettings] = useState({
+    title: 'Now, set your prices',
+    subtitle: 'These suggestions are based on guest demand for similar listings.',
+    basePrice: '',
+    suggestedPrice: 2028,
+    weekendAdjustment: 6,
+    learnMoreLink: '#'
+  });
+
+  // Dynamic Backend State for Step 3 Modals (Map / Compare similar listings modal)
+  const [step3ModalsSettings, setStep3ModalsSettings] = useState({
+    mapTitle: 'Compare similar listings',
+    mapSubtitle: 'Entire home/flat · 1 bedroom',
+    mapDates: '1 Oct 2025 - 1 Oct 2026',
+    mapDesc: 'Most listings with reservations during these dates were an average of ₹962 - ₹3,864 per night.',
+    learnMoreLink: '#'
+  });
+
+  // Dynamic Backend State for Step 4 Discounts Settings & List
+  const [discountsList, setDiscountsList] = useState([]);
+  const [step4DiscountsSettings, setStep4DiscountsSettings] = useState({
+    title: 'Add discounts',
+    subtitle: 'Help your place stand out to get booked faster and earn your first reviews.',
+    footerNote: 'Only one discount will be applied per stay.',
+    learnMoreLink: '#'
+  });
+
+  // Dynamic Backend State for Step 5 Safety Settings & Master Safety Items
+  const [safetyItemsList, setSafetyItemsList] = useState([]);
+  const [step5SafetySettings, setStep5SafetySettings] = useState({
+    title: 'Share safety details',
+    subtitle: 'Does your place have any of these?',
+    toggleLabel: 'Important things to know',
+    toggleSubtitle: "Security cameras that monitor indoor spaces are not allowed even if they're turned off. All exterior security cameras must be disclosed.",
+    learnMoreLink: '#'
+  });
+
+  // Dynamic Backend State for Step 5 Camera Details Modal
+  const [step5CameraModalSettings, setStep5CameraModalSettings] = useState({
+    title: 'Tell guests about your exterior security cameras',
+    subtitle: 'Describe the area that each camera monitors, such as the back garden or pool.',
+    maxChars: 300,
+    learnMoreLink: '#'
+  });
+
+  // Dynamic Backend State for Step 6 Legal & Address Final Details Settings
+  const [step6LegalSettings, setStep6LegalSettings] = useState({
+    title: 'Provide a few final details',
+    subtitle: 'This is required to comply with financial regulations and helps us prevent fraud.',
+    addressHeading: "What's your residential address?",
+    addressSub: "Guests won't see this information.",
+    learnMoreLink: '#'
+  });
+
+  // Dynamic Backend State for Step 6 Business Modal Settings
+  const [step6BusinessModalSettings, setStep6BusinessModalSettings] = useState({
+    modalTitle: 'Hosting as a business',
+    modalDesc: 'Select "yes" if you\'re registered as a business with your government and have a business registration number or tax ID.',
+    sectionTitle: 'Are you hosting as a business?',
+    sectionSub: 'This means your business is most likely registered with your government.',
+    learnMoreLink: '#'
+  });
+
+  useEffect(() => {
+    const fetchStep3Data = async () => {
+      try {
+        // 1. Fetch dynamic booking options
+        const optRes = await fetch('http://localhost:5000/api/listings/master-booking-options');
+        const optData = await optRes.json();
+        if (optData.success && Array.isArray(optData.data) && optData.data.length > 0) {
+          setBookingOptionsList(optData.data);
+          // if current selection not valid, default to first option's key
+          if (!optData.data.some(o => o.key === bookingSetting)) {
+            setBookingSetting(optData.data[0].key);
+          }
+        }
+
+        // 2. Fetch Step 2 Settings
+        const setRes = await fetch('http://localhost:5000/api/listings/step-settings/step3_step2_booking');
+        const setData = await setRes.json();
+        if (setData.success && setData.data) {
+          setStep2BookingSettings({
+            title: setData.data.title || 'Pick your booking settings',
+            subtitle: setData.data.subtitle || 'You can change this at any time.',
+            learnMoreLink: setData.data.learn_more_link || '#'
+          });
+        }
+
+        // 3. Fetch Step 3 Pricing Settings
+        const priceSetRes = await fetch('http://localhost:5000/api/listings/step-settings/step3_step3_pricing');
+        const priceSetData = await priceSetRes.json();
+        if (priceSetData.success && priceSetData.data) {
+          const fetchedSuggested = parseInt(priceSetData.data.toggle_label, 10) || 2028;
+          const fetchedWeekend = parseInt(priceSetData.data.toggle_subtitle, 10) || 6;
+          setStep3PricingSettings({
+            title: priceSetData.data.title || 'Now, set your prices',
+            subtitle: priceSetData.data.subtitle || 'These suggestions are based on guest demand for similar listings.',
+            basePrice: '',
+            suggestedPrice: fetchedSuggested,
+            weekendAdjustment: fetchedWeekend,
+            learnMoreLink: priceSetData.data.learn_more_link || '#'
+          });
+          setWeekendAdjustment(fetchedWeekend);
+        }
+
+        // 4. Fetch Step 3 Pricing Modals Settings
+        const modalsSetRes = await fetch('http://localhost:5000/api/listings/step-settings/step3_modals_pricing');
+        const modalsSetData = await modalsSetRes.json();
+        if (modalsSetData.success && modalsSetData.data) {
+          setStep3ModalsSettings({
+            mapTitle: modalsSetData.data.title || 'Compare similar listings',
+            mapDesc: modalsSetData.data.subtitle || 'Most listings with reservations during these dates were an average of ₹962 - ₹3,864 per night.',
+            mapSubtitle: modalsSetData.data.toggle_label || 'Entire home/flat · 1 bedroom',
+            mapDates: modalsSetData.data.toggle_subtitle || '1 Oct 2025 - 1 Oct 2026',
+            learnMoreLink: modalsSetData.data.learn_more_link || '#'
+          });
+        }
+
+        // 5. Fetch Step 4 Discounts Master Data & Settings
+        const discRes = await fetch('http://localhost:5000/api/listings/master-discounts');
+        const discData = await discRes.json();
+        if (discData.success && Array.isArray(discData.data) && discData.data.length > 0) {
+          setDiscountsList(discData.data);
+          // populate default percentage values
+          setDiscountValues(prev => {
+            const updated = { ...prev };
+            discData.data.forEach(d => {
+              if (d.discount_percentage > 0 && (updated[d.key] === undefined || updated[d.key] === 0)) {
+                updated[d.key] = d.discount_percentage;
+              }
+            });
+            return updated;
+          });
+        }
+
+        const discSetRes = await fetch('http://localhost:5000/api/listings/step-settings/step3_step4_discounts');
+        const discSetData = await discSetRes.json();
+        if (discSetData.success && discSetData.data) {
+          setStep4DiscountsSettings({
+            title: discSetData.data.title || 'Add discounts',
+            subtitle: discSetData.data.subtitle || 'Help your place stand out to get booked faster and earn your first reviews.',
+            footerNote: discSetData.data.toggle_label || 'Only one discount will be applied per stay.',
+            learnMoreLink: discSetData.data.learn_more_link || '#'
+          });
+        }
+
+        // 6. Fetch Step 5 Safety Master Items & Settings
+        const safetyRes = await fetch('http://localhost:5000/api/listings/master-safety-items');
+        const safetyData = await safetyRes.json();
+        if (safetyData.success && Array.isArray(safetyData.data) && safetyData.data.length > 0) {
+          setSafetyItemsList(safetyData.data);
+        }
+
+        const safetySetRes = await fetch('http://localhost:5000/api/listings/step-settings/step3_step5_safety');
+        const safetySetData = await safetySetRes.json();
+        if (safetySetData.success && safetySetData.data) {
+          setStep5SafetySettings({
+            title: safetySetData.data.title || 'Share safety details',
+            subtitle: safetySetData.data.subtitle || 'Does your place have any of these?',
+            toggleLabel: safetySetData.data.toggle_label || 'Important things to know',
+            toggleSubtitle: safetySetData.data.toggle_subtitle || "Security cameras that monitor indoor spaces are not allowed even if they're turned off. All exterior security cameras must be disclosed.",
+            learnMoreLink: safetySetData.data.learn_more_link || '#'
+          });
+        }
+
+        const cameraModalSetRes = await fetch('http://localhost:5000/api/listings/step-settings/step3_camera_modal');
+        const cameraModalSetData = await cameraModalSetRes.json();
+        if (cameraModalSetData.success && cameraModalSetData.data) {
+          setStep5CameraModalSettings({
+            title: cameraModalSetData.data.title || 'Tell guests about your exterior security cameras',
+            subtitle: cameraModalSetData.data.subtitle || 'Describe the area that each camera monitors, such as the back garden or pool.',
+            maxChars: parseInt(cameraModalSetData.data.toggle_label, 10) || 300,
+            learnMoreLink: cameraModalSetData.data.learn_more_link || '#'
+          });
+        }
+
+        // 7. Fetch Step 6 Legal & Address Final Details Settings
+        const legalSetRes = await fetch('http://localhost:5000/api/listings/step-settings/step3_step6_legal');
+        const legalSetData = await legalSetRes.json();
+        if (legalSetData.success && legalSetData.data) {
+          setStep6LegalSettings({
+            title: legalSetData.data.title || 'Provide a few final details',
+            subtitle: legalSetData.data.subtitle || 'This is required to comply with financial regulations and helps us prevent fraud.',
+            addressHeading: legalSetData.data.toggle_label || "What's your residential address?",
+            addressSub: legalSetData.data.toggle_subtitle || "Guests won't see this information.",
+            learnMoreLink: legalSetData.data.learn_more_link || '#'
+          });
+        }
+
+        // 8. Fetch Step 6 Business Modal Settings
+        const bizSetRes = await fetch('http://localhost:5000/api/listings/step-settings/step3_business_modal');
+        const bizSetData = await bizSetRes.json();
+        if (bizSetData.success && bizSetData.data) {
+          setStep6BusinessModalSettings({
+            modalTitle: bizSetData.data.title || 'Hosting as a business',
+            modalDesc: bizSetData.data.subtitle || 'Select "yes" if you\'re registered as a business with your government and have a business registration number or tax ID.',
+            sectionTitle: bizSetData.data.toggle_label || 'Are you hosting as a business?',
+            sectionSub: bizSetData.data.toggle_subtitle || 'This means your business is most likely registered with your government.',
+            learnMoreLink: bizSetData.data.learn_more_link || '#'
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch dynamic booking settings:', err);
+      }
+    };
+
+    fetchStep3Data();
+  }, []);
+
+  const defaultSafetyItems = [
+    { key: 'camera', label: 'Exterior security camera present', requires_details: true },
+    { key: 'noise', label: 'Noise decibel monitor present', requires_details: false },
+    { key: 'weapons', label: 'Weapon(s) on the property', requires_details: false }
+  ];
+
+  const safetyItems = safetyItemsList.length > 0 ? safetyItemsList : defaultSafetyItems;
+
+  const bookingOptions = bookingOptionsList.length > 0
+    ? bookingOptionsList.map(o => ({
+        id: o.key,
+        title: o.title,
+        badge: o.badge,
+        description: o.description,
+        icon: getBookingIcon(o.icon || o.key)
+      }))
+    : defaultBookingOptions;
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
   const [isWeekendModalOpen, setIsWeekendModalOpen] = useState(false);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [isBreakdownExpanded, setIsBreakdownExpanded] = useState(false);
-  const [basePrice, setBasePrice] = useState(2028);
+  const [basePrice, setBasePrice] = useState('');
   const [isEditingPrice, setIsEditingPrice] = useState(false);
   const [weekendAdjustment, setWeekendAdjustment] = useState(6);
   const [discounts, setDiscounts] = useState({
@@ -34,8 +328,26 @@ export default function HostStep3() {
   const [cameraDetails, setCameraDetails] = useState('');
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
   const [tempCameraText, setTempCameraText] = useState('');
-  const [addressDetails, setAddressDetails] = useState({
-    country: 'India', flat: '', street: '', landmark: '', district: '', city: '', state: '', pin: ''
+  const [addressDetails, setAddressDetails] = useState(() => {
+    try {
+      const stored = localStorage.getItem('host_address');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return {
+          country: parsed.country || 'India',
+          flat: parsed.flat || '',
+          street: parsed.street || '',
+          landmark: parsed.landmark || '',
+          district: parsed.district || '',
+          city: parsed.city || '',
+          state: parsed.state || '',
+          pin: parsed.pin || ''
+        };
+      }
+    } catch (e) {}
+    return {
+      country: 'India', flat: '', street: '', landmark: '', district: '', city: '', state: '', pin: ''
+    };
   });
   const [isBusiness, setIsBusiness] = useState(null);
   const [isBusinessModalOpen, setIsBusinessModalOpen] = useState(false);
@@ -56,18 +368,109 @@ export default function HostStep3() {
     }
   };
 
-  const serviceFee = Math.round(basePrice * 0.144);
-  const youEarn = basePrice - serviceFee;
-  const weekendPrice = Math.round(basePrice * (1 + weekendAdjustment / 100));
+  const numBasePrice = Number(basePrice) || 0;
+  const serviceFee = Math.round(numBasePrice * 0.144);
+  const youEarn = numBasePrice - serviceFee;
+  const weekendPrice = Math.round(numBasePrice * (1 + weekendAdjustment / 100));
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step === 1) setStep(2);
     else if (step === 2) setStep(3);
     else if (step === 3) setStep(4);
     else if (step === 4) setStep(5);
     else if (step === 5) setStep(6);
     else if (step === 6) {
-      navigate('/');
+      if (isSubmitting) return;
+      setIsSubmitting(true);
+      try {
+        let step1Data = {};
+        try {
+          const s1 = localStorage.getItem('host_step1_data');
+          if (s1) step1Data = JSON.parse(s1);
+        } catch (e) {}
+
+        let step2Data = {};
+        try {
+          const s2 = localStorage.getItem('host_step2_data');
+          if (s2) step2Data = JSON.parse(s2);
+        } catch (e) {}
+
+        // Determine current host id & name
+        let currentUserId = user?.id;
+        let currentUserEmail = user?.email || null;
+
+        if (!currentUserId || !currentUserEmail) {
+          try {
+            const storedAuth = localStorage.getItem('airbnb_user_auth');
+            if (storedAuth) {
+              const parsed = JSON.parse(storedAuth);
+              currentUserId = parsed?.user?.id || currentUserId;
+              currentUserEmail = parsed?.user?.email || currentUserEmail;
+              currentUserName = parsed?.user?.name || parsed?.user?.first_name || currentUserName;
+              currentUserPhone = parsed?.user?.phone || currentUserPhone;
+            }
+          } catch (e) {}
+        }
+
+        const fallbackCover = 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80';
+        const coverImg = step2Data.cover_img || (Array.isArray(step2Data.photos) && step2Data.photos[0]) || fallbackCover;
+        const photosList = Array.isArray(step2Data.photos) && step2Data.photos.length > 0 ? step2Data.photos : [coverImg];
+
+        const payload = {
+          title: step2Data.title || 'Entire Place hosted by ' + currentUserName,
+          type: step1Data.placeType || 'Entire place',
+          category: step1Data.selectedType || 'Home',
+          host_name: currentUserName,
+          host_email: currentUserEmail,
+          host_phone: currentUserPhone,
+          city: addressDetails.city ? `${addressDetails.city}, ${addressDetails.state}` : (step1Data.address?.city || 'Jaipur, Rajasthan'),
+          price: numBasePrice || 2028,
+          cover_img: coverImg,
+          amenities: Array.isArray(step2Data.amenities) ? step2Data.amenities : [],
+          description: step2Data.description || 'Comfortable and stylish accommodation.',
+          photos: photosList,
+          itinerary: [],
+          discounts: {
+            ...discounts,
+            values: discountValues
+          },
+          host_id: currentUserId || null,
+          max_guests: step1Data.guests || 4,
+          years_experience: 1,
+          host_intro: '',
+          host_qualifications: '',
+          host_recognition: '',
+          online_profiles: [],
+          residential_address: addressDetails,
+          hosting_as_business: isBusiness || 'no',
+          review_requirements_agreed: true
+        };
+
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+        const response = await fetch(`${baseUrl}/listings`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          // Clear cached listing flow steps
+          localStorage.removeItem('host_step1_data');
+          localStorage.removeItem('host_step2_data');
+          // Navigate to host's listings dashboard so they immediately see their new listing!
+          navigate('/hosting/listings');
+        } else {
+          alert(result.message || 'Failed to create listing. Please try again.');
+        }
+      } catch (err) {
+        console.error('Error creating listing:', err);
+        alert('Server error while creating listing.');
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -80,6 +483,77 @@ export default function HostStep3() {
     else if (step === 1) navigate('/step2');
   };
 
+  const handleSaveAndExit = async () => {
+    try {
+      let currentUserId = user?.id;
+      let currentUserName = user?.name || user?.first_name || 'Airbnb Host';
+      let currentUserEmail = user?.email || null;
+
+      if (!currentUserId || !currentUserEmail) {
+        try {
+          const storedAuth = localStorage.getItem('airbnb_user_auth');
+          if (storedAuth) {
+            const parsed = JSON.parse(storedAuth);
+            currentUserId = parsed?.user?.id || currentUserId;
+            currentUserEmail = parsed?.user?.email || currentUserEmail;
+            currentUserName = parsed?.user?.name || parsed?.user?.first_name || currentUserName;
+          }
+        } catch (e) {}
+      }
+
+      let step1Data = {};
+      let step2Data = {};
+      try {
+        const s1 = localStorage.getItem('host_step1_data');
+        const s2 = localStorage.getItem('host_step2_data');
+        if (s1) step1Data = JSON.parse(s1);
+        if (s2) step2Data = JSON.parse(s2);
+      } catch (e) {}
+
+      const hostId = currentUserId || 4;
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+      const coverPhoto = step2Data.cover_img || (Array.isArray(step2Data.photos) && step2Data.photos[0]) || 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80';
+
+      const draftPayload = {
+        title: step2Data.title || (step1Data.selectedType ? `${step1Data.selectedType} hosted by ${currentUserName}` : 'Home in progress'),
+        type: step1Data.placeType === 'room' ? 'Room' : (step1Data.placeType === 'shared' ? 'Shared room' : 'Entire place'),
+        category: step1Data.selectedType || 'Home',
+        host_name: currentUserName,
+        host_email: currentUserEmail,
+        host_id: hostId,
+        city: addressDetails?.city ? `${addressDetails.city}, ${addressDetails.state}` : (step1Data.address?.city || 'Jaipur, Rajasthan'),
+        price: numBasePrice || 2028,
+        status: 'In progress',
+        cover_img: coverPhoto,
+        photos: Array.isArray(step2Data.photos) && step2Data.photos.length > 0 ? step2Data.photos : [coverPhoto],
+        amenities: Array.isArray(step2Data.amenities) ? step2Data.amenities : [],
+        description: step2Data.description || 'Listing creation in progress. Finish required steps to publish.',
+        residential_address: addressDetails || step1Data.address || {}
+      };
+
+      try {
+        localStorage.setItem('host_resume_route', `/step3?step=${step}`);
+      } catch (err) {}
+
+      const existingDraftId = localStorage.getItem('host_draft_listing_id');
+      const method = existingDraftId ? 'PUT' : 'POST';
+      const endpoint = existingDraftId ? `${baseUrl}/listings/${existingDraftId}` : `${baseUrl}/listings`;
+
+      const res = await fetch(endpoint, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(draftPayload)
+      });
+      const data = await res.json();
+      if (data.success && data.data?.id) {
+        localStorage.setItem('host_draft_listing_id', String(data.data.id));
+      }
+    } catch (e) {
+      console.warn('Save & exit draft warning in step3:', e);
+    }
+    navigate('/hosting/listings');
+  };
+
   return (
     <div className={styles.pageContainer}>
       {/* Header */}
@@ -88,8 +562,14 @@ export default function HostStep3() {
           <FaAirbnb size={32} color="#222222" />
         </NavLink>
         <div className={styles.headerRight}>
-          <button className={styles.questionsBtn}>Questions?</button>
-          <button className={styles.saveExitBtn}>Save & exit</button>
+          <button className={styles.questionsBtn} type="button">Questions?</button>
+          <button 
+            className={styles.saveExitBtn} 
+            type="button"
+            onClick={handleSaveAndExit}
+          >
+            Save & exit
+          </button>
         </div>
       </header>
       
@@ -128,60 +608,102 @@ export default function HostStep3() {
           </div>
         ) : step === 2 ? (
           <div className={styles.titleContainer}>
-            <h1 className={styles.step2Title} style={{ marginBottom: '8px', textAlign: 'center' }}>Pick your booking settings</h1>
+            <h1 className={styles.step2Title} style={{ marginBottom: '8px', textAlign: 'center' }}>{step2BookingSettings.title}</h1>
             <p className={styles.mapSubtitle} style={{ textAlign: 'center', marginBottom: '32px' }}>
-              You can change this at any time. <a href="#" style={{ color: '#222', textDecoration: 'underline', fontWeight: 600 }}>Learn more</a>
+              {step2BookingSettings.subtitle} <a href={step2BookingSettings.learnMoreLink} style={{ color: '#222', textDecoration: 'underline', fontWeight: 600 }}>Learn more</a>
             </p>
             
             <div style={{ width: '100%' }}>
-              <div 
-                className={`${styles.bookingOptionCard} ${bookingSetting === 'approve' ? styles.bookingOptionCardSelected : ''}`}
-                onClick={() => setBookingSetting('approve')}
-              >
-                <div className={styles.bookingOptionText}>
-                  <div className={styles.bookingOptionTitle}>Approve your first 5 bookings</div>
-                  <div className={styles.bookingOptionRecommended}>Recommended</div>
-                  <div className={styles.bookingOptionDesc}>
-                    Start by reviewing reservation requests, then switch to Instant Book so guests can book automatically.
+              {bookingOptions.map((opt) => (
+                <div 
+                  key={opt.id}
+                  className={`${styles.bookingOptionCard} ${bookingSetting === opt.id ? styles.bookingOptionCardSelected : ''}`}
+                  onClick={() => setBookingSetting(opt.id)}
+                >
+                  <div className={styles.bookingOptionText}>
+                    <div className={styles.bookingOptionTitle}>{opt.title}</div>
+                    {opt.badge && <div className={styles.bookingOptionRecommended}>{opt.badge}</div>}
+                    <div className={styles.bookingOptionDesc}>
+                      {opt.description}
+                    </div>
                   </div>
+                  <div className={styles.bookingOptionIcon}>{opt.icon}</div>
                 </div>
-                <div className={styles.bookingOptionIcon}><FaRegCalendarCheck /></div>
-              </div>
-
-              <div 
-                className={`${styles.bookingOptionCard} ${bookingSetting === 'instant' ? styles.bookingOptionCardSelected : ''}`}
-                onClick={() => setBookingSetting('instant')}
-              >
-                <div className={styles.bookingOptionText}>
-                  <div className={styles.bookingOptionTitle}>Use Instant Book</div>
-                  <div className={styles.bookingOptionDesc}>
-                    Let guests book automatically.
-                  </div>
-                </div>
-                <div className={styles.bookingOptionIcon}><FaBolt /></div>
-              </div>
+              ))}
             </div>
           </div>
         ) : step === 3 ? (
           <div className={styles.titleContainer} style={{ alignItems: 'center' }}>
-            <h1 className={styles.step2Title} style={{ marginBottom: '8px', textAlign: 'center' }}>Now, set your prices</h1>
+            <h1 className={styles.step2Title} style={{ marginBottom: '8px', textAlign: 'center' }}>{step3PricingSettings.title}</h1>
             <p className={styles.mapSubtitle} style={{ textAlign: 'center', marginBottom: '32px' }}>
-              These suggestions are based on guest demand for similar listings. <a href="#" style={{ color: '#222', textDecoration: 'underline', fontWeight: 600 }}>Learn more</a>
+              {step3PricingSettings.subtitle} <a href={step3PricingSettings.learnMoreLink} style={{ color: '#222', textDecoration: 'underline', fontWeight: 600 }}>Learn more</a>
             </p>
             
             <div style={{ width: '100%', maxWidth: '600px' }}>
-              <div className={styles.priceCard} onClick={() => setIsPriceModalOpen(true)}>
-                <div className={styles.priceCardLabel}>Base price</div>
-                <div className={styles.priceCardValue}>
-                  ₹{basePrice.toLocaleString('en-IN')}
+              {/* Direct Editable Base Price Card */}
+              <div 
+                className={styles.priceCard} 
+                style={{ cursor: 'default' }}
+                onClick={(e) => {
+                  const input = document.getElementById('directBasePriceInput');
+                  if (input && e.target !== input) input.focus();
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <div className={styles.priceCardLabel} style={{ marginBottom: 0, fontWeight: 600 }}>Base price (per night)</div>
+                  <button 
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setIsPriceModalOpen(true); }}
+                    style={{ background: 'none', border: 'none', color: '#717171', fontSize: '13px', textDecoration: 'underline', cursor: 'pointer', padding: 0 }}
+                  >
+                    View breakdown
+                  </button>
+                </div>
+                <div className={styles.priceCardValue} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ fontSize: '38px', fontWeight: 800, color: '#222' }}>₹</span>
+                  <input 
+                    id="directBasePriceInput"
+                    type="number" 
+                    value={basePrice}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setBasePrice(val === '' ? '' : Math.max(0, parseInt(val, 10) || 0));
+                    }}
+                    placeholder=""
+                    style={{ 
+                      fontSize: '38px', 
+                      fontWeight: 800, 
+                      color: '#222', 
+                      border: 'none', 
+                      background: 'transparent', 
+                      outline: 'none', 
+                      width: '100%',
+                      padding: 0
+                    }}
+                  />
+                  <div 
+                    onClick={() => {
+                      const input = document.getElementById('directBasePriceInput');
+                      if (input) input.focus();
+                    }}
+                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '50%', border: '1px solid #e2e8f0', cursor: 'pointer', background: '#f8fafc', flexShrink: 0 }}
+                    title="Click to edit price"
+                  >
+                    <FaPencilAlt size={13} color="#475569" />
+                  </div>
+                </div>
+                <div style={{ fontSize: '13px', color: '#717171', marginTop: '10px', display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Guest price before taxes: <strong>₹{numBasePrice.toLocaleString('en-IN')}</strong></span>
+                  <span style={{ color: '#059669', fontWeight: 600 }}>You earn: ₹{youEarn.toLocaleString('en-IN')}</span>
                 </div>
               </div>
 
+              {/* Weekend Adjustment Card */}
               <div className={styles.priceCard} onClick={() => setIsWeekendModalOpen(true)}>
-                <div className={styles.priceCardLabel}>Weekend adjustment</div>
+                <div className={styles.priceCardLabel} style={{ fontWeight: 600 }}>Weekend adjustment</div>
                 <div className={styles.priceCardValue}>
-                  {weekendAdjustment > 0 ? '+' : ''}{weekendAdjustment}%
-                  <span className={styles.priceCardSub}>₹{weekendPrice.toLocaleString('en-IN')} for Fri and Sat</span>
+                  <span>{weekendAdjustment > 0 ? '+' : ''}{weekendAdjustment}%</span>
+                  <span className={styles.priceCardSub} style={{ fontSize: '13px' }}>₹{weekendPrice.toLocaleString('en-IN')} for Fri and Sat</span>
                 </div>
               </div>
 
@@ -194,144 +716,99 @@ export default function HostStep3() {
           </div>
         ) : step === 4 ? (
           <div className={styles.titleContainer} style={{ alignItems: 'center' }}>
-            <h1 className={styles.step2Title} style={{ marginBottom: '8px', textAlign: 'center' }}>Add discounts</h1>
+            <h1 className={styles.step2Title} style={{ marginBottom: '8px', textAlign: 'center' }}>{step4DiscountsSettings.title}</h1>
             <p className={styles.mapSubtitle} style={{ textAlign: 'center', marginBottom: '32px' }}>
-              Help your place stand out to get booked faster and earn your first reviews.
+              {step4DiscountsSettings.subtitle}
             </p>
             
             <div style={{ width: '100%', maxWidth: '650px' }}>
-              
-              {/* New Listing Promotion */}
-              <div className={`${styles.discountCard} ${discounts.newListing ? styles.discountCardSelected : ''}`} onClick={() => toggleDiscount('newListing')}>
-                <div className={styles.discountPrefix}>20%</div>
-                <div className={styles.discountContent}>
-                  <div className={styles.discountTitle}>New listing promotion</div>
-                  <div className={styles.discountDesc}>Offer 20% off your first 3 bookings</div>
+              {(discountsList.length > 0 ? discountsList : [
+                { key: 'newListing', title: 'New listing promotion', description: 'Offer 20% off your first 3 bookings', discount_percentage: 20, is_customizable: false },
+                { key: 'lastMinute', title: 'Last-minute discount', description: 'For stays booked 14 days or less before arrival', discount_percentage: 0, is_customizable: true },
+                { key: 'weekly', title: 'Weekly discount', description: 'For stays of 7 nights or more', discount_percentage: 0, is_customizable: true },
+                { key: 'monthly', title: 'Monthly discount', description: 'For stays of 28 nights or more', discount_percentage: 0, is_customizable: true }
+              ]).map((d) => (
+                <div 
+                  key={d.key} 
+                  className={`${styles.discountCard} ${discounts[d.key] ? styles.discountCardSelected : ''}`} 
+                  onClick={() => toggleDiscount(d.key)}
+                >
+                  {d.is_customizable ? (
+                    <input 
+                      type="text" 
+                      className={styles.discountPrefixInput} 
+                      value={discountValues[d.key] ? `${discountValues[d.key]}%` : '0%'} 
+                      onChange={(e) => setDiscountValues({ ...discountValues, [d.key]: parseInt(e.target.value.replace('%', ''), 10) || 0 })}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  ) : (
+                    <div className={styles.discountPrefix}>{d.discount_percentage}%</div>
+                  )}
+                  <div className={styles.discountContent}>
+                    <div className={styles.discountTitle}>{d.title}</div>
+                    <div className={styles.discountDesc}>{d.description}</div>
+                  </div>
+                  <div className={`${styles.discountCheckbox} ${discounts[d.key] ? styles.discountCheckboxChecked : ''}`}>
+                    {discounts[d.key] && <FaCheck size={12} />}
+                  </div>
                 </div>
-                <div className={`${styles.discountCheckbox} ${discounts.newListing ? styles.discountCheckboxChecked : ''}`}>
-                  {discounts.newListing && <FaCheck size={12} />}
-                </div>
-              </div>
-
-              {/* Last-minute */}
-              <div className={`${styles.discountCard} ${discounts.lastMinute ? styles.discountCardSelected : ''}`} onClick={() => toggleDiscount('lastMinute')}>
-                <input 
-                  type="text" 
-                  className={styles.discountPrefixInput} 
-                  value={discountValues.lastMinute ? `${discountValues.lastMinute}%` : '0%'} 
-                  onChange={(e) => setDiscountValues({...discountValues, lastMinute: parseInt(e.target.value.replace('%', '')) || 0})}
-                  onClick={(e) => e.stopPropagation()}
-                />
-                <div className={styles.discountContent}>
-                  <div className={styles.discountTitle}>Last-minute discount</div>
-                  <div className={styles.discountDesc}>For stays booked 14 days or less before arrival</div>
-                </div>
-                <div className={`${styles.discountCheckbox} ${discounts.lastMinute ? styles.discountCheckboxChecked : ''}`}>
-                  {discounts.lastMinute && <FaCheck size={12} />}
-                </div>
-              </div>
-
-              {/* Weekly */}
-              <div className={`${styles.discountCard} ${discounts.weekly ? styles.discountCardSelected : ''}`} onClick={() => toggleDiscount('weekly')}>
-                <input 
-                  type="text" 
-                  className={styles.discountPrefixInput} 
-                  value={discountValues.weekly ? `${discountValues.weekly}%` : '0%'} 
-                  onChange={(e) => setDiscountValues({...discountValues, weekly: parseInt(e.target.value.replace('%', '')) || 0})}
-                  onClick={(e) => e.stopPropagation()}
-                />
-                <div className={styles.discountContent}>
-                  <div className={styles.discountTitle}>Weekly discount</div>
-                  <div className={styles.discountDesc}>For stays of 7 nights or more</div>
-                </div>
-                <div className={`${styles.discountCheckbox} ${discounts.weekly ? styles.discountCheckboxChecked : ''}`}>
-                  {discounts.weekly && <FaCheck size={12} />}
-                </div>
-              </div>
-
-              {/* Monthly */}
-              <div className={`${styles.discountCard} ${discounts.monthly ? styles.discountCardSelected : ''}`} onClick={() => toggleDiscount('monthly')}>
-                <input 
-                  type="text" 
-                  className={styles.discountPrefixInput} 
-                  value={discountValues.monthly ? `${discountValues.monthly}%` : '0%'} 
-                  onChange={(e) => setDiscountValues({...discountValues, monthly: parseInt(e.target.value.replace('%', '')) || 0})}
-                  onClick={(e) => e.stopPropagation()}
-                />
-                <div className={styles.discountContent}>
-                  <div className={styles.discountTitle}>Monthly discount</div>
-                  <div className={styles.discountDesc}>For stays of 28 nights or more</div>
-                </div>
-                <div className={`${styles.discountCheckbox} ${discounts.monthly ? styles.discountCheckboxChecked : ''}`}>
-                  {discounts.monthly && <FaCheck size={12} />}
-                </div>
-              </div>
+              ))}
 
               <div style={{ textAlign: 'center', fontSize: '12px', color: '#717171', marginTop: '32px' }}>
-                Only one discount will be applied per stay. <a href="#" style={{ color: '#222', textDecoration: 'underline' }}>Learn more</a>
+                {step4DiscountsSettings.footerNote} <a href={step4DiscountsSettings.learnMoreLink} style={{ color: '#222', textDecoration: 'underline' }}>Learn more</a>
               </div>
             </div>
           </div>
         ) : step === 5 ? (
           <div className={styles.titleContainer} style={{ alignItems: 'flex-start' }}>
-            <h1 className={styles.step2Title} style={{ marginBottom: '32px', textAlign: 'left' }}>Share safety details</h1>
+            <h1 className={styles.step2Title} style={{ marginBottom: '32px', textAlign: 'left' }}>{step5SafetySettings.title}</h1>
             
             <div style={{ width: '100%', maxWidth: '650px', textAlign: 'left' }}>
               <div style={{ fontSize: '18px', color: '#222', marginBottom: '16px' }}>
-                Does your place have any of these? <FaQuestionCircle size={14} style={{ display: 'inline', color: '#717171' }} />
+                {step5SafetySettings.subtitle} <FaQuestionCircle size={14} style={{ display: 'inline', color: '#717171' }} />
               </div>
               
-              <div className={styles.safetyRow} onClick={() => toggleSafety('camera')}>
-                <div className={styles.safetyLabel}>Exterior security camera present</div>
-                <div className={`${styles.safetyCheckbox} ${safetyOptions.camera ? styles.safetyCheckboxChecked : ''}`}>
-                  {safetyOptions.camera && <FaCheck size={12} />}
-                </div>
-              </div>
-
-              {safetyOptions.camera && (
-                <div className={styles.cameraDetailsBox}>
-                  <div className={styles.cameraDetailsText}>
-                    "{cameraDetails}"
+              {safetyItems.map((item) => (
+                <React.Fragment key={item.key || item.id}>
+                  <div className={styles.safetyRow} onClick={() => toggleSafety(item.key)}>
+                    <div className={styles.safetyLabel}>{item.label}</div>
+                    <div className={`${styles.safetyCheckbox} ${safetyOptions[item.key] ? styles.safetyCheckboxChecked : ''}`}>
+                      {safetyOptions[item.key] && <FaCheck size={12} />}
+                    </div>
                   </div>
-                  <button className={styles.cameraDetailsEditBtn} onClick={(e) => { e.stopPropagation(); setTempCameraText(cameraDetails); setIsCameraModalOpen(true); }}>Edit</button>
-                </div>
-              )}
 
-              <div className={styles.safetyRow} onClick={() => toggleSafety('noise')}>
-                <div className={styles.safetyLabel}>Noise decibel monitor present</div>
-                <div className={`${styles.safetyCheckbox} ${safetyOptions.noise ? styles.safetyCheckboxChecked : ''}`}>
-                  {safetyOptions.noise && <FaCheck size={12} />}
-                </div>
-              </div>
-
-              <div className={styles.safetyRow} onClick={() => toggleSafety('weapons')}>
-                <div className={styles.safetyLabel}>Weapon(s) on the property</div>
-                <div className={`${styles.safetyCheckbox} ${safetyOptions.weapons ? styles.safetyCheckboxChecked : ''}`}>
-                  {safetyOptions.weapons && <FaCheck size={12} />}
-                </div>
-              </div>
+                  {item.key === 'camera' && safetyOptions.camera && (
+                    <div className={styles.cameraDetailsBox}>
+                      <div className={styles.cameraDetailsText}>
+                        "{cameraDetails}"
+                      </div>
+                      <button className={styles.cameraDetailsEditBtn} onClick={(e) => { e.stopPropagation(); setTempCameraText(cameraDetails); setIsCameraModalOpen(true); }}>Edit</button>
+                    </div>
+                  )}
+                </React.Fragment>
+              ))}
 
               <hr style={{ borderTop: '1px solid #ebebeb', margin: '32px 0' }} />
 
-              <div style={{ fontSize: '16px', fontWeight: 600, color: '#222', marginBottom: '16px' }}>Important things to know</div>
+              <div style={{ fontSize: '16px', fontWeight: 600, color: '#222', marginBottom: '16px' }}>{step5SafetySettings.toggleLabel}</div>
               <div style={{ fontSize: '14px', color: '#717171', lineHeight: 1.4, marginBottom: '16px' }}>
-                Security cameras that monitor indoor spaces are not allowed even if they're turned off. All exterior security cameras must be disclosed.
+                {step5SafetySettings.toggleSubtitle}
               </div>
               <div style={{ fontSize: '14px', color: '#717171', lineHeight: 1.4 }}>
-                Be sure to comply with your <a href="#" style={{ color: '#222', textDecoration: 'underline' }}>local laws</a> and review Airbnb's <a href="#" style={{ color: '#222', textDecoration: 'underline' }}>anti-discrimination policy</a> and <a href="#" style={{ color: '#222', textDecoration: 'underline' }}>guest and host fees</a>.
+                Be sure to comply with your <a href={step5SafetySettings.learnMoreLink} style={{ color: '#222', textDecoration: 'underline' }}>local laws</a> and review Airbnb's <a href={step5SafetySettings.learnMoreLink} style={{ color: '#222', textDecoration: 'underline' }}>anti-discrimination policy</a> and <a href={step5SafetySettings.learnMoreLink} style={{ color: '#222', textDecoration: 'underline' }}>guest and host fees</a>.
               </div>
             </div>
           </div>
         ) : step === 6 ? (
           <div className={styles.titleContainer} style={{ alignItems: 'flex-start' }}>
-            <h1 className={styles.step2Title} style={{ marginBottom: '8px', textAlign: 'left' }}>Provide a few final details</h1>
+            <h1 className={styles.step2Title} style={{ marginBottom: '8px', textAlign: 'left' }}>{step6LegalSettings.title}</h1>
             <p className={styles.mapSubtitle} style={{ textAlign: 'left', marginBottom: '32px' }}>
-              This is required to comply with financial regulations and helps us prevent fraud.
+              {step6LegalSettings.subtitle}
             </p>
             
             <div style={{ width: '100%', maxWidth: '650px', textAlign: 'left' }}>
-              <div style={{ fontSize: '18px', color: '#222', marginBottom: '4px', fontWeight: 600 }}>What's your residential address?</div>
-              <div style={{ fontSize: '14px', color: '#717171', marginBottom: '24px' }}>Guests won't see this information.</div>
+              <div style={{ fontSize: '18px', color: '#222', marginBottom: '4px', fontWeight: 600 }}>{step6LegalSettings.addressHeading}</div>
+              <div style={{ fontSize: '14px', color: '#717171', marginBottom: '24px' }}>{step6LegalSettings.addressSub}</div>
               
               <div className="border rounded-3 overflow-hidden mb-4">
                 <div className="form-floating border-bottom">
@@ -373,9 +850,9 @@ export default function HostStep3() {
 
               <hr style={{ borderTop: '1px solid #ebebeb', margin: '32px 0' }} />
 
-              <div style={{ fontSize: '18px', fontWeight: 600, color: '#222', marginBottom: '4px' }}>Are you hosting as a business?</div>
+              <div style={{ fontSize: '18px', fontWeight: 600, color: '#222', marginBottom: '4px' }}>{step6BusinessModalSettings.sectionTitle}</div>
               <div style={{ fontSize: '14px', color: '#717171', marginBottom: '16px' }}>
-                This means your business is most likely registered with your government. <a href="#" style={{ color: '#222', textDecoration: 'underline' }} onClick={(e) => { e.preventDefault(); setIsBusinessModalOpen(true); }}>Get details</a>
+                {step6BusinessModalSettings.sectionSub} <a href={step6BusinessModalSettings.learnMoreLink} style={{ color: '#222', textDecoration: 'underline' }} onClick={(e) => { e.preventDefault(); setIsBusinessModalOpen(true); }}>Get details</a>
               </div>
               
               <div className={styles.businessBtnGroup}>
@@ -413,11 +890,11 @@ export default function HostStep3() {
         <div className={styles.footerContent}>
           <button className={styles.backBtn} onClick={handleBack}>Back</button>
           <button 
-            className={`${styles.nextBtn} ${step === 6 && (!addressDetails.street || !addressDetails.city || !addressDetails.state || !addressDetails.pin || isBusiness === null) ? styles.disabledBtn : ''}`} 
+            className={`${styles.nextBtn} ${(isSubmitting || (step === 6 && (!addressDetails.street || !addressDetails.city || !addressDetails.state || !addressDetails.pin || isBusiness === null))) ? styles.disabledBtn : ''}`} 
             onClick={handleNext}
-            disabled={step === 6 && (!addressDetails.street || !addressDetails.city || !addressDetails.state || !addressDetails.pin || isBusiness === null)}
+            disabled={isSubmitting || (step === 6 && (!addressDetails.street || !addressDetails.city || !addressDetails.state || !addressDetails.pin || isBusiness === null))}
           >
-            {step === 6 ? 'Create listing' : 'Next'}
+            {step === 6 ? (isSubmitting ? 'Creating listing...' : 'Create listing') : 'Next'}
           </button>
         </div>
       </footer>
@@ -441,15 +918,19 @@ export default function HostStep3() {
                   <input 
                     type="number" 
                     value={basePrice}
-                    onChange={(e) => setBasePrice(Number(e.target.value) || 0)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setBasePrice(val === '' ? '' : Math.max(0, parseInt(val, 10) || 0));
+                    }}
+                    placeholder=""
                     onBlur={() => setIsEditingPrice(false)}
                     autoFocus
-                    style={{ fontSize: '48px', fontWeight: 800, color: '#222', border: 'none', background: 'transparent', width: `${String(basePrice).length + 1}ch`, outline: 'none', padding: 0 }}
+                    style={{ fontSize: '48px', fontWeight: 800, color: '#222', border: 'none', background: 'transparent', width: `${Math.max(2, String(basePrice).length + 1)}ch`, outline: 'none', padding: 0 }}
                   />
                 </div>
               ) : (
                 <>
-                  ₹{basePrice.toLocaleString('en-IN')}
+                  ₹{numBasePrice.toLocaleString('en-IN')}
                   <div 
                     onClick={() => setIsEditingPrice(true)}
                     style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', border: '1px solid #ddd', cursor: 'pointer' }}
@@ -464,7 +945,7 @@ export default function HostStep3() {
               <div className={styles.priceBreakdownBox}>
                 <div className={styles.priceBreakdownRow}>
                   <span>Guest price before taxes</span>
-                  <span>₹{basePrice.toLocaleString('en-IN')}</span>
+                  <span>₹{numBasePrice.toLocaleString('en-IN')}</span>
                 </div>
                 <div className={styles.priceBreakdownRow}>
                   <span>Host service fee</span>
@@ -555,14 +1036,14 @@ export default function HostStep3() {
           </div>
           
           <div className={styles.mapModalInfoBox}>
-            <h2 className={styles.mapModalInfoTitle}>Compare similar listings</h2>
-            <div className={styles.mapModalInfoSub}>Entire home/flat · 1 bedroom<br/>1 Oct 2025 - 1 Oct 2026</div>
+            <h2 className={styles.mapModalInfoTitle}>{step3ModalsSettings.mapTitle}</h2>
+            <div className={styles.mapModalInfoSub}>{step3ModalsSettings.mapSubtitle}<br/>{step3ModalsSettings.mapDates}</div>
             
             <h3 className={styles.mapModalInfoSectTitle}>Booked listings</h3>
             <div className={styles.mapModalInfoDesc}>
-              Most listings with reservations during these dates were an average of ₹962 - ₹3,864 per night.
+              {step3ModalsSettings.mapDesc}
             </div>
-            <a href="#" style={{ color: '#222', fontSize: '14px', fontWeight: 600, textDecoration: 'underline' }}>Learn more</a>
+            <a href={step3ModalsSettings.learnMoreLink} style={{ color: '#222', fontSize: '14px', fontWeight: 600, textDecoration: 'underline' }}>Learn more</a>
           </div>
 
           <div className={styles.mapModalContent}>
@@ -600,20 +1081,20 @@ export default function HostStep3() {
               <IoMdClose size={24} />
             </button>
             
-            <h2 className={styles.priceModalTitle} style={{ textAlign: 'left', fontSize: '22px', marginBottom: '8px' }}>Tell guests about your exterior security cameras</h2>
+            <h2 className={styles.priceModalTitle} style={{ textAlign: 'left', fontSize: '22px', marginBottom: '8px' }}>{step5CameraModalSettings.title}</h2>
             <div style={{ fontSize: '14px', color: '#717171' }}>
-              Describe the area that each camera monitors, such as the back garden or pool. <a href="#" style={{ color: '#222', textDecoration: 'underline', fontWeight: 600 }}>Learn more</a>
+              {step5CameraModalSettings.subtitle} <a href={step5CameraModalSettings.learnMoreLink} style={{ color: '#222', textDecoration: 'underline', fontWeight: 600 }}>Learn more</a>
             </div>
 
             <textarea 
               className={styles.cameraModalTextarea}
               value={tempCameraText}
-              onChange={(e) => setTempCameraText(e.target.value.substring(0, 300))}
+              onChange={(e) => setTempCameraText(e.target.value.substring(0, step5CameraModalSettings.maxChars || 300))}
               placeholder="e.g. Camera facing the driveway"
               autoFocus
             ></textarea>
             <div className={styles.cameraModalCharCount}>
-              {300 - tempCameraText.length} characters available
+              {(step5CameraModalSettings.maxChars || 300) - tempCameraText.length} characters available
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
@@ -641,20 +1122,20 @@ export default function HostStep3() {
             <button className={styles.mapModalClose} style={{ position: 'absolute', top: '16px', left: '16px', width: '32px', height: '32px', boxShadow: 'none', background: 'transparent' }} onClick={() => setIsBusinessModalOpen(false)}>
               <IoMdClose size={24} />
             </button>
-            <h2 className={styles.priceModalTitle} style={{ textAlign: 'center', fontSize: '18px', marginBottom: '24px', fontWeight: 800 }}>Hosting as a business</h2>
+            <h2 className={styles.priceModalTitle} style={{ textAlign: 'center', fontSize: '18px', marginBottom: '24px', fontWeight: 800 }}>{step6BusinessModalSettings.modalTitle}</h2>
             
             <div style={{ fontSize: '14px', color: '#222', lineHeight: 1.5, marginBottom: '24px' }}>
-              Select "yes" if you're registered as a business with your government and have a business registration number or tax ID.
+              {step6BusinessModalSettings.modalDesc}
             </div>
 
             <div style={{ fontSize: '14px', color: '#222', lineHeight: 1.5, marginBottom: '24px' }}>
               <strong>For hosts in the EEA, Switzerland or the UK</strong><br/>
-              If you're not registered, you may also qualify as a business under local rules. For example, hosting is your primary profession or you're a sole trader where registration is optional. <a href="#" style={{ color: '#222', textDecoration: 'underline', fontWeight: 600 }}>Learn more</a>
+              If you're not registered, you may also qualify as a business under local rules. For example, hosting is your primary profession or you're a sole trader where registration is optional. <a href={step6BusinessModalSettings.learnMoreLink} style={{ color: '#222', textDecoration: 'underline', fontWeight: 600 }}>Learn more</a>
             </div>
 
             <div style={{ fontSize: '14px', color: '#222', lineHeight: 1.5 }}>
               <strong>For hosts in South Korea</strong><br/>
-              Korean law has specific business registration requirements. If you're not yet registered and you need to be, you can still select "yes" now, then complete registration before you publish. <a href="#" style={{ color: '#222', textDecoration: 'underline', fontWeight: 600 }}>Learn more</a>
+              Korean law has specific business registration requirements. If you're not yet registered and you need to be, you can still select "yes" now, then complete registration before you publish. <a href={step6BusinessModalSettings.learnMoreLink} style={{ color: '#222', textDecoration: 'underline', fontWeight: 600 }}>Learn more</a>
             </div>
           </div>
         </div>

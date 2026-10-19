@@ -3,13 +3,14 @@ import styles from '../../components/styles/Profile.module.css';
 import { FcPortraitMode, FcConferenceCall } from 'react-icons/fc';
 import { BsLayoutSidebar, BsLayoutSidebarInsetReverse, BsChatLeftText, BsShieldCheck } from 'react-icons/bs';
 import { FaHome, FaUserCheck, FaAward } from 'react-icons/fa';
-import { NavLink, useSearchParams } from 'react-router-dom';
+import { NavLink, useSearchParams, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
 function Profile() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState('about');
   const [searchParams] = useSearchParams();
+  const location = useLocation();
 
   // Redux Auth State
   const { user: authUser, isAuthenticated } = useSelector((state) => state.auth);
@@ -35,7 +36,7 @@ function Profile() {
 
   // Determine if viewing in Host mode or Guest mode
   const roleParam = searchParams.get('role');
-  const isHostMode = roleParam === 'host' || profileData?.role === 'host';
+  const isHostMode = location.pathname.startsWith('/hosting') || roleParam === 'host' || profileData?.role === 'host';
 
   // Fetch dynamic profile details from Backend
   useEffect(() => {
@@ -122,7 +123,7 @@ function Profile() {
                 <h1 className={styles['prof-main-title']}>
                   {isHostMode ? 'Host Profile' : 'About me'}
                 </h1>
-                <NavLink to='/edit-mode' className={styles['prof-edit-btn']}>Edit</NavLink>
+                <NavLink to={isHostMode ? '/hosting/edit-mode' : '/edit-mode'} className={styles['prof-edit-btn']}>Edit</NavLink>
               </div>
 
               <div className="row align-items-center">
@@ -165,7 +166,7 @@ function Profile() {
                           <NavLink to='/hosting/listings' className={styles['prof-get-started-btn']}>
                             Manage Listings
                           </NavLink>
-                          <NavLink to='/edit-mode' className={styles['prof-edit-btn']} style={{ padding: '12px 20px', fontSize: '1rem' }}>
+                          <NavLink to='/hosting/edit-mode' className={styles['prof-edit-btn']} style={{ padding: '12px 20px', fontSize: '1rem' }}>
                             Edit Host Bio
                           </NavLink>
                         </div>

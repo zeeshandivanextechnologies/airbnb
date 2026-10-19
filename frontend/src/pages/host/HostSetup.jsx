@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { getUserProfileApi, updateUserProfileApi } from "../../services/api.js";
 import { updateUser } from "../../store/slices/authSlice.js";
+import toast from "react-hot-toast";
 import {
   FaAirbnb,
   FaSearch,
@@ -29,12 +30,14 @@ import {
 } from "react-icons/fa";
 import { BsThreeDots } from 'react-icons/bs';
 import { IoMdClose } from 'react-icons/io';
+import { renderCategoryIcon } from "../../utils/categoryIcons.jsx";
 import styles from "../../components/styles/HostSetup.module.css";
 import step1Styles from "../../components/styles/HostStep1.module.css";
 
 
 export default function HostSetup() {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
 
@@ -57,18 +60,39 @@ export default function HostSetup() {
   const [selectedActivityForEdit, setSelectedActivityForEdit] = useState(null);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [addressStep, setAddressStep] = useState(1);
+  const [addressSearchQuery, setAddressSearchQuery] = useState('');
+  const [addressSuggestions, setAddressSuggestions] = useState([]);
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+  const [modalAddress, setModalAddress] = useState(() => {
+    try {
+      const stored = localStorage.getItem('host_address');
+      if (stored) return JSON.parse(stored);
+    } catch (e) {}
+    return {
+      country: 'India',
+      country_code: 'IN',
+      flat: '',
+      street: '',
+      landmark: '',
+      district: '',
+      city: '',
+      state: '',
+      pin: '',
+      full_address: ''
+    };
+  });
   const [showExperienceModal, setShowExperienceModal] = useState(false);
   const [hostingType, setHostingType] = useState(null);
   const [hostingTypes, setHostingTypes] = useState([
-    { key: "experience", name: "Experience", icon: "🎈", description: "Lead activities guests can only find locally.", target_step: 2 },
-    { key: "service", name: "Service", icon: "🛎️", description: "Offer tailored in-person or on-demand services.", target_step: 1 }
+    { key: "experience", name: "Experience", icon: "experience", description: "Lead activities guests can only find locally.", target_step: 2 },
+    { key: "service", name: "Service", icon: "service", description: "Offer tailored in-person or on-demand services.", target_step: 1 }
   ]);
   const [isLoadingTypes, setIsLoadingTypes] = useState(false);
 
   const [experienceCategories, setExperienceCategories] = useState([
     {
       name: "Art and design",
-      icon: "🎨",
+      icon: "art",
       subOptions: [
         "Architecture tour",
         "Art workshop",
@@ -78,7 +102,7 @@ export default function HostSetup() {
     },
     {
       name: "Fitness and wellness",
-      icon: "🧘",
+      icon: "wellness",
       subOptions: [
         "Yoga class",
         "Meditation session",
@@ -88,12 +112,12 @@ export default function HostSetup() {
     },
     {
       name: "Food and drink",
-      icon: "🍷",
+      icon: "food",
       subOptions: ["Cooking class", "Wine tasting", "Food tour", "Bar crawl"],
     },
     {
       name: "History and culture",
-      icon: "🏛️",
+      icon: "history",
       subOptions: [
         "Historical tour",
         "Cultural walk",
@@ -103,7 +127,7 @@ export default function HostSetup() {
     },
     {
       name: "Nature and outdoors",
-      icon: "🌲",
+      icon: "nature",
       subOptions: ["Hiking", "Camping", "Wildlife watching", "Boat ride"],
     },
   ]);
@@ -111,7 +135,7 @@ export default function HostSetup() {
   const [serviceCategories, setServiceCategories] = useState([
     {
       name: "Catering",
-      icon: "🍲",
+      icon: "catering",
       subOptions: [
         "Event catering",
         "Corporate catering",
@@ -121,7 +145,7 @@ export default function HostSetup() {
     },
     {
       name: "Chef",
-      icon: "🔪",
+      icon: "chef",
       subOptions: [
         "Private dinners",
         "Menu planning",
@@ -131,12 +155,12 @@ export default function HostSetup() {
     },
     {
       name: "Hairstyling",
-      icon: "💇‍♀️",
+      icon: "hair",
       subOptions: ["Haircut", "Coloring", "Bridal styling", "Hair treatments"],
     },
     {
       name: "Make-up",
-      icon: "💄",
+      icon: "makeup",
       subOptions: [
         "Bridal makeup",
         "Special effects",
@@ -146,7 +170,7 @@ export default function HostSetup() {
     },
     {
       name: "Massage",
-      icon: "💆",
+      icon: "massage",
       subOptions: [
         "Swedish massage",
         "Deep tissue",
@@ -156,7 +180,7 @@ export default function HostSetup() {
     },
     {
       name: "Personal training",
-      icon: "🏋️",
+      icon: "fitness",
       subOptions: [
         "Strength training",
         "Cardio fitness",
@@ -166,7 +190,7 @@ export default function HostSetup() {
     },
     {
       name: "Photography",
-      icon: "📷",
+      icon: "photo",
       subOptions: [
         "Portrait session",
         "Event coverage",
@@ -176,7 +200,7 @@ export default function HostSetup() {
     },
     {
       name: "Prepared meals",
-      icon: "🍱",
+      icon: "meals",
       subOptions: [
         "Weekly meal prep",
         "Dietary specific",
@@ -186,7 +210,7 @@ export default function HostSetup() {
     },
     {
       name: "Spa treatments",
-      icon: "🧖",
+      icon: "spa",
       subOptions: [
         "Facials",
         "Body scrubs",
@@ -196,15 +220,20 @@ export default function HostSetup() {
     },
   ]);
 
+
+  // Dynamic Experience Step Settings & Modal Configs from Backend / Admin
+  const [expStepSettings, setExpStepSettings] = useState({});
+
   useEffect(() => {
-    // Fetch dynamic hosting types and categories from backend API
+    // Fetch dynamic hosting types, categories, and step configurations from backend API
     const fetchMetadata = async () => {
       try {
         setIsLoadingTypes(true);
         const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-        const [typesRes, catRes] = await Promise.all([
+        const [typesRes, catRes, stepsRes] = await Promise.all([
           fetch(`${baseUrl}/listings/hosting-types`),
-          fetch(`${baseUrl}/listings/host-categories`)
+          fetch(`${baseUrl}/listings/host-categories`),
+          fetch(`${baseUrl}/listings/step-settings`)
         ]);
 
         const typesJson = await typesRes.json();
@@ -232,8 +261,19 @@ export default function HostSetup() {
           if (sCats.length > 0) setServiceCategories(sCats);
           if (eCats.length > 0) setExperienceCategories(eCats);
         }
+
+        const stepsJson = await stepsRes.json();
+        if (stepsJson.success && Array.isArray(stepsJson.data)) {
+          const settingsMap = {};
+          stepsJson.data.forEach(item => {
+            if (item.step_key) {
+              settingsMap[item.step_key] = item;
+            }
+          });
+          setExpStepSettings(settingsMap);
+        }
       } catch (err) {
-        console.error('Failed to load hosting types / categories from API:', err);
+        console.error('Failed to load hosting types / categories / step settings from API:', err);
       } finally {
         setIsLoadingTypes(false);
       }
@@ -249,6 +289,31 @@ export default function HostSetup() {
       setMaxUnlockedStep(serviceStep);
     }
   }, [serviceStep, maxUnlockedStep]);
+
+  // Handle URL query param: e.g. /host?type=experience or /host?type=service or /host?type=service&step=10
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const typeParam = params.get('type');
+    const stepParam = parseInt(params.get('step'), 10);
+
+    if (typeParam === 'experience') {
+      setHostingType('experience');
+      if (!isNaN(stepParam) && stepParam > 0) {
+        setServiceStep(stepParam);
+      } else {
+        setServiceStep(2);
+      }
+    } else if (typeParam === 'service') {
+      setHostingType('service');
+      if (!isNaN(stepParam) && stepParam > 0) {
+        setServiceStep(stepParam);
+      } else {
+        setServiceStep(1);
+      }
+    } else if (!isNaN(stepParam) && stepParam > 0) {
+      setServiceStep(stepParam);
+    }
+  }, [location.search]);
 
   const [selectedExperience, setSelectedExperience] = useState(null);
   const [selectedSubExperience, setSelectedSubExperience] = useState(null);
@@ -578,7 +643,7 @@ export default function HostSetup() {
   // Use current location helper for both modals
   const handleUseCurrentLocationForModal = (modalType) => {
     if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser.");
+      toast.error("Geolocation is not supported by your browser.");
       return;
     }
 
@@ -687,16 +752,76 @@ export default function HostSetup() {
   };
   const fileInputRef = useRef(null);
 
-  const handleFileChange = (e) => {
+  const readFileAsDataUrl = (file) => {
+    return new Promise((resolve) => {
+      // If not an image or if file is small (< 150KB), read directly
+      if (!file.type.startsWith('image/') || file.size < 150 * 1024) {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      // Fast client-side canvas compression for large photos
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 1280;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Export as compressed jpeg (quality 0.82)
+          const optimizedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          resolve(optimizedDataUrl);
+        };
+        img.onerror = () => {
+          resolve(e.target.result);
+        };
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileChange = async (e) => {
     if (e.target.files && e.target.files.length > 0) {
-      const newPhotos = Array.from(e.target.files).map((file) =>
-        URL.createObjectURL(file),
-      );
-      setSelectedUploadPhotos([...selectedUploadPhotos, ...newPhotos]);
+      const fileList = Array.from(e.target.files);
+      const dataUrls = await Promise.all(fileList.map(readFileAsDataUrl));
+      setSelectedUploadPhotos(prev => [...prev, ...dataUrls.filter(Boolean)]);
     }
   };
 
   const [activeMenuIndex, setActiveMenuIndex] = useState(null);
+  const photoMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (activeMenuIndex !== null && photoMenuRef.current && !photoMenuRef.current.contains(e.target)) {
+        setActiveMenuIndex(null);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [activeMenuIndex]);
+
   const [photoToDelete, setPhotoToDelete] = useState(null);
   const [hasSeenItineraryIntro, setHasSeenItineraryIntro] = useState(false);
   const [photoToEdit, setPhotoToEdit] = useState(null);
@@ -734,6 +859,7 @@ export default function HostSetup() {
   const [inviteCode, setInviteCode] = useState("");
 
   // Service Offerings states for "Create your offerings" / "Your offerings" (Service Step 3 of 5)
+  const [createdListingId, setCreatedListingId] = useState(null);
   const [hasSeenOfferingsIntro, setHasSeenOfferingsIntro] = useState(false);
   const [serviceOfferings, setServiceOfferings] = useState([]);
   const [showOfferingModal, setShowOfferingModal] = useState(false);
@@ -851,6 +977,10 @@ export default function HostSetup() {
       try {
         const stored = localStorage.getItem('user');
         if (stored) currentUser = JSON.parse(stored);
+        if (!currentUser) {
+          const authStored = localStorage.getItem('airbnb_user_auth');
+          if (authStored) currentUser = JSON.parse(authStored)?.user;
+        }
       } catch (err) {
         console.error('Error reading stored user', err);
       }
@@ -859,18 +989,30 @@ export default function HostSetup() {
         ? `${currentUser.first_name || currentUser.firstName || ''} ${currentUser.last_name || currentUser.lastName || ''}`.trim() || 'Airbnb Host'
         : 'Airbnb Host';
       const hostPhone = currentUser?.phone || '+91 98765 43210';
-      const hostId = currentUser?.id || null;
+      const hostId = currentUser?.id || 4; // default to active host user ID if unassigned
 
       const cityName = selectedCity || meetupAddress?.city || residentialAddress?.city || 'Jaipur, Rajasthan';
       const listingCategory = selectedExperience?.name || (hostingType === 'service' ? 'Services' : 'Experiences');
       const listingType = hostingType === 'service' ? 'Service' : 'Experience';
-      const listingPrice = Number(pricePerGuest) || (basePrice > 0 ? basePrice : 1500);
+      
+      let listingPrice = Number(pricePerGuest);
+      if (!listingPrice || listingPrice <= 0) {
+        if (serviceOfferings && serviceOfferings.length > 0) {
+          const prices = serviceOfferings.map(o => Number(o.price)).filter(p => !isNaN(p) && p > 0);
+          listingPrice = prices.length > 0 ? Math.min(...prices) : 500;
+        } else {
+          listingPrice = basePrice > 0 ? basePrice : 500;
+        }
+      }
+
+      const hostEmail = currentUser?.email || null;
 
       const payload = {
         title: experienceTitle || 'Creative Experience & Host Tour',
         type: listingType,
         category: listingCategory,
         host_name: hostName,
+        host_email: hostEmail,
         host_phone: hostPhone,
         host_id: hostId,
         city: cityName,
@@ -896,12 +1038,28 @@ export default function HostSetup() {
         hosting_as_business: hostingAsBusiness || 'no',
         meetup_address: meetupAddress,
         service_area: serviceArea,
-        service_provision_type: serviceProvisionType
+        service_provision_type: serviceProvisionType,
+        service_offerings: serviceOfferings,
+        business_hours: businessHoursList,
+        review_requirements_agreed: true,
+        status: redirectToDone ? 'Active' : 'In progress'
       };
 
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-      const res = await fetch(`${baseUrl}/listings`, {
-        method: 'POST',
+      
+      // Cache exact step and draft route for resuming later
+      try {
+        const resumeUrl = `/host?type=${hostingType || 'experience'}&step=${serviceStep || 1}`;
+        localStorage.setItem('host_resume_route', resumeUrl);
+        localStorage.setItem('host_selected_type', hostingType || 'experience');
+      } catch (err) {}
+
+      const existingDraftId = createdListingId || localStorage.getItem('host_draft_listing_id');
+      const method = existingDraftId ? 'PUT' : 'POST';
+      const endpoint = existingDraftId ? `${baseUrl}/listings/${existingDraftId}` : `${baseUrl}/listings`;
+
+      const res = await fetch(endpoint, {
+        method,
         headers: {
           'Content-Type': 'application/json'
         },
@@ -909,20 +1067,26 @@ export default function HostSetup() {
       });
 
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.data) {
+        const targetListingId = data.data.id || existingDraftId;
+        setCreatedListingId(targetListingId);
+        if (targetListingId) {
+          localStorage.setItem('host_draft_listing_id', String(targetListingId));
+        }
+        toast.success(redirectToDone ? "Listing published successfully!" : "Listing saved successfully!");
         if (redirectToDone) {
-          setServiceStep(25);
+          if (typeof setServiceStep === 'function') setServiceStep(25);
         } else {
           navigate('/hosting/listings');
         }
       } else {
-        // Fallback gracefully so host flow is never broken
-        if (redirectToDone) setServiceStep(25);
-        else navigate('/hosting/listings');
+        console.error('Server rejected listing creation:', data);
+        toast.error(data?.message || 'Could not save listing. Continuing...');
+        navigate('/hosting/listings');
       }
     } catch (err) {
       console.error('Failed to save listing to backend:', err);
-      // Fallback gracefully so host flow is never broken
+      toast.error('Network error while saving listing.');
       if (redirectToDone) setServiceStep(25);
       else navigate('/hosting/listings');
     } finally {
@@ -930,8 +1094,214 @@ export default function HostSetup() {
     }
   };
 
-  const handleLocationSelect = () => {
+  // Dynamic Location search from Backend API
+  const handleAddressSearch = async (queryText) => {
+    if (!queryText || queryText.trim().length === 0) {
+      setAddressSuggestions([]);
+      return;
+    }
+    try {
+      setIsSearchingAddress(true);
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+      const res = await fetch(`${baseUrl}/listings/locations/search?q=${encodeURIComponent(queryText)}`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        setAddressSuggestions(data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching address suggestions:', err);
+    } finally {
+      setIsSearchingAddress(false);
+    }
+  };
+
+  const handleSelectSuggestion = (suggestion) => {
+    setModalAddress({
+      country: suggestion.country || 'India',
+      country_code: suggestion.country_code || 'IN',
+      flat: suggestion.flat || '',
+      street: suggestion.street || '',
+      landmark: suggestion.landmark || '',
+      district: suggestion.district || '',
+      city: suggestion.city || '',
+      state: suggestion.state || '',
+      pin: suggestion.pin || '',
+      lat: suggestion.lat || null,
+      lng: suggestion.lng || null,
+      full_address: suggestion.full_address || `${suggestion.street || ''}, ${suggestion.city || ''}, ${suggestion.state || ''}`
+    });
+    setAddressSearchQuery(suggestion.full_address || suggestion.street || suggestion.city);
+    setAddressSuggestions([]);
     setAddressStep(2);
+  };
+
+  const handleLocationSelect = (fallbackQuery) => {
+    if (fallbackQuery && fallbackQuery.trim()) {
+      setModalAddress(prev => ({
+        ...prev,
+        street: fallbackQuery.trim(),
+        full_address: `${fallbackQuery.trim()}, India`
+      }));
+    }
+    setAddressStep(2);
+  };
+
+  // Browser Geolocation / GPS dynamic detection for Address Modal
+  const handleUseAddressModalCurrentLocation = async () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser');
+      setAddressStep(2);
+      return;
+    }
+
+    try {
+      setIsDetectingLocation(true);
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          let dynamicFetched = false;
+
+          // 1. Try via backend live reverse-geocoding endpoint
+          try {
+            const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+            const res = await fetch(`${baseUrl}/listings/locations/search?lat=${latitude}&lng=${longitude}`);
+            const data = await res.json();
+            if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+              handleSelectSuggestion(data.data[0]);
+              toast.success('Live location detected successfully!');
+              dynamicFetched = true;
+            }
+          } catch (apiErr) {
+            console.warn('Backend geo search failed, trying direct reverse geocoding:', apiErr);
+          }
+
+          // 2. Direct client-side reverse geocoding fallback (Nominatim + BigDataCloud)
+          if (!dynamicFetched) {
+            try {
+              const osmRes = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+                { headers: { 'Accept-Language': 'en' } }
+              );
+              if (osmRes.ok) {
+                const osmData = await osmRes.json();
+                const addr = osmData.address || {};
+                const country = addr.country || 'India';
+                const countryCode = (addr.country_code || 'in').toUpperCase();
+                const pin = addr.postcode || '';
+                const state = addr.state || addr.region || '';
+                const city = addr.city || addr.town || addr.village || addr.municipality || addr.county || '';
+                const district = addr.suburb || addr.neighbourhood || addr.city_district || addr.district || addr.county || city;
+                const streetParts = [
+                  addr.house_number,
+                  addr.building,
+                  addr.road || addr.pedestrian || addr.footway || addr.path,
+                  addr.neighbourhood || addr.suburb
+                ].filter(Boolean);
+                const street = streetParts.length > 0 ? Array.from(new Set(streetParts)).join(', ') : (addr.road || district);
+                const landmark = addr.amenity || addr.shop || addr.tourism || addr.leisure || '';
+                const flat = [addr.house_number, addr.building].filter(Boolean).join(', ') || '';
+
+                const liveAddress = {
+                  country,
+                  country_code: countryCode,
+                  flat,
+                  street,
+                  landmark,
+                  district,
+                  city,
+                  state,
+                  pin,
+                  full_address: osmData.display_name || [street, district, city, state, pin, country].filter(Boolean).join(', ')
+                };
+
+                handleSelectSuggestion(liveAddress);
+                toast.success('Live location detected successfully!');
+                dynamicFetched = true;
+              }
+            } catch (osmClientErr) {
+              console.warn('Direct Nominatim geocode error:', osmClientErr);
+            }
+          }
+
+          if (!dynamicFetched) {
+            try {
+              const directRes = await fetch(
+                `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+              );
+              if (directRes.ok) {
+                const geoData = await directRes.json();
+                const city = geoData.city || geoData.locality || geoData.principalSubdivisionDistrict || '';
+                const state = geoData.principalSubdivision || '';
+                const country = geoData.countryName || 'India';
+                const countryCode = geoData.countryCode || 'IN';
+                const pin = geoData.postcode || '';
+                const street = geoData.localityInfo?.administrative?.[3]?.name || geoData.locality || '';
+                const district = geoData.localityInfo?.administrative?.[2]?.name || city;
+
+                const liveAddress = {
+                  country,
+                  country_code: countryCode,
+                  flat: '',
+                  street,
+                  landmark: '',
+                  district,
+                  city,
+                  state,
+                  pin,
+                  full_address: [street, district, city, state, pin, country].filter(Boolean).join(', ')
+                };
+
+                handleSelectSuggestion(liveAddress);
+                toast.success('Live location detected successfully!');
+                dynamicFetched = true;
+              }
+            } catch (directErr) {
+              console.warn('Direct reverse geocode error:', directErr);
+            }
+          }
+
+          if (!dynamicFetched) {
+            // Keep clean dynamic blank fields for user to fill in if GPS offline
+            setModalAddress(prev => ({
+              ...prev,
+              flat: '',
+              street: '',
+              landmark: '',
+              district: '',
+              city: '',
+              state: '',
+              pin: '',
+              full_address: ''
+            }));
+            toast.error('Could not resolve address details. Please type your address.');
+            setAddressStep(2);
+          }
+
+          setIsDetectingLocation(false);
+        },
+        (error) => {
+          console.warn('Geolocation error:', error.message);
+          toast.error('Location permission denied or unavailable. Please enter manually.');
+          setIsDetectingLocation(false);
+          setAddressStep(2);
+        },
+        { timeout: 10000, enableHighAccuracy: true }
+      );
+    } catch (e) {
+      setIsDetectingLocation(false);
+      setAddressStep(2);
+    }
+  };
+
+  // Save selected address & navigate smoothly to /step1
+  const handleSaveAddressAndProceed = () => {
+    try {
+      localStorage.setItem('host_address', JSON.stringify(modalAddress));
+    } catch (e) {
+      console.warn('Could not persist address in localStorage');
+    }
+    setShowAddressModal(false);
+    navigate('/step1');
   };
 
   return (
@@ -1046,15 +1416,18 @@ export default function HostSetup() {
                 <div
                   className={`${styles.sidebarItem} ${serviceStep === 105 ? styles.sidebarItemActive : ""}`}
                   onClick={() => {
-                    if (maxUnlockedStep >= 105 || maxUnlockedStep >= 13) {
+                    const isOfferingsUnlocked = maxUnlockedStep >= 105 && photos.length >= 5;
+                    if (isOfferingsUnlocked) {
                       setServiceStep(105);
                       setIsSidebarExpanded(false);
+                    } else if (photos.length < 5) {
+                      toast.error("Please add at least 5 photos first to unlock Offerings.", { id: "photos-required-toast" });
                     }
                   }}
-                  title={maxUnlockedStep >= 105 || maxUnlockedStep >= 13 ? "Offerings" : "Complete previous step to unlock"}
+                  title={maxUnlockedStep >= 105 && photos.length >= 5 ? "Offerings" : "Add at least 5 photos to unlock Offerings"}
                   style={{
-                    cursor: maxUnlockedStep >= 105 || maxUnlockedStep >= 13 ? "pointer" : "not-allowed",
-                    opacity: maxUnlockedStep >= 105 || maxUnlockedStep >= 13 ? 1 : 0.45
+                    cursor: maxUnlockedStep >= 105 && photos.length >= 5 ? "pointer" : "not-allowed",
+                    opacity: maxUnlockedStep >= 105 && photos.length >= 5 ? 1 : 0.45
                   }}
                 >
                   <div className={styles.sidebarItemIcon}><FaShoppingBag /></div>
@@ -1108,15 +1481,41 @@ export default function HostSetup() {
               <div
                 className={`${styles.sidebarItem} ${serviceStep === 21 || serviceStep === 22 || serviceStep === 23 ? styles.sidebarItemActive : ""}`}
                 onClick={() => {
-                  if (maxUnlockedStep >= 21) {
-                    setServiceStep(21);
-                    setIsSidebarExpanded(false);
+                  if (hostingType === "service") {
+                    const isServiceDetailsUnlocked = maxUnlockedStep >= 22 && serviceOfferings.length > 0 && photos.length >= 5;
+                    if (isServiceDetailsUnlocked) {
+                      setServiceStep(22);
+                      setIsSidebarExpanded(false);
+                    } else if (photos.length < 5) {
+                      toast.error("Please add at least 5 photos first.", { id: "step-details-toast" });
+                    } else if (serviceOfferings.length === 0) {
+                      toast.error("Please add at least one offering first to unlock Service details.", { id: "step-details-toast" });
+                    } else {
+                      toast.error("Please complete previous steps first to unlock Service details.", { id: "step-details-toast" });
+                    }
+                  } else {
+                    if (maxUnlockedStep >= 21) {
+                      setServiceStep(21);
+                      setIsSidebarExpanded(false);
+                    } else {
+                      toast.error("Please complete previous steps first.", { id: "step-details-toast" });
+                    }
                   }
                 }}
-                title={maxUnlockedStep >= 21 ? (hostingType === "service" ? "Service details" : "Details") : "Complete previous step to unlock"}
+                title={
+                  (hostingType === "service"
+                    ? (maxUnlockedStep >= 22 && serviceOfferings.length > 0 && photos.length >= 5)
+                    : maxUnlockedStep >= 21)
+                    ? (hostingType === "service" ? "Service details" : "Details")
+                    : (hostingType === "service" ? "Complete offerings to unlock Service details" : "Complete previous step to unlock")
+                }
                 style={{
-                  cursor: maxUnlockedStep >= 21 ? "pointer" : "not-allowed",
-                  opacity: maxUnlockedStep >= 21 ? 1 : 0.45
+                  cursor: (hostingType === "service"
+                    ? (maxUnlockedStep >= 22 && serviceOfferings.length > 0 && photos.length >= 5)
+                    : maxUnlockedStep >= 21) ? "pointer" : "not-allowed",
+                  opacity: (hostingType === "service"
+                    ? (maxUnlockedStep >= 22 && serviceOfferings.length > 0 && photos.length >= 5)
+                    : maxUnlockedStep >= 21) ? 1 : 0.45
                 }}
               >
                 <div className={styles.sidebarItemIcon}><FaClipboardList /></div>
@@ -1127,15 +1526,37 @@ export default function HostSetup() {
               <div
                 className={`${styles.sidebarItem} ${serviceStep === 24 ? styles.sidebarItemActive : ""}`}
                 onClick={() => {
-                  if (maxUnlockedStep >= 24) {
+                  const isPublishUnlocked = hostingType === "service"
+                    ? (maxUnlockedStep >= 24 && serviceOfferings.length > 0 && photos.length >= 5 && !!experienceTitle?.trim())
+                    : (maxUnlockedStep >= 24 && photos.length >= 5);
+
+                  if (isPublishUnlocked) {
                     setServiceStep(24);
                     setIsSidebarExpanded(false);
+                  } else if (photos.length < 5) {
+                    toast.error("Please complete photos step first.", { id: "step-publish-toast" });
+                  } else if (hostingType === "service" && serviceOfferings.length === 0) {
+                    toast.error("Please create at least one offering first.", { id: "step-publish-toast" });
+                  } else if (!experienceTitle?.trim()) {
+                    toast.error("Please provide a title and description in Service details.", { id: "step-publish-toast" });
+                  } else {
+                    toast.error("Please complete all previous steps to unlock Publish.", { id: "step-publish-toast" });
                   }
                 }}
-                title={maxUnlockedStep >= 24 ? "Publish your listing" : "Complete previous step to unlock"}
+                title={
+                  (hostingType === "service"
+                    ? (maxUnlockedStep >= 24 && serviceOfferings.length > 0 && photos.length >= 5 && !!experienceTitle?.trim())
+                    : (maxUnlockedStep >= 24 && photos.length >= 5))
+                    ? "Publish your listing"
+                    : "Complete all steps to unlock Publish"
+                }
                 style={{
-                  cursor: maxUnlockedStep >= 24 ? "pointer" : "not-allowed",
-                  opacity: maxUnlockedStep >= 24 ? 1 : 0.45
+                  cursor: (hostingType === "service"
+                    ? (maxUnlockedStep >= 24 && serviceOfferings.length > 0 && photos.length >= 5 && !!experienceTitle?.trim())
+                    : (maxUnlockedStep >= 24 && photos.length >= 5)) ? "pointer" : "not-allowed",
+                  opacity: (hostingType === "service"
+                    ? (maxUnlockedStep >= 24 && serviceOfferings.length > 0 && photos.length >= 5 && !!experienceTitle?.trim())
+                    : (maxUnlockedStep >= 24 && photos.length >= 5)) ? 1 : 0.45
                 }}
               >
                 <div className={styles.sidebarItemIcon}><FaCheck /></div>
@@ -1148,7 +1569,7 @@ export default function HostSetup() {
                 <button
                   type="button"
                   className={styles.sidebarSaveExitBtn}
-                  onClick={() => setIsSidebarExpanded(false)}
+                  onClick={() => handleSaveListingToBackend(false)}
                 >
                   Save and exit
                 </button>
@@ -1203,9 +1624,7 @@ export default function HostSetup() {
                         setServiceStep(23);
                       } else if (serviceStep === 23) {
                         setServiceStep(22);
-                      } else if (serviceStep === 22) {
-                        setServiceStep(21);
-                      } else if (serviceStep === 21) {
+                      } else if (serviceStep === 22 || serviceStep === 21) {
                         setServiceStep(105);
                       } else if (serviceStep === 105) {
                         if (offeringsSubScreen === "requirements") {
@@ -1245,22 +1664,22 @@ export default function HostSetup() {
                 >
                   <span className={styles.sidebarHeaderTitle}>
                     {serviceStep >= 6 && serviceStep <= 9
-                      ? "About you"
+                      ? (expStepSettings.exp_step_about?.title || "About you")
                       : serviceStep >= 10 && serviceStep <= 12
-                        ? "Location"
+                        ? (expStepSettings.exp_step_location?.title || "Location")
                         : serviceStep === 105
                           ? "Offerings"
                           : serviceStep === 13
-                            ? "Photos"
+                            ? (expStepSettings.exp_step_photos?.title || "Photos")
                             : serviceStep === 14
-                              ? "Itinerary"
+                              ? (expStepSettings.exp_step_itinerary?.title || "Itinerary")
                               : serviceStep >= 15 && serviceStep <= 20
-                                ? "Pricing"
+                                ? (expStepSettings.exp_step_pricing?.title || "Pricing")
                                 : serviceStep === 21
-                                  ? "Details"
+                                  ? (expStepSettings.exp_step_details?.title || "Details")
                                   : serviceStep === 22 || serviceStep === 23
                                     ? (hostingType === "service" ? "Service Details" : "Experience")
-                                    : "Publish"}
+                                    : (expStepSettings.exp_step_publish?.title || "Publish")}
                   </span>
                   <span className={styles.sidebarHeaderSub}>
                     {hostingType === "service" ? (
@@ -1483,15 +1902,19 @@ export default function HostSetup() {
                   <div style={{ width: '220px', background: 'white', borderRadius: '16px', boxShadow: '0 12px 24px rgba(0,0,0,0.08)', padding: '16px', marginBottom: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', border: '1px solid #ebebeb' }}>
                     <div style={{ width: '100%', height: '140px', borderRadius: '12px', overflow: 'hidden', position: 'relative' }}>
                        <img src={photos[0] || 'https://via.placeholder.com/300x200'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="cover" />
-                       <div style={{ position: 'absolute', bottom: '-16px', left: '50%', transform: 'translateX(-50%)', width: '32px', height: '32px', borderRadius: '50%', background: '#F7E6F7', color: '#892789', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 600, border: '2px solid white' }}>M</div>
+                       <div style={{ position: 'absolute', bottom: '-16px', left: '50%', transform: 'translateX(-50%)', width: '32px', height: '32px', borderRadius: '50%', background: '#F7E6F7', color: '#892789', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 600, border: '2px solid white' }}>
+                         {getUserInitials()}
+                       </div>
                     </div>
                     <div style={{ marginTop: '32px', width: '80%', height: '12px', background: '#f0f0f0', borderRadius: '6px' }}></div>
                     <div style={{ marginTop: '12px', width: '60%', height: '12px', background: '#f0f0f0', borderRadius: '6px' }}></div>
                   </div>
-                  <h1 style={{ fontSize: '40px', fontWeight: 600, color: '#222', textAlign: 'center', marginBottom: '16px', maxWidth: '480px', lineHeight: '1.2' }}>
-                    Add an experience title and description
+                  <h1 style={{ fontSize: '40px', fontWeight: 600, color: '#222', textAlign: 'center', marginBottom: '16px', maxWidth: '520px', lineHeight: '1.2' }}>
+                    {hostingType === "service"
+                      ? `Add a ${selectedExperience?.name ? selectedExperience.name.toLowerCase() : "service"} title and description`
+                      : `Add an ${selectedExperience?.name ? selectedExperience.name.toLowerCase() : "experience"} title and description`}
                   </h1>
-                  <p style={{ color: '#717171', fontSize: '18px', textAlign: 'center', maxWidth: '400px', lineHeight: '1.4' }}>
+                  <p style={{ color: '#717171', fontSize: '18px', textAlign: 'center', maxWidth: '440px', lineHeight: '1.4' }}>
                     We'll share some options to get you started – then you'll choose one and make it your own.
                   </p>
                 </div>
@@ -1506,28 +1929,51 @@ export default function HostSetup() {
                     Choose one and make it your own
                   </h1>
                   <div style={{ display: 'flex', gap: '24px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                    {[
-                      { id: 1, title: 'Travel stories with an art host', desc: 'Trade travel stories with a creative host and talk about how you like to travel.' },
-                      { id: 2, title: 'Travel sketching with an art host', desc: 'Travel with a creative host and sketch what you see, and share how you like to travel.' },
-                      { id: 3, title: 'Travel journaling with an art host', desc: 'Travel with a creative host and journal what you notice, and share how you like to travel.' }
-                    ].map((opt) => (
-                      <div 
-                        key={opt.id}
-                        onClick={() => {
-                          setSelectedTitleOption(opt.id);
-                          setExperienceTitle(opt.title);
-                          setExperienceDesc(opt.desc);
-                        }}
-                        style={{ width: '260px', background: 'white', borderRadius: '16px', padding: '16px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', border: selectedTitleOption === opt.id ? '2px solid #222' : '1px solid #ebebeb', boxShadow: selectedTitleOption === opt.id ? '0 12px 24px rgba(0,0,0,0.1)' : 'none', transform: selectedTitleOption === opt.id ? 'scale(1.02)' : 'scale(1)', transition: 'all 0.2s ease' }}
-                      >
-                        <div style={{ width: '100%', height: '140px', borderRadius: '12px', overflow: 'hidden', position: 'relative', marginBottom: '32px' }}>
-                          <img src={photos[0] || 'https://via.placeholder.com/300x200'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="cover" />
-                          <div style={{ position: 'absolute', bottom: '-16px', left: '50%', transform: 'translateX(-50%)', width: '32px', height: '32px', borderRadius: '50%', background: '#F7E6F7', color: '#892789', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 600, border: '2px solid white' }}>M</div>
+                    {(() => {
+                      const catName = selectedExperience?.name || (hostingType === "service" ? "Service" : "Experience");
+                      const sub1 = selectedExperience?.subOptions?.[0] || `Personalized ${catName}`;
+                      const sub2 = selectedExperience?.subOptions?.[1] || `Mastering ${catName}`;
+                      const sub3 = selectedExperience?.subOptions?.[2] || `Signature ${catName} session`;
+
+                      const dynamicOptions = [
+                        {
+                          id: 1,
+                          title: `${sub1} with a professional host`,
+                          desc: `Experience dedicated ${catName.toLowerCase()} session tailored directly to you and your preferences.`
+                        },
+                        {
+                          id: 2,
+                          title: `${sub2} with an expert host`,
+                          desc: `Discover new skills and enjoy authentic ${catName.toLowerCase()} moments guided by your host.`
+                        },
+                        {
+                          id: 3,
+                          title: `${sub3} with a local specialist`,
+                          desc: `Immerse in the craft of ${catName.toLowerCase()} and take away memorable insights from an expert.`
+                        }
+                      ];
+
+                      return dynamicOptions.map((opt) => (
+                        <div 
+                          key={opt.id}
+                          onClick={() => {
+                            setSelectedTitleOption(opt.id);
+                            setExperienceTitle(opt.title);
+                            setExperienceDesc(opt.desc);
+                          }}
+                          style={{ width: '260px', background: 'white', borderRadius: '16px', padding: '16px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', border: selectedTitleOption === opt.id ? '2px solid #222' : '1px solid #ebebeb', boxShadow: selectedTitleOption === opt.id ? '0 12px 24px rgba(0,0,0,0.1)' : 'none', transform: selectedTitleOption === opt.id ? 'scale(1.02)' : 'scale(1)', transition: 'all 0.2s ease' }}
+                        >
+                          <div style={{ width: '100%', height: '140px', borderRadius: '12px', overflow: 'hidden', position: 'relative', marginBottom: '32px' }}>
+                            <img src={photos[0] || 'https://via.placeholder.com/300x200'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="cover" />
+                            <div style={{ position: 'absolute', bottom: '-16px', left: '50%', transform: 'translateX(-50%)', width: '32px', height: '32px', borderRadius: '50%', background: '#F7E6F7', color: '#892789', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 600, border: '2px solid white' }}>
+                              {getUserInitials()}
+                            </div>
+                          </div>
+                          <h3 style={{ fontSize: '20px', fontWeight: 600, color: '#222', marginBottom: '12px', lineHeight: '1.2' }}>{opt.title}</h3>
+                          <p style={{ fontSize: '14px', color: '#717171', lineHeight: '1.4' }}>{opt.desc}</p>
                         </div>
-                        <h3 style={{ fontSize: '20px', fontWeight: 600, color: '#222', marginBottom: '12px', lineHeight: '1.2' }}>{opt.title}</h3>
-                        <p style={{ fontSize: '14px', color: '#717171', lineHeight: '1.4' }}>{opt.desc}</p>
-                      </div>
-                    ))}
+                      ));
+                    })()}
                   </div>
                   
                   {selectedTitleOption && (
@@ -1738,7 +2184,7 @@ export default function HostSetup() {
                                 className={styles.publishPreviewImg} 
                                 alt="cover" 
                               />
-                              <div className={styles.publishPreviewAvatar}>M</div>
+                              <div className={styles.publishPreviewAvatar}>{getUserInitials()}</div>
                             </div>
                             <h2 className={styles.publishPreviewTitle}>{experienceTitle}</h2>
                           </div>
@@ -1805,10 +2251,10 @@ export default function HostSetup() {
                       {/* Left Column: Heading & Subtitle */}
                       <div className="col-md-6 col-lg-6 d-flex flex-column justify-content-center">
                         <h1 className={styles.submissionTitle}>
-                          Thanks for your submission
+                          {expStepSettings.exp_step_submission?.title || "Thanks for your submission"}
                         </h1>
                         <p className={styles.submissionSubtitle}>
-                          We'll let you know in a few days if your listing has been approved. It will be published one week later.
+                          {expStepSettings.exp_step_submission?.subtitle || "We'll let you know in a few days if your listing has been approved. It will be published one week later."}
                         </p>
                       </div>
 
@@ -1843,7 +2289,7 @@ export default function HostSetup() {
                 <footer className={styles.submissionFooter}>
                   <button 
                     className={styles.submissionDoneBtn} 
-                    onClick={() => navigate('/hosting/listings')}
+                    onClick={() => navigate(createdListingId ? `/hosting/listing-editor/${createdListingId}` : '/hosting/listings')}
                   >
                     Done
                   </button>
@@ -2422,12 +2868,16 @@ export default function HostSetup() {
               </div>
               )
             ) : serviceStep === 13 ? (
-              <div className={step1Styles.pageContainer} style={{ width: '100%', display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto' }}>
-                <div style={{ flexGrow: 1, padding: '40px' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: '#ffffff' }}>
+                <div style={{ flex: 1, overflowY: 'auto', padding: '36px 24px 130px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   {photos.length === 0 ? (
-                    <div className={step1Styles.step6Container}>
+                    <div className={step1Styles.step6Container} style={{ width: '100%', maxWidth: '640px' }}>
                       <h1 className={step1Styles.step2Title} style={{ marginBottom: '8px' }}>
-                        {hostingType === "service" ? "Add unique photos of your Airbnb Service" : "Add unique photos of your Airbnb Experience"}
+                        {selectedExperience?.name
+                          ? `Add unique photos of your Airbnb ${selectedExperience.name}`
+                          : hostingType === "service"
+                            ? "Add unique photos of your Airbnb Service"
+                            : "Add unique photos of your Airbnb Experience"}
                       </h1>
                       <p className={step1Styles.mapSubtitle}>You'll need 5 photos to get started. You can add more or make changes later.</p>
 
@@ -2436,12 +2886,13 @@ export default function HostSetup() {
                         onClick={() => setShowUploadModal(true)} 
                         onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
                         onDragLeave={() => setIsDragOver(false)}
-                        onDrop={(e) => {
+                        onDrop={async (e) => {
                           e.preventDefault();
                           setIsDragOver(false);
                           if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                            const newPhotos = Array.from(e.dataTransfer.files).map((f) => URL.createObjectURL(f));
-                            setPhotos(prev => [...prev, ...newPhotos]);
+                            const droppedFiles = Array.from(e.dataTransfer.files);
+                            const dataUrls = await Promise.all(droppedFiles.map(readFileAsDataUrl));
+                            setPhotos(prev => [...prev, ...dataUrls]);
                           }
                         }}
                         style={{ cursor: 'pointer', borderColor: isDragOver ? '#222' : '#b0b0b0', background: isDragOver ? '#f0f0f0' : 'white' }}
@@ -2451,9 +2902,13 @@ export default function HostSetup() {
                       </div>
                     </div>
                   ) : (
-                    <div className={step1Styles.step6Container}>
+                    <div className={step1Styles.step6Container} style={{ width: '100%', maxWidth: '760px', padding: 0 }}>
                       <h1 className={step1Styles.step2Title} style={{ marginBottom: '8px', textAlign: 'center' }}>
-                        {hostingType === "service" ? "Add unique photos of your Airbnb Service" : "Add unique photos of your Airbnb Experience"}
+                        {selectedExperience?.name
+                          ? `Add unique photos of your Airbnb ${selectedExperience.name}`
+                          : hostingType === "service"
+                            ? "Add unique photos of your Airbnb Service"
+                            : "Add unique photos of your Airbnb Experience"}
                       </h1>
                       <p className={step1Styles.mapSubtitle} style={{ textAlign: 'center' }}>
                         {photos.length < 5 ? `Add at least ${5 - photos.length} more photo${5 - photos.length > 1 ? 's' : ''} (5 required).` : `${photos.length} photos added.`}
@@ -2471,21 +2926,79 @@ export default function HostSetup() {
                               </div>
                             )}
 
-                            <button className={styles.experienceMenuBtn} onClick={() => setActiveMenuIndex(activeMenuIndex === index ? null : index)}>
+                            <button 
+                              type="button"
+                              className={styles.experienceMenuBtn} 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveMenuIndex(activeMenuIndex === index ? null : index);
+                              }}
+                              title="Photo options"
+                            >
                               <BsThreeDots />
                             </button>
                             
                             {activeMenuIndex === index && (
-                              <div className={styles.experiencePhotoDropdown}>
-                                <div className={styles.experiencePhotoDropdownItem} onClick={() => { 
-                                  setPhotoToEdit(index); 
-                                  setCurrentCaption(photoCaptions[index] || "");
-                                  setActiveMenuIndex(null); 
-                                }}>Edit</div>
-                                {index > 0 && <div className={styles.experiencePhotoDropdownItem} onClick={() => movePhotoBackwards(index)}>Move backwards</div>}
-                                {index < photos.length - 1 && <div className={styles.experiencePhotoDropdownItem} onClick={() => movePhotoForwards(index)}>Move forwards</div>}
-                                {index > 0 && <div className={styles.experiencePhotoDropdownItem} onClick={() => makeCoverPhoto(index)}>Make cover photo</div>}
-                                <div className={styles.experiencePhotoDropdownItem} onClick={() => { setPhotoToDelete(index); setActiveMenuIndex(null); }}>Delete</div>
+                              <div 
+                                ref={photoMenuRef}
+                                className={styles.experiencePhotoDropdown}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div 
+                                  className={styles.experiencePhotoDropdownItem} 
+                                  onClick={(e) => { 
+                                    e.stopPropagation();
+                                    setPhotoToEdit(index); 
+                                    setCurrentCaption(photoCaptions[index] || "");
+                                    setActiveMenuIndex(null); 
+                                  }}
+                                >
+                                  Edit
+                                </div>
+                                {index > 0 && (
+                                  <div 
+                                    className={styles.experiencePhotoDropdownItem} 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      movePhotoBackwards(index);
+                                    }}
+                                  >
+                                    Move backwards
+                                  </div>
+                                )}
+                                {index < photos.length - 1 && (
+                                  <div 
+                                    className={styles.experiencePhotoDropdownItem} 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      movePhotoForwards(index);
+                                    }}
+                                  >
+                                    Move forwards
+                                  </div>
+                                )}
+                                {index > 0 && (
+                                  <div 
+                                    className={styles.experiencePhotoDropdownItem} 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      makeCoverPhoto(index);
+                                    }}
+                                  >
+                                    Make cover photo
+                                  </div>
+                                )}
+                                <div 
+                                  className={styles.experiencePhotoDropdownItem} 
+                                  style={{ color: '#c13515' }}
+                                  onClick={(e) => { 
+                                    e.stopPropagation();
+                                    setPhotoToDelete(index); 
+                                    setActiveMenuIndex(null); 
+                                  }}
+                                >
+                                  Delete
+                                </div>
                               </div>
                             )}
                           </div>
@@ -2495,11 +3008,12 @@ export default function HostSetup() {
                           className={styles.experienceAddPhotoBox} 
                           onClick={() => setShowUploadModal(true)}
                           onDragOver={(e) => { e.preventDefault(); }}
-                          onDrop={(e) => {
+                          onDrop={async (e) => {
                             e.preventDefault();
                             if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                              const newPhotos = Array.from(e.dataTransfer.files).map((f) => URL.createObjectURL(f));
-                              setPhotos(prev => [...prev, ...newPhotos]);
+                              const files = Array.from(e.dataTransfer.files);
+                              const newPhotos = await Promise.all(files.map(readFileAsDataUrl));
+                              setPhotos(prev => [...prev, ...newPhotos.filter(Boolean)]);
                             }
                           }}
                         >
@@ -2543,11 +3057,12 @@ export default function HostSetup() {
                             <div 
                               className={step1Styles.uploadDragBox}
                               onDragOver={(e) => { e.preventDefault(); }}
-                              onDrop={(e) => {
+                              onDrop={async (e) => {
                                 e.preventDefault();
                                 if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                                  const dropped = Array.from(e.dataTransfer.files).map(f => URL.createObjectURL(f));
-                                  setSelectedUploadPhotos(prev => [...prev, ...dropped]);
+                                  const dropped = Array.from(e.dataTransfer.files);
+                                  const dataUrls = await Promise.all(dropped.map(readFileAsDataUrl));
+                                  setSelectedUploadPhotos(prev => [...prev, ...dataUrls]);
                                 }
                               }}
                             >
@@ -2620,7 +3135,7 @@ export default function HostSetup() {
                           </button>
                         </div>
                         <div className={step1Styles.deleteModalBody}>
-                          Once you delete this photo from your experience, you can't get it back.
+                          Once you delete this photo from your {selectedExperience?.name ? selectedExperience.name.toLowerCase() : (hostingType === "service" ? "service" : "experience")}, you can't get it back.
                         </div>
                         <div className={step1Styles.deleteModalFooter}>
                           <button className={step1Styles.deleteCancelBtn} onClick={() => setPhotoToDelete(null)}>Cancel</button>
@@ -2662,13 +3177,17 @@ export default function HostSetup() {
                           <div className={step1Styles.editModalRight}>
                             <div className={step1Styles.editModalLabel}>Caption</div>
                             <div className={step1Styles.editModalDesc}>
-                              Mention what's special about this moment or details guests will experience.
+                              Mention what's special about this moment or details guests will receive in your {selectedExperience?.name ? selectedExperience.name.toLowerCase() : (hostingType === "service" ? "service" : "experience")}.
                             </div>
                             <textarea 
                               className={step1Styles.editModalTextarea}
                               value={currentCaption}
                               onChange={(e) => setCurrentCaption(e.target.value)}
-                              placeholder="e.g. Preparing fresh local ingredients together in the studio"
+                              placeholder={
+                                hostingType === "service"
+                                  ? `e.g. Setting up professional equipment for ${selectedExperience?.name ? selectedExperience.name.toLowerCase() : 'service'}`
+                                  : "e.g. Preparing fresh local ingredients together in the studio"
+                              }
                               maxLength={150}
                             />
                             <div style={{ fontSize: '12px', color: '#717171', marginTop: '6px', textAlign: 'right' }}>
@@ -2706,7 +3225,7 @@ export default function HostSetup() {
                   )}
                 </div>
 
-                <footer className={styles.fixedFooter} style={{position: 'absolute', justifyContent: 'space-between', display: 'flex', alignItems: 'center'}}>
+                <footer className={styles.fixedFooter} style={{ position: 'absolute', bottom: 0, left: 0, right: 0, justifyContent: 'space-between', display: 'flex', alignItems: 'center', zIndex: 50, borderTop: '1px solid #ebebeb', background: '#ffffff', padding: '16px 24px' }}>
                   <span className={styles.getTipsText}>Get tips</span>
                   <button
                     className={`${styles.footerNextBtn} ${photos.length < 5 ? styles.footerNextBtnDisabled : ""}`}
@@ -2740,7 +3259,9 @@ export default function HostSetup() {
                           </svg>
                         </div>
                         <div className={styles.cardTextContent}>
-                          <div className={styles.cardTitleText}>Swedish massage</div>
+                          <div className={styles.cardTitleText}>
+                            {selectedExperience?.subOptions?.[0] || (selectedExperience?.name ? `Standard ${selectedExperience.name}` : "Swedish massage")}
+                          </div>
                           <div className={styles.cardPriceText}>₹70 total</div>
                         </div>
                       </div>
@@ -2755,7 +3276,9 @@ export default function HostSetup() {
                           </svg>
                         </div>
                         <div className={styles.cardTextContent}>
-                          <div className={styles.cardTitleText}>Aromatherapy massage</div>
+                          <div className={styles.cardTitleText}>
+                            {selectedExperience?.subOptions?.[1] || (selectedExperience?.name ? `Premium ${selectedExperience.name}` : "Aromatherapy massage")}
+                          </div>
                           <div className={styles.cardPriceText}>₹100 total</div>
                         </div>
                       </div>
@@ -2770,7 +3293,9 @@ export default function HostSetup() {
                           </svg>
                         </div>
                         <div className={styles.cardTextContent}>
-                          <div className={styles.cardTitleText}>Deep tissue massage</div>
+                          <div className={styles.cardTitleText}>
+                            {selectedExperience?.subOptions?.[2] || (selectedExperience?.name ? `Specialized ${selectedExperience.name}` : "Deep tissue massage")}
+                          </div>
                           <div className={styles.cardPriceText}>₹150 total</div>
                         </div>
                       </div>
@@ -2865,10 +3390,11 @@ export default function HostSetup() {
                       className={styles.offeringsAddBtnBox}
                       onClick={() => {
                         setEditingOfferingIndex(null);
+                        const defaultSub = selectedExperience?.subOptions?.[0] || selectedExperience?.name || "Service offering";
                         setOfferingForm({
                           title: "",
                           description: "",
-                          serviceType: "Swedish massage",
+                          serviceType: defaultSub,
                           price: "",
                           priceType: "Per guest",
                           maxGuests: "",
@@ -3026,7 +3552,7 @@ export default function HostSetup() {
                         </p>
 
                         <ul style={{ margin: 0, paddingLeft: '24px' }}>
-                          <li>providing <a href="https://www.airbnb.com/help/article/1451" target="_blank" rel="noreferrer" style={{ textDecoration: 'underline', fontWeight: 600, color: '#222' }}>massage services</a>.</li>
+                          <li>providing <a href="https://www.airbnb.com/help/article/1451" target="_blank" rel="noreferrer" style={{ textDecoration: 'underline', fontWeight: 600, color: '#222' }}>{selectedExperience?.name ? `${selectedExperience.name.toLowerCase()} services` : "services"}</a>.</li>
                         </ul>
 
                         <p style={{ margin: 0 }}>
@@ -3091,7 +3617,7 @@ export default function HostSetup() {
                             <input
                               type="text"
                               className={styles.offeringInputGiant}
-                              placeholder="Swedish massage"
+                              placeholder={selectedExperience?.subOptions?.[0] || (selectedExperience?.name ? `e.g. ${selectedExperience.name}` : "Service title")}
                               value={offeringForm.title}
                               maxLength={32}
                               autoFocus
@@ -3166,7 +3692,12 @@ export default function HostSetup() {
                             <div
                               className={styles.offeringDetailSection}
                               onClick={() => {
-                                setTempServiceType(offeringForm.serviceType || "Swedish");
+                                setTempServiceType(
+                                  offeringForm.serviceType ||
+                                  selectedExperience?.subOptions?.[0] ||
+                                  selectedExperience?.name ||
+                                  "Standard service"
+                                );
                                 setActiveOfferingDetailModal("service_type");
                               }}
                               style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
@@ -3529,7 +4060,7 @@ export default function HostSetup() {
                             padding: "6px",
                             color: "#717171",
                           }}
-                          onClick={() => alert("Enter the total amount per guest or booking.")}
+                          onClick={() => toast("Enter the total amount per guest or booking.", { icon: "ℹ️" })}
                         >
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <circle cx="12" cy="12" r="10" />
@@ -3675,7 +4206,7 @@ export default function HostSetup() {
                       <div className={styles.detailSubModalHeader}>
                         <div style={{ width: '30px' }}></div>
                         <span className={styles.detailSubModalTitle} style={{ fontSize: '20px' }}>
-                          Choose a type of massage
+                          Choose a type of {selectedExperience?.name ? selectedExperience.name.toLowerCase() : "service"}
                         </span>
                         <button
                           className={styles.detailSubModalClose}
@@ -3687,17 +4218,23 @@ export default function HostSetup() {
 
                       <div className={styles.detailSubModalBody}>
                         <div className={styles.detailServiceTypeList}>
-                          {[
-                            { name: "Swedish", icon: "⇡⇡" },
-                            { name: "Deep tissue", icon: "↡" },
-                            { name: "Hot stone massage", icon: "♨" },
-                            { name: "Antenatal", icon: "♡" },
-                            { name: "Couples", icon: "⚏" },
-                            { name: "Thai", icon: "≋" },
-                            { name: "Reflexology", icon: "👣" },
-                            { name: "Aromatherapy", icon: "🌸" },
-                            { name: "Sports massage", icon: "⚡" },
-                          ].map((item) => (
+                          {(selectedExperience?.subOptions && selectedExperience.subOptions.length > 0
+                            ? selectedExperience.subOptions.map((sub, i) => ({
+                                name: sub,
+                                icon: ["✨", "★", "◈", "❖", "✦", "⇡⇡", "↡", "≋", "⚡"][i % 9]
+                              }))
+                            : [
+                                { name: "Swedish", icon: "⇡⇡" },
+                                { name: "Deep tissue", icon: "↡" },
+                                { name: "Hot stone massage", icon: "♨" },
+                                { name: "Antenatal", icon: "♡" },
+                                { name: "Couples", icon: "⚏" },
+                                { name: "Thai", icon: "≋" },
+                                { name: "Reflexology", icon: "👣" },
+                                { name: "Aromatherapy", icon: "🌸" },
+                                { name: "Sports massage", icon: "⚡" },
+                              ]
+                          ).map((item) => (
                             <div
                               key={item.name}
                               className={`${styles.detailServiceTypeItem} ${tempServiceType === item.name ? styles.detailServiceTypeItemSelected : ""}`}
@@ -3761,7 +4298,11 @@ export default function HostSetup() {
                             maxLength={500}
                             rows={8}
                             autoFocus
-                            placeholder="Tell guests what’s included. For example, “A relaxing full-body massage that uses long, gentle strokes and other techniques to...”"
+                            placeholder={
+                              selectedExperience?.name
+                                ? `Tell guests what’s included. For example, “A professional ${selectedExperience.name.toLowerCase()} service tailored to your needs, including...”`
+                                : "Tell guests what’s included. For example, “A relaxing service tailored to your needs, including...”"
+                            }
                             value={tempDescription}
                             onChange={(e) => setTempDescription(e.target.value)}
                           />
@@ -6978,7 +7519,7 @@ export default function HostSetup() {
                     className={styles.title}
                     style={{ fontSize: "52px", marginBottom: "16px" }}
                   >
-                    Create your listing
+                    {expStepSettings.exp_step5_welcome?.title || "Create your listing"}
                   </h1>
                   <p
                     style={{
@@ -6988,15 +7529,19 @@ export default function HostSetup() {
                       maxWidth: "440px",
                     }}
                   >
-                    Tell us about yourself and the{" "}
-                    {hostingType === "service" ? "service" : "experience"} you
-                    offer. Our team will review it to confirm it meets our{" "}
-                    <a
-                      href="#"
-                      style={{ color: "#222", textDecoration: "underline" }}
-                    >
-                      requirements.
-                    </a>
+                    {expStepSettings.exp_step5_welcome?.subtitle || (
+                      <>
+                        Tell us about yourself and the{" "}
+                        {hostingType === "service" ? "service" : "experience"} you
+                        offer. Our team will review it to confirm it meets our{" "}
+                        <a
+                          href="#"
+                          style={{ color: "#222", textDecoration: "underline" }}
+                        >
+                          requirements.
+                        </a>
+                      </>
+                    )}
                   </p>
                 </div>
                 <div className="col-md-5 d-flex justify-content-center align-items-center">
@@ -7005,7 +7550,7 @@ export default function HostSetup() {
                     style={{ transform: "rotate(-3deg)" }}
                   >
                     <div className={styles.subExpLargeIcon}>
-                      {selectedExperience?.icon}
+                      {renderCategoryIcon(selectedExperience?.icon, { size: '42px' })}
                     </div>
                     <div
                       className={styles.subExpLargeName}
@@ -7038,10 +7583,19 @@ export default function HostSetup() {
               <div className="row">
                 <div className="col-md-7 d-flex flex-column justify-content-center">
                   <h1 className={styles.subExpTitle}>
-                    Where will you offer
-                    <br />
-                    your {hostingType === "service" ? "service" : "experience"}?
+                    {expStepSettings.exp_step4_city?.title || (
+                      <>
+                        Where will you offer
+                        <br />
+                        your {hostingType === "service" ? "service" : "experience"}?
+                      </>
+                    )}
                   </h1>
+                  {expStepSettings.exp_step4_city?.subtitle && (
+                    <p style={{ color: '#717171', fontSize: '16px', marginBottom: '16px' }}>
+                      {expStepSettings.exp_step4_city.subtitle}
+                    </p>
+                  )}
                   <div
                     className={styles.cityInputBox}
                     onClick={() => setShowCityModal(true)}
@@ -7066,7 +7620,7 @@ export default function HostSetup() {
                 <div className="col-md-5 d-flex justify-content-center align-items-center">
                   <div className={styles.subExpLargeCard}>
                     <div className={styles.subExpLargeIcon}>
-                      {selectedExperience?.icon}
+                      {renderCategoryIcon(selectedExperience?.icon, { size: '42px' })}
                     </div>
                     <div className={styles.subExpLargeName}>
                       {selectedExperience?.name}
@@ -7245,10 +7799,19 @@ export default function HostSetup() {
               <div className="row">
                 <div className="col-md-7 d-flex flex-column justify-content-center">
                   <h1 className={styles.subExpTitle}>
-                    How would you describe
-                    <br />
-                    your experience?
+                    {expStepSettings.exp_step3_describe?.title || (
+                      <>
+                        How would you describe
+                        <br />
+                        your {hostingType === "service" ? "service" : "experience"}?
+                      </>
+                    )}
                   </h1>
+                  {expStepSettings.exp_step3_describe?.subtitle && (
+                    <p style={{ color: '#717171', fontSize: '16px', marginBottom: '16px' }}>
+                      {expStepSettings.exp_step3_describe.subtitle}
+                    </p>
+                  )}
                   <div className={styles.subExpGrid}>
                     {selectedExperience?.subOptions.map((opt) => (
                       <button
@@ -7264,7 +7827,7 @@ export default function HostSetup() {
                 <div className="col-md-5 d-flex justify-content-center align-items-center">
                   <div className={styles.subExpLargeCard}>
                     <div className={styles.subExpLargeIcon}>
-                      {selectedExperience?.icon}
+                      {renderCategoryIcon(selectedExperience?.icon, { size: '42px' })}
                     </div>
                     <div className={styles.subExpLargeName}>
                       {selectedExperience?.name}
@@ -7294,8 +7857,13 @@ export default function HostSetup() {
             >
               {serviceStep === 1
                 ? "What service will you\nprovide?"
-                : "What experience will you\nhost?"}
+                : (expStepSettings.exp_step2_category?.title || "What experience will you\nhost?")}
             </h1>
+            {serviceStep === 2 && expStepSettings.exp_step2_category?.subtitle && (
+              <p style={{ color: '#717171', fontSize: '16px', marginBottom: '24px' }}>
+                {expStepSettings.exp_step2_category.subtitle}
+              </p>
+            )}
 
             <div className={styles.serviceGrid}>
               {(serviceStep === 1
@@ -7311,7 +7879,9 @@ export default function HostSetup() {
                     setServiceStep(3);
                   }}
                 >
-                  <div className={styles.serviceCardIcon}>{item.icon}</div>
+                  <div className={styles.serviceCardIcon}>
+                    {renderCategoryIcon(item.icon, { size: '40px' })}
+                  </div>
                   <div className={styles.serviceCardName}>{item.name}</div>
                 </div>
               ))}
@@ -7323,17 +7893,17 @@ export default function HostSetup() {
           <div className="container h-100">
             <div className="row align-items-center">
               {/* Left Column - Text and Input */}
-              <div className="col-lg-6 col-md-12 d-flex flex-column justify-content-center pe-md-5 mb-5 mb-md-0">
+              <div className="col-lg-6 col-md-12 d-flex flex-column justify-content-center pe-md-5 mb-3 mb-lg-0">
                 <h1 className={styles.title}>
                   Set up your
-                  <br />
-                  Airbnb listing
+                  
+                  <span className="d-lg-block d-sm-inline">Airbnb listing</span>
                 </h1>
 
                 <p className={styles.subtitle}>
                   It's easy to create a great listing - let's start
-                  <br />
-                  with your address.
+                  
+                  <span className="d-lg-block d-sm-inline">with your address.</span>
                 </p>
 
                 <div
@@ -7442,21 +8012,71 @@ export default function HostSetup() {
                     className={styles.modalSearchInput}
                     placeholder="Enter your address"
                     autoFocus
+                    value={addressSearchQuery}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setAddressSearchQuery(val);
+                      handleAddressSearch(val);
+                    }}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") handleLocationSelect();
+                      if (e.key === "Enter") {
+                        if (addressSuggestions.length > 0) {
+                          handleSelectSuggestion(addressSuggestions[0]);
+                        } else {
+                          handleLocationSelect(addressSearchQuery);
+                        }
+                      }
                     }}
                   />
+                  {isSearchingAddress && (
+                    <div className="spinner-border spinner-border-sm text-secondary me-2" role="status"></div>
+                  )}
                 </div>
+
+                {/* Suggestions List from Backend */}
+                {addressSuggestions.length > 0 && (
+                  <div style={{ maxHeight: '240px', overflowY: 'auto', marginBottom: '16px', border: '1px solid #ebebeb', borderRadius: '12px' }}>
+                    {addressSuggestions.map((item, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => handleSelectSuggestion(item)}
+                        style={{
+                          padding: '12px 16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          cursor: 'pointer',
+                          borderBottom: idx === addressSuggestions.length - 1 ? 'none' : '1px solid #f0f0f0',
+                          backgroundColor: '#ffffff',
+                          transition: 'background-color 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f7f7f7'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
+                      >
+                        <FaMapMarkerAlt style={{ color: '#FF385C', flexShrink: 0 }} />
+                        <div>
+                          <div style={{ fontSize: '14px', fontWeight: 600, color: '#222' }}>
+                            {item.street || item.city}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#717171' }}>
+                            {item.full_address}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 <button
                   className={styles.locationBtn}
-                  onClick={handleLocationSelect}
+                  onClick={handleUseAddressModalCurrentLocation}
+                  disabled={isDetectingLocation}
                 >
                   <div className={styles.locationIconContainer}>
                     <FaLocationArrow className={styles.locationIcon} />
                   </div>
                   <span className={styles.locationText}>
-                    Use my current location
+                    {isDetectingLocation ? 'Detecting current location...' : 'Use my current location'}
                   </span>
                 </button>
               </div>
@@ -7467,7 +8087,15 @@ export default function HostSetup() {
                     <select
                       className="form-select border-0 shadow-none"
                       id="countrySelect"
-                      defaultValue="IN"
+                      value={modalAddress.country_code || 'IN'}
+                      onChange={(e) => {
+                        const code = e.target.value;
+                        setModalAddress(prev => ({
+                          ...prev,
+                          country_code: code,
+                          country: code === 'IN' ? 'India' : 'United States'
+                        }));
+                      }}
                     >
                       <option value="IN">India - IN</option>
                       <option value="US">United States - US</option>
@@ -7481,6 +8109,8 @@ export default function HostSetup() {
                       className="form-control border-0 shadow-none"
                       id="flatInput"
                       placeholder="Flat, house, etc."
+                      value={modalAddress.flat || ''}
+                      onChange={(e) => setModalAddress(prev => ({ ...prev, flat: e.target.value }))}
                     />
                     <label htmlFor="flatInput">
                       Flat, house, etc. (if applicable)
@@ -7493,7 +8123,8 @@ export default function HostSetup() {
                       className="form-control border-0 shadow-none"
                       id="streetInput"
                       placeholder="Street address"
-                      defaultValue="1st floor, Vaishali Tower II, 101, Nursery Circle"
+                      value={modalAddress.street || ''}
+                      onChange={(e) => setModalAddress(prev => ({ ...prev, street: e.target.value }))}
                     />
                     <label htmlFor="streetInput">Street address</label>
                   </div>
@@ -7504,6 +8135,8 @@ export default function HostSetup() {
                       className="form-control border-0 shadow-none"
                       id="landmarkInput"
                       placeholder="Nearby landmark"
+                      value={modalAddress.landmark || ''}
+                      onChange={(e) => setModalAddress(prev => ({ ...prev, landmark: e.target.value }))}
                     />
                     <label htmlFor="landmarkInput">
                       Nearby landmark (if applicable)
@@ -7516,7 +8149,8 @@ export default function HostSetup() {
                       className="form-control border-0 shadow-none"
                       id="districtInput"
                       placeholder="District/locality"
-                      defaultValue="Vaishali Nagar"
+                      value={modalAddress.district || ''}
+                      onChange={(e) => setModalAddress(prev => ({ ...prev, district: e.target.value }))}
                     />
                     <label htmlFor="districtInput">
                       District/locality (if applicable)
@@ -7529,7 +8163,8 @@ export default function HostSetup() {
                       className="form-control border-0 shadow-none"
                       id="cityInput"
                       placeholder="City/town"
-                      defaultValue="Jaipur"
+                      value={modalAddress.city || ''}
+                      onChange={(e) => setModalAddress(prev => ({ ...prev, city: e.target.value }))}
                     />
                     <label htmlFor="cityInput">City/town</label>
                   </div>
@@ -7540,7 +8175,8 @@ export default function HostSetup() {
                       className="form-control border-0 shadow-none"
                       id="stateInput"
                       placeholder="State"
-                      defaultValue="Rajasthan"
+                      value={modalAddress.state || ''}
+                      onChange={(e) => setModalAddress(prev => ({ ...prev, state: e.target.value }))}
                     />
                     <label htmlFor="stateInput">State/union territory</label>
                   </div>
@@ -7551,7 +8187,8 @@ export default function HostSetup() {
                       className="form-control border-0 shadow-none"
                       id="pinInput"
                       placeholder="PIN code"
-                      defaultValue="302021"
+                      value={modalAddress.pin || ''}
+                      onChange={(e) => setModalAddress(prev => ({ ...prev, pin: e.target.value }))}
                     />
                     <label htmlFor="pinInput">PIN code</label>
                   </div>
@@ -7560,7 +8197,7 @@ export default function HostSetup() {
                 <button
                   className={`btn w-100 fw-bold py-3 rounded-3 text-white`}
                   style={{ backgroundColor: "#222222" }}
-                  onClick={() => (window.location.href = "/step1")}
+                  onClick={handleSaveAddressAndProceed}
                 >
                   Next
                 </button>
@@ -7587,8 +8224,13 @@ export default function HostSetup() {
                 <FaTimes />
               </button>
               <h2 className={styles.expModalTitle}>
-                What would you like to host?
+                {expStepSettings.exp_type_modal?.title || "What would you like to host?"}
               </h2>
+              {expStepSettings.exp_type_modal?.subtitle && (
+                <p style={{ fontSize: '14px', color: '#717171', margin: '4px 0 0 0', textAlign: 'center' }}>
+                  {expStepSettings.exp_type_modal.subtitle}
+                </p>
+              )}
             </div>
 
             <div className={styles.expModalBody}>
@@ -7598,7 +8240,9 @@ export default function HostSetup() {
                   className={`${styles.expModalCard} ${hostingType === type.key ? styles.expModalCardSelected : ""}`}
                   onClick={() => setHostingType(type.key)}
                 >
-                  <div className={styles.expModalIcon}>{type.icon || '✨'}</div>
+                  <div className={styles.expModalIcon}>
+                    {renderCategoryIcon(type.icon || type.key, { size: '' })}
+                  </div>
                   <div className={styles.expModalName}>{type.name}</div>
                   {hostingType === type.key && type.description && (
                     <div className={styles.expModalSub}>
@@ -7639,16 +8283,26 @@ export default function HostSetup() {
               <FaTimes size={14} />
             </button>
             <div className={styles.discountModalHeader}>
-              <span className={styles.discountModalTitle}>Limited-time discount</span>
-              <span className={styles.discountModalSub}>Applies to all bookings made in the first 90 days</span>
+              <span className={styles.discountModalTitle}>
+                {expStepSettings.exp_modal_discount_limited?.title || "Limited-time discount"}
+              </span>
+              <span className={styles.discountModalSub}>
+                {expStepSettings.exp_modal_discount_limited?.subtitle || "Applies to all bookings made in the first 90 days"}
+              </span>
             </div>
             
             <div className={styles.discountInputWrapper}>
               <input 
                 type="text"
                 className={styles.discountInputHuge}
-                value={limitedTimeDiscount ? limitedTimeDiscount + "%" : "0%"}
-                onChange={(e) => setLimitedTimeDiscount(e.target.value.replace(/[^0-9]/g, ''))}
+                placeholder={`${expStepSettings.exp_modal_discount_limited?.toggle_label || "20"}%`}
+                value={limitedTimeDiscount ? `${limitedTimeDiscount}%` : ""}
+                onChange={(e) => {
+                  const num = e.target.value.replace(/[^0-9]/g, '');
+                  if (num === '' || (parseInt(num, 10) >= 0 && parseInt(num, 10) <= 99)) {
+                    setLimitedTimeDiscount(num);
+                  }
+                }}
               />
             </div>
             
@@ -7677,12 +8331,18 @@ export default function HostSetup() {
               <FaTimes size={14} />
             </button>
             <div className={styles.discountModalHeader}>
-              <span className={styles.discountModalTitle}>Early-bird discount</span>
+              <span className={styles.discountModalTitle}>
+                {expStepSettings.exp_modal_discount_early?.title || "Early-bird discount"}
+              </span>
             </div>
             
             <div className={styles.discountInputWrapper} style={{ flexDirection: 'column', gap: '8px' }}>
-              <span className={styles.discountInputHuge}>20% off</span>
-              <span className={styles.discountModalSub}>Applies to all bookings made more than 2 weeks in advance.</span>
+              <span className={styles.discountInputHuge}>
+                {expStepSettings.exp_modal_discount_early?.toggle_label || "20"}% off
+              </span>
+              <span className={styles.discountModalSub}>
+                {expStepSettings.exp_modal_discount_early?.subtitle || "Applies to all bookings made more than 2 weeks in advance."}
+              </span>
             </div>
             
             <div className={styles.discountModalFooter}>
@@ -7694,7 +8354,7 @@ export default function HostSetup() {
               </button>
               <button 
                 className={styles.discountSaveBtn}
-                onClick={() => { setEarlyBirdDiscount("20"); setActiveDiscountModal(null); }}
+                onClick={() => { setEarlyBirdDiscount(expStepSettings.exp_modal_discount_early?.toggle_label || "20"); setActiveDiscountModal(null); }}
               >
                 Apply discount
               </button>
@@ -7710,7 +8370,14 @@ export default function HostSetup() {
               <FaTimes size={14} />
             </button>
             <div className={styles.discountModalHeader}>
-              <span className={styles.discountModalTitle}>Large group discount</span>
+              <span className={styles.discountModalTitle}>
+                {expStepSettings.exp_modal_discount_large?.title || "Large group discount"}
+              </span>
+              {expStepSettings.exp_modal_discount_large?.subtitle && (
+                <span className={styles.discountModalSub}>
+                  {expStepSettings.exp_modal_discount_large.subtitle}
+                </span>
+              )}
             </div>
             
             <div className={styles.discountStackedInputBox}>
@@ -7719,6 +8386,7 @@ export default function HostSetup() {
                 <input 
                   type="text"
                   className={styles.discountStackedInputField}
+                  placeholder={expStepSettings.exp_modal_discount_large?.toggle_label || "4"}
                   value={largeGroupMinGuests}
                   onChange={(e) => setLargeGroupMinGuests(e.target.value.replace(/[^0-9]/g, ''))}
                 />
@@ -7728,6 +8396,7 @@ export default function HostSetup() {
                 <input 
                   type="text"
                   className={styles.discountStackedInputField}
+                  placeholder={`${expStepSettings.exp_modal_discount_large?.toggle_subtitle || "15"}%`}
                   value={largeGroupDiscount}
                   onChange={(e) => setLargeGroupDiscount(e.target.value.replace(/[^0-9]/g, ''))}
                 />
@@ -7752,77 +8421,6 @@ export default function HostSetup() {
           </div>
         </div>
       )}
-      {activeDiscountModal === 'limited' && (
-        <div className={styles.discountModalOverlay}>
-          <div className={styles.discountModalDialog}>
-            <button className={styles.discountModalClose} onClick={() => setActiveDiscountModal(null)}>
-              <FaTimes size={14} />
-            </button>
-            <div className={styles.discountModalHeader}>
-              <span className={styles.discountModalTitle}>Limited-time discount</span>
-              <span className={styles.discountModalSub}>Applies to all bookings made in the first 90 days</span>
-            </div>
-            
-            <div className={styles.discountInputWrapper}>
-              <input 
-                type="text"
-                className={styles.discountInputHuge}
-                value={limitedTimeDiscount ? limitedTimeDiscount + "%" : "0%"}
-                onChange={(e) => setLimitedTimeDiscount(e.target.value.replace(/[^0-9]/g, ''))}
-              />
-            </div>
-            
-            <div className={styles.discountModalFooter}>
-              <button 
-                className={styles.discountRemoveBtn}
-                onClick={() => { setLimitedTimeDiscount(""); setActiveDiscountModal(null); }}
-              >
-                Remove
-              </button>
-              <button 
-                className={styles.discountSaveBtn}
-                onClick={() => setActiveDiscountModal(null)}
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeDiscountModal === 'early' && (
-        <div className={styles.discountModalOverlay}>
-          <div className={styles.discountModalDialog}>
-            <button className={styles.discountModalClose} onClick={() => setActiveDiscountModal(null)}>
-              <FaTimes size={14} />
-            </button>
-            <div className={styles.discountModalHeader}>
-              <span className={styles.discountModalTitle}>Early-bird discount</span>
-            </div>
-            
-            <div className={styles.discountInputWrapper} style={{ flexDirection: 'column', gap: '8px' }}>
-              <span className={styles.discountInputHuge}>20% off</span>
-              <span className={styles.discountModalSub}>Applies to all bookings made more than 2 weeks in advance.</span>
-            </div>
-            
-            <div className={styles.discountModalFooter}>
-              <button 
-                className={styles.discountRemoveBtn}
-                onClick={() => { setEarlyBirdDiscount(""); setActiveDiscountModal(null); }}
-              >
-                Cancel
-              </button>
-              <button 
-                className={styles.discountSaveBtn}
-                onClick={() => { setEarlyBirdDiscount("20"); setActiveDiscountModal(null); }}
-              >
-                Apply discount
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
 
     </div>
   );

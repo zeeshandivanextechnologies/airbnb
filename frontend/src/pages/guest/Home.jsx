@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { Splide, SplideSlide, SplideTrack } from '@splidejs/react-splide';
 import '@splidejs/react-splide/css';
 import { FaHeart, FaStar, FaChevronLeft, FaChevronRight, FaArrowRight } from 'react-icons/fa';
@@ -7,18 +8,43 @@ import { useTranslation } from 'react-i18next';
 
 export default function Home() {
   const { t } = useTranslation();
-  const images = [
-    "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=720&q=80",
-    "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=720&q=80",
-    "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?w=720&q=80",
-    "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=720&q=80",
-    "https://images.unsplash.com/photo-1497366216548-37526070297c?w=720&q=80",
-    "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=720&q=80",
-    "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=720&q=80",
-    "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=720&q=80"
-  ];
+  const [dynamicListings, setDynamicListings] = useState([]);
+  const [destinationsData, setDestinationsData] = useState([]);
 
-  const destinationsData = [
+  useEffect(() => {
+    const fetchHomeData = async () => {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+      
+      // Fetch dynamic listings
+      try {
+        const res = await fetch(`${baseUrl}/listings?status=Active`);
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          setDynamicListings(json.data);
+        }
+      } catch (e) {
+        console.warn('Failed to fetch home listings from backend:', e);
+      }
+
+      // Fetch dynamic destinations slider
+      try {
+        const destRes = await fetch(`${baseUrl}/listings/home-destinations?status=active`);
+        const destJson = await destRes.json();
+        if (destJson.success && Array.isArray(destJson.data) && destJson.data.length > 0) {
+          setDestinationsData(destJson.data);
+        } else {
+          setDestinationsData(fallbackDestinations);
+        }
+      } catch (e) {
+        console.warn('Failed to fetch destinations from backend:', e);
+        setDestinationsData(fallbackDestinations);
+      }
+    };
+
+    fetchHomeData();
+  }, []);
+
+  const fallbackDestinations = [
     { country: "Maldives", image: "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=720&q=80", title: "Prime beach spot" },
     { country: "Switzerland", image: "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?w=720&q=80", title: "Mountain retreat" },
     { country: "Japan", image: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=720&q=80", title: "Cultural hub" },
@@ -31,6 +57,17 @@ export default function Home() {
     { country: "Dubai", image: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=720&q=80", title: "Urban luxury" },
     { country: "Spain", image: "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=720&q=80", title: "Vibrant nightlife" },
     { country: "New Zealand", image: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=720&q=80", title: "Nature's best" }
+  ];
+
+  const images = [
+    "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=720&q=80",
+    "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=720&q=80",
+    "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?w=720&q=80",
+    "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=720&q=80",
+    "https://images.unsplash.com/photo-1497366216548-37526070297c?w=720&q=80",
+    "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=720&q=80",
+    "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=720&q=80",
+    "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=720&q=80"
   ];
 
   const baseListings1 = [
@@ -77,7 +114,28 @@ export default function Home() {
     { title: "Snow View Room", rating: "4.91", subtitle: "", price: "₹9,200", image: images[5] }
   ];
 
+  const liveListingItems = dynamicListings.map(item => {
+    const revCount = Number(item.reviews_count) || 0;
+    const numRating = Number(item.rating) || 0;
+    return {
+      id: item.id,
+      title: item.title,
+      type: item.type || 'Stay',
+      rating: revCount > 0 && numRating > 0 ? numRating.toFixed(2) : null,
+      reviewsCount: revCount,
+      subtitle: item.is_guest_favourite ? "Guest favourite" : (item.city || ""),
+      price: item.price ? `₹${Number(item.price).toLocaleString('en-IN')}` : "",
+      duration: item.duration || "",
+      image: item.cover_img || (Array.isArray(item.photos) && item.photos[0]) || ""
+    };
+  });
+
+  const liveExperienceItems = liveListingItems.filter(item => item.type === 'Experience');
+  const liveStayAndServiceItems = liveListingItems.filter(item => item.type !== 'Experience');
+
   const rowsData = [
+    ...(liveExperienceItems.length > 0 ? [{ category: "Newly Created Experiences", listings: liveExperienceItems }] : []),
+    ...(liveStayAndServiceItems.length > 0 ? [{ category: "Newly Added Homes & Services", listings: liveStayAndServiceItems }] : []),
     { category: "Explore experiences nearby", listings: baseListings4 },
     { category: "Popular homes in Manali", listings: baseListings4 },
     { category: "Popular homes in Gurgaon District", listings: baseListings3 },
@@ -196,10 +254,13 @@ export default function Home() {
               </div>
 
               <SplideTrack>
-              {row.listings.map((listing, index) => (
-                <SplideSlide key={index}>
-                  <NavLink to={`/listing/${index + 1}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
-                    <div className={styles['listing-card']}>
+              {row.listings.map((listing, index) => {
+                const targetPath = `/listing/${listing.id || index + 1}`;
+
+                return (
+                  <SplideSlide key={listing.id || index}>
+                    <NavLink to={targetPath} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+                      <div className={styles['listing-card']}>
                     
                     {/* Image Container with Badges */}
                     <div className={styles['image-container']}>
@@ -229,18 +290,24 @@ export default function Home() {
                       </h3>
                       <div className={styles['listing-details']}>
                         <span className={styles.price}>{listing.price}</span> 
-                        <span className={styles.duration}>for 2 nights</span>
-                        <span className={styles['rating-container']}>
-                          <FaStar size={10} className={styles['star-icon']} />
-                          {listing.rating}
-                        </span>
+                        {listing.duration && (
+                          <span className={styles.duration}>
+                            {listing.duration.startsWith('for') ? listing.duration : `/${listing.duration}`}
+                          </span>
+                        )}
+                        {listing.rating && (
+                          <span className={styles['rating-container']}>
+                            <FaStar size={10} className={styles['star-icon']} />
+                            {listing.rating}
+                          </span>
+                        )}
                       </div>
                     </div>
-                    
                   </div>
-                  </NavLink>
-                </SplideSlide>
-              ))}
+                </NavLink>
+              </SplideSlide>
+            );
+          })}
               </SplideTrack>
             </Splide>
           </div>

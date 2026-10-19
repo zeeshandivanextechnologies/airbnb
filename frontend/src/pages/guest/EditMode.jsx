@@ -15,7 +15,7 @@ import {
 import { BiBookOpen, BiBulb } from "react-icons/bi";
 import { MdPets, MdLanguage } from "react-icons/md";
 import { FiGlobe, FiSun } from "react-icons/fi";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { FaTree, FaUtensils, FaCoffee, FaFilm, FaHamburger, FaLandmark, FaWalking, FaShoppingBag, FaPaw, FaBook, FaMountain, FaWineGlass, FaDumbbell, FaSwimmer } from 'react-icons/fa';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateUser, updateAvatar } from '../../store/slices/authSlice';
@@ -23,9 +23,10 @@ import toast from 'react-hot-toast';
 import Cropper from 'react-easy-crop';
 import { getCroppedImg } from '../../utils/cropImage';
 
-function EditMode() {
+function EditMode({ userId = null, userEmail = null, onProfileUpdated = null }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user: authUser, token } = useSelector((state) => state.auth);
 
   const [isSticky, setIsSticky] = useState(true);
@@ -203,8 +204,8 @@ function EditMode() {
         const headers = {};
         if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
 
-        const targetId = activeUser?.id;
-        const targetEmail = activeUser?.email;
+        const targetId = userId || activeUser?.id;
+        const targetEmail = userEmail || activeUser?.email;
         const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
         const url = targetId
           ? `${baseUrl}/auth/profile?id=${targetId}`
@@ -222,6 +223,7 @@ function EditMode() {
           if (u.interests && Array.isArray(u.interests)) setSelectedInterests(u.interests);
           if (u.stampsEnabled !== undefined) setIsStampsEnabled(!!u.stampsEnabled);
           if (u.avatar) setProfileImage(u.avatar);
+          if (onProfileUpdated) onProfileUpdated(u);
         }
       } catch (err) {
         console.warn('Error fetching profile for EditMode:', err);
@@ -231,7 +233,7 @@ function EditMode() {
     };
 
     fetchUserData();
-  }, [activeUser?.id, activeUser?.email, activeToken]);
+  }, [userId, userEmail, activeUser?.id, activeUser?.email, activeToken]);
 
   // Helper to persist updates to Backend
   const saveToBackend = async (payload, successMsg = 'Profile updated successfully') => {
@@ -240,9 +242,12 @@ function EditMode() {
       const headers = { 'Content-Type': 'application/json' };
       if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
 
+      const targetId = userId || activeUser?.id;
+      const targetEmail = userEmail || activeUser?.email;
+
       const bodyData = {
-        id: activeUser?.id,
-        email: activeUser?.email,
+        id: targetId,
+        email: targetEmail,
         ...payload
       };
 
@@ -257,6 +262,7 @@ function EditMode() {
       if (data.success) {
         if (payload.avatar) dispatch(updateAvatar(payload.avatar));
         dispatch(updateUser(payload));
+        if (onProfileUpdated) onProfileUpdated({ ...bodyData, ...payload });
         if (successMsg) toast.success(successMsg);
         return true;
       } else {
@@ -682,7 +688,7 @@ function EditMode() {
               className={`col-md-8 d-flex justify-content-end align-items-center ${!isSticky ? styles.innerBorder : ""}`}
               style={{ height: "100%" }}
             >
-              <NavLink to="/profile" className={styles.doneBtn}>
+              <NavLink to={location.pathname.startsWith('/hosting') ? '/hosting/profile' : '/profile'} className={styles.doneBtn}>
                 Done
               </NavLink>
             </div>

@@ -122,7 +122,10 @@ router.post('/verify-otp', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid 6-digit verification code.' });
     }
 
-    if (user) {
+    // Determine if this is a registered user with profile completed
+    const isProfileComplete = user && (user.last_name || user.dob || user.password);
+
+    if (user && isProfileComplete) {
       // Clear OTP after successful use
       await pool.query('UPDATE users SET otp = NULL WHERE id = $1', [user.id]);
 
@@ -150,7 +153,7 @@ router.post('/verify-otp', async (req, res) => {
         message: 'Welcome back to Airbnb!'
       });
     } else {
-      // New user: proceed to create account step
+      // New user or uncompleted profile: proceed to create account steps (Step 2 Legal name, DOB, password & Step 3 Community commitment)
       return res.status(200).json({
         success: true,
         action: 'REGISTER_REQUIRED',

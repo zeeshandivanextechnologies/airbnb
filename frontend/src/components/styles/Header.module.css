@@ -711,11 +711,37 @@
   text-align: left;
 }
 
+.loc-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
 .loc-dropdown-title {
   font-size: 14px;
   font-weight: 600;
   color: #222;
-  margin-bottom: 24px;
+  margin: 0;
+}
+
+.loc-close-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: #f7f7f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #717171;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.loc-close-btn:hover {
+  background: #ebebeb;
+  color: #222;
 }
 
 .loc-list {

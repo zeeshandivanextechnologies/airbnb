@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
+import { adminApiRequest } from '../services/api';
 import { 
   FaUserTie,
   FaArrowUp,
@@ -24,116 +26,8 @@ import {
 import styles from './styles/Hosts.module.css';
 
 export default function Hosts() {
-  const initialHosts = [
-    {
-      id: 1,
-      name: 'Priya Sharma',
-      email: 'priya.sharma@artstays.in',
-      phone: '+91 98290 12345',
-      city: 'Jaipur, Rajasthan',
-      kycType: 'Aadhaar & PAN Card',
-      kycDocId: 'AADHAAR-8921-XXXX',
-      kycStatus: 'Verified',
-      registrationStatus: 'Approved',
-      listingsCount: 4,
-      totalEarnings: '₹3,45,000',
-      payouts: [
-        { id: 'PAY-901', amount: '₹42,000', date: '01 Oct 2026', status: 'Settled' },
-        { id: 'PAY-864', amount: '₹68,500', date: '15 Sep 2026', status: 'Settled' }
-      ],
-      avatarBg: '#ff385c',
-      initials: 'PS'
-    },
-    {
-      id: 2,
-      name: 'Mohammad Alvi',
-      email: 'mohammad.alvi@heritage.in',
-      phone: '+91 98760 54321',
-      city: 'Sawai Madhopur, RJ',
-      kycType: 'Passport & PAN',
-      kycDocId: 'PASS-Z982143',
-      kycStatus: 'Verified',
-      registrationStatus: 'Approved',
-      listingsCount: 2,
-      totalEarnings: '₹1,85,000',
-      payouts: [
-        { id: 'PAY-892', amount: '₹28,000', date: '28 Sep 2026', status: 'Settled' }
-      ],
-      avatarBg: '#16a34a',
-      initials: 'MA'
-    },
-    {
-      id: 3,
-      name: 'Ananya Roy',
-      email: 'ananya.roy@goastays.com',
-      phone: '+91 99123 45678',
-      city: 'North Goa',
-      kycType: 'Aadhaar Card',
-      kycDocId: 'AADHAAR-5541-XXXX',
-      kycStatus: 'Under Review',
-      registrationStatus: 'Pending',
-      listingsCount: 1,
-      totalEarnings: '₹0 (New)',
-      payouts: [],
-      avatarBg: '#ca8a04',
-      initials: 'AR'
-    },
-    {
-      id: 4,
-      name: 'Vikram Rajput',
-      email: 'vikram.rajput@hilltop.in',
-      phone: '+91 94140 88776',
-      city: 'Udaipur, Rajasthan',
-      kycType: 'Driving License & PAN',
-      kycDocId: 'DL-RJ-14202100',
-      kycStatus: 'Verified',
-      registrationStatus: 'Approved',
-      listingsCount: 6,
-      totalEarnings: '₹8,20,000',
-      payouts: [
-        { id: 'PAY-912', amount: '₹1,15,000', date: '05 Oct 2026', status: 'Settled' },
-        { id: 'PAY-875', amount: '₹95,000', date: '20 Sep 2026', status: 'Settled' }
-      ],
-      avatarBg: '#2563eb',
-      initials: 'VR'
-    },
-    {
-      id: 5,
-      name: 'Devendra Joshi',
-      email: 'devendra.j@mountainvilla.com',
-      phone: '+91 98111 22334',
-      city: 'Manali, Himachal Pradesh',
-      kycType: 'Voter ID Card',
-      kycDocId: 'EPIC-XYZ9811',
-      kycStatus: 'Rejected',
-      registrationStatus: 'Rejected',
-      listingsCount: 0,
-      totalEarnings: '₹0',
-      payouts: [],
-      avatarBg: '#6b7280',
-      initials: 'DJ'
-    },
-    {
-      id: 6,
-      name: 'Kavita Menon',
-      email: 'kavita.menon@keralabackwaters.in',
-      phone: '+91 97455 66778',
-      city: 'Alleppey, Kerala',
-      kycType: 'Aadhaar & GSTIN',
-      kycDocId: 'AADHAAR-7712-XXXX',
-      kycStatus: 'Verified',
-      registrationStatus: 'Suspended',
-      listingsCount: 3,
-      totalEarnings: '₹4,10,000',
-      payouts: [
-        { id: 'PAY-880', amount: '₹52,000', date: '10 Sep 2026', status: 'Settled' }
-      ],
-      avatarBg: '#dc2626',
-      initials: 'KM'
-    }
-  ];
-
-  const [hosts, setHosts] = useState(initialHosts);
+  const [hosts, setHosts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all'); // 'all' | 'pending' | 'approved' | 'suspended'
   const [kycFilter, setKycFilter] = useState('all'); // 'all' | 'Verified' | 'Under Review' | 'Rejected'
@@ -142,12 +36,35 @@ export default function Hosts() {
   const [selectedHost, setSelectedHost] = useState(null); // for KYC & Details
   const [payoutHost, setPayoutHost] = useState(null); // for Earnings & Payout history
 
+  // Fetch hosts dynamically from backend database
+  const fetchHosts = async () => {
+    try {
+      setLoading(true);
+      const res = await adminApiRequest('/admin/auth/hosts');
+      const hostList = (res && res.hosts && Array.isArray(res.hosts)) 
+        ? res.hosts 
+        : (res && res.data && Array.isArray(res.data)) 
+          ? res.data 
+          : [];
+      setHosts(hostList);
+    } catch (err) {
+      console.error('Failed to fetch hosts from DB:', err);
+      toast.error('Failed to load hosts from database');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHosts();
+  }, []);
+
   // Filtered Hosts
   const filteredHosts = hosts.filter((h) => {
     const matchesSearch = 
-      h.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      h.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      h.city.toLowerCase().includes(searchTerm.toLowerCase());
+      (h.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (h.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (h.city || '').toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesTab = 
       activeTab === 'all' ? true :
@@ -162,28 +79,67 @@ export default function Hosts() {
   });
 
   // Action handlers
-  const handleApproveRegistration = (id) => {
-    setHosts(hosts.map(h => h.id === id ? { ...h, registrationStatus: 'Approved', kycStatus: 'Verified' } : h));
-    if (selectedHost && selectedHost.id === id) {
-      setSelectedHost({ ...selectedHost, registrationStatus: 'Approved', kycStatus: 'Verified' });
-    }
-  };
-
-  const handleRejectRegistration = (id) => {
-    setHosts(hosts.map(h => h.id === id ? { ...h, registrationStatus: 'Rejected', kycStatus: 'Rejected' } : h));
-    if (selectedHost && selectedHost.id === id) {
-      setSelectedHost({ ...selectedHost, registrationStatus: 'Rejected', kycStatus: 'Rejected' });
-    }
-  };
-
-  const handleToggleSuspend = (id) => {
-    setHosts(hosts.map(h => {
-      if (h.id === id) {
-        const nextStatus = h.registrationStatus === 'Suspended' ? 'Approved' : 'Suspended';
-        return { ...h, registrationStatus: nextStatus };
+  const handleApproveRegistration = async (id) => {
+    try {
+      const res = await adminApiRequest(`/admin/auth/hosts/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ registrationStatus: 'Approved', kycStatus: 'Verified' })
+      });
+      if (res && res.success) {
+        toast.success(res.message || 'Host registration & KYC approved successfully');
+      } else {
+        toast.success('Host registration approved');
       }
-      return h;
-    }));
+      setHosts(prev => prev.map(h => h.id === id ? { ...h, registrationStatus: 'Approved', kycStatus: 'Verified' } : h));
+      if (selectedHost && selectedHost.id === id) {
+        setSelectedHost(prev => ({ ...prev, registrationStatus: 'Approved', kycStatus: 'Verified' }));
+      }
+    } catch (err) {
+      toast.error(err.message || 'Failed to approve host registration');
+    }
+  };
+
+  const handleRejectRegistration = async (id) => {
+    try {
+      const res = await adminApiRequest(`/admin/auth/hosts/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ registrationStatus: 'Rejected', kycStatus: 'Rejected' })
+      });
+      if (res && res.success) {
+        toast.success(res.message || 'Host registration rejected');
+      } else {
+        toast.success('Host registration rejected');
+      }
+      setHosts(prev => prev.map(h => h.id === id ? { ...h, registrationStatus: 'Rejected', kycStatus: 'Rejected' } : h));
+      if (selectedHost && selectedHost.id === id) {
+        setSelectedHost(prev => ({ ...prev, registrationStatus: 'Rejected', kycStatus: 'Rejected' }));
+      }
+    } catch (err) {
+      toast.error(err.message || 'Failed to reject host registration');
+    }
+  };
+
+  const handleToggleSuspend = async (id) => {
+    const current = hosts.find(h => h.id === id);
+    if (!current) return;
+    const nextStatus = current.registrationStatus === 'Suspended' ? 'Approved' : 'Suspended';
+    try {
+      const res = await adminApiRequest(`/admin/auth/hosts/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ registrationStatus: nextStatus })
+      });
+      if (res && res.success) {
+        toast.success(res.message || `Host marked as ${nextStatus}`);
+      } else {
+        toast.success(`Host marked as ${nextStatus}`);
+      }
+      setHosts(prev => prev.map(h => h.id === id ? { ...h, registrationStatus: nextStatus } : h));
+      if (selectedHost && selectedHost.id === id) {
+        setSelectedHost(prev => ({ ...prev, registrationStatus: nextStatus }));
+      }
+    } catch (err) {
+      toast.error(err.message || 'Failed to update host status');
+    }
   };
 
   return (
@@ -343,6 +299,7 @@ export default function Hosts() {
               <option value="all">KYC: All</option>
               <option value="Verified">KYC Verified</option>
               <option value="Under Review">KYC Under Review</option>
+              <option value="Pending">KYC Pending / Not Uploaded</option>
               <option value="Rejected">KYC Rejected</option>
             </select>
           </div>
@@ -364,9 +321,16 @@ export default function Hosts() {
               </tr>
             </thead>
             <tbody>
-              {filteredHosts.length === 0 ? (
+              {loading ? (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '36px', color: '#9ca3af' }}>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '48px', color: '#6b7280' }}>
+                    <div className="spinner-border text-danger spinner-border-sm me-2" role="status"></div>
+                    Loading hosts from database...
+                  </td>
+                </tr>
+              ) : filteredHosts.length === 0 ? (
+                <tr>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '36px', color: '#9ca3af' }}>
                     No hosts found matching the selected search or filter criteria.
                   </td>
                 </tr>
@@ -395,7 +359,8 @@ export default function Hosts() {
                       <span 
                         className={`${styles.kycBadge} ${
                           host.kycStatus === 'Verified' ? styles.kycVerified :
-                          host.kycStatus === 'Under Review' ? styles.kycReview : styles.kycRejected
+                          host.kycStatus === 'Under Review' ? styles.kycReview :
+                          host.kycStatus === 'Pending' ? styles.kycPending : styles.kycRejected
                         }`}
                         onClick={() => setSelectedHost(host)}
                         style={{ cursor: 'pointer' }}
@@ -555,19 +520,22 @@ export default function Hosts() {
                 </span>
                 <div className={styles.kycDocPreview}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ fontSize: '24px', color: '#2563eb' }}><FaIdCard /></div>
+                    <div style={{ fontSize: '24px', color: selectedHost.kycDocId && selectedHost.kycDocId !== 'Not Submitted' ? '#2563eb' : '#9ca3af' }}>
+                      <FaIdCard />
+                    </div>
                     <div>
                       <span style={{ fontWeight: '700', fontSize: '14px', display: 'block', color: '#111111' }}>
-                        {selectedHost.kycType}
+                        {selectedHost.kycType || 'Not Uploaded'}
                       </span>
                       <span style={{ fontSize: '12px', color: '#64748b' }}>
-                        Doc Ref: {selectedHost.kycDocId}
+                        Doc Ref: {selectedHost.kycDocId || 'Not Submitted'}
                       </span>
                     </div>
                   </div>
                   <span className={`${styles.kycBadge} ${
                     selectedHost.kycStatus === 'Verified' ? styles.kycVerified :
-                    selectedHost.kycStatus === 'Under Review' ? styles.kycReview : styles.kycRejected
+                    selectedHost.kycStatus === 'Under Review' ? styles.kycReview :
+                    selectedHost.kycStatus === 'Pending' ? styles.kycPending : styles.kycRejected
                   }`}>
                     {selectedHost.kycStatus}
                   </span>

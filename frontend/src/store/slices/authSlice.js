@@ -84,6 +84,8 @@ const authSlice = createSlice({
       state.isModalOpen = false;
       state.authStep = 0;
       localStorage.removeItem('airbnb_user_auth');
+      localStorage.removeItem('host_address');
+      localStorage.removeItem('host_step1_data');
     }
   }
 });

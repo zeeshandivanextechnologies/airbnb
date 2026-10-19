@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { Splide, SplideSlide, SplideTrack } from '@splidejs/react-splide';
 import '@splidejs/react-splide/css';
 import { FaHeart, FaStar, FaChevronLeft, FaChevronRight, FaArrowRight } from 'react-icons/fa';
@@ -5,6 +6,24 @@ import styles from '../../components/styles/Experiences.module.css';
 import { NavLink } from 'react-router-dom';
 
 export default function Experiences() {
+  const [dynamicExperiences, setDynamicExperiences] = useState([]);
+
+  useEffect(() => {
+    const fetchExperiences = async () => {
+      try {
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+        const res = await fetch(`${baseUrl}/listings?type=Experience&status=Active`);
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          setDynamicExperiences(json.data);
+        }
+      } catch (err) {
+        console.warn('Failed to load experiences from backend:', err);
+      }
+    };
+    fetchExperiences();
+  }, []);
+
   const images = [
     "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=720&q=80", // travel/adventure
     "https://images.unsplash.com/photo-1528181304800-259b08848526?w=720&q=80", // cooking
@@ -16,7 +35,21 @@ export default function Experiences() {
     "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=720&q=80"  // food/dinner
   ];
 
+  const liveExpItems = dynamicExperiences.map(item => {
+    const revCount = Number(item.reviews_count) || 0;
+    const numRating = Number(item.rating) || 5;
+    return {
+      id: item.id,
+      title: item.title,
+      rating: revCount > 0 ? numRating.toFixed(2) : "New",
+      time: item.city || "Today",
+      price: item.price ? Number(item.price).toLocaleString('en-IN') : "1,500",
+      image: item.cover_img || (Array.isArray(item.photos) && item.photos[0]) || images[0]
+    };
+  });
+
   const rowsData = [
+    ...(liveExpItems.length > 0 ? [{ category: "Newly Published Experiences", listings: liveExpItems }] : []),
     {
       category: "Happening today in Jaipur",
       listings: [
@@ -114,8 +147,8 @@ export default function Experiences() {
 
               <SplideTrack>
               {row.listings.map((listing, index) => (
-                <SplideSlide key={index}>
-                  <NavLink to={`/experience/${index}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                <SplideSlide key={listing.id || index}>
+                  <NavLink to={`/experience/${listing.id || index}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                     <div className={styles['listing-card']}>
                       
                       {/* Image Container with Badges */}

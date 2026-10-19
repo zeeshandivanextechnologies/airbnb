@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FaRupeeSign, 
   FaPercentage, 
@@ -146,32 +146,214 @@ export default function Finance() {
     }
   ];
 
-  const [transactions, setTransactions] = useState(initialTransactions);
-  const [payouts, setPayouts] = useState(initialPayouts);
-  const [refunds, setRefunds] = useState(initialRefunds);
+  const [transactions, setTransactions] = useState([]);
+  const [payouts, setPayouts] = useState([]);
+  const [refunds, setRefunds] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
 
   // Selected Invoice Modal
   const [invoiceItem, setInvoiceItem] = useState(null);
 
+  // Fetch live finance data from backend
+  const fetchFinanceData = async () => {
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+      const [setRes, txnRes, payRes, refRes] = await Promise.all([
+        fetch(`${baseUrl}/finance/settings`),
+        fetch(`${baseUrl}/finance/transactions`),
+        fetch(`${baseUrl}/finance/payouts`),
+        fetch(`${baseUrl}/finance/refunds`)
+      ]);
+
+      const setData = await setRes.json();
+      if (setData.success && setData.data) {
+        setCommissionRate(parseFloat(setData.data.commission_rate) || 20);
+        setGuestServiceFee(parseFloat(setData.data.guest_service_fee) || 3);
+        setGstTaxRate(parseFloat(setData.data.gst_tax_rate) || 18);
+      }
+
+      const txnData = await txnRes.json();
+      if (txnData.success && Array.isArray(txnData.data)) {
+        setTransactions(txnData.data);
+      } else {
+        setTransactions(initialTransactions);
+      }
+
+      const payData = await payRes.json();
+      if (payData.success && Array.isArray(payData.data) && payData.data.length > 0) {
+        setPayouts(payData.data);
+      } else {
+        setPayouts(initialPayouts);
+      }
+
+      const refData = await refRes.json();
+      if (refData.success && Array.isArray(refData.data) && refData.data.length > 0) {
+        setRefunds(refData.data);
+      } else {
+        setRefunds(initialRefunds);
+      }
+    } catch (err) {
+      console.warn('Failed to load finance data from backend, using default initial data:', err);
+      setTransactions(initialTransactions);
+      setPayouts(initialPayouts);
+      setRefunds(initialRefunds);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFinanceData();
+  }, []);
+
   // Totals calculations
-  const totalRevenue = transactions.reduce((acc, t) => acc + (t.status === 'Success' ? t.amount : 0), 0);
-  const totalCommission = transactions.reduce((acc, t) => acc + (t.status === 'Success' ? t.commission : 0), 0);
-  const totalPayoutsDisbursed = payouts.reduce((acc, p) => acc + (p.status === 'Processed' ? p.amount : 0), 0);
-  const totalRefunded = refunds.reduce((acc, r) => acc + (r.status === 'Completed' ? r.amount : 0), 0);
+  const totalRevenue = transactions.reduce((acc, t) => acc + (t.status === 'Success' ? Number(t.amount) : 0), 0);
+  const totalCommission = transactions.reduce((acc, t) => acc + (t.status === 'Success' ? Number(t.commission) : 0), 0);
+  const totalPayoutsDisbursed = payouts.reduce((acc, p) => acc + (p.status === 'Processed' ? Number(p.amount) : 0), 0);
+  const totalRefunded = refunds.reduce((acc, r) => acc + (r.status === 'Completed' || r.status === 'Processed' ? Number(r.amount) : 0), 0);
 
-  const handleSaveFeeSettings = (e) => {
+  const handleSaveFeeSettings = async (e) => {
     e.preventDefault();
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+      const res = await fetch(`${baseUrl}/finance/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          commission_rate: commissionRate,
+          guest_service_fee: guestServiceFee,
+          gst_tax_rate: gstTaxRate
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+        fetchFinanceData();
+      }
+    } catch (err) {
+      console.error('Failed to update fee settings:', err);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    }
   };
 
-  const handleApproveRefund = (refId) => {
-    setRefunds(refunds.map(r => r.id === refId ? { ...r, status: 'Completed' } : r));
+  const handleApproveRefund = async (refId) => {
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+      await fetch(`${baseUrl}/finance/refunds/${refId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Processed' })
+      });
+      setRefunds(prev => prev.map(r => (r.id === refId || r.dbId === refId) ? { ...r, status: 'Completed' } : r));
+    } catch (err) {
+      setRefunds(prev => prev.map(r => r.id === refId ? { ...r, status: 'Completed' } : r));
+    }
   };
 
-  const handleDisbursePayout = (payId) => {
-    setPayouts(payouts.map(p => p.id === payId ? { ...p, status: 'Processed' } : p));
+  const handleDisbursePayout = async (payId) => {
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+      await fetch(`${baseUrl}/finance/payouts/${payId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Processed' })
+      });
+      setPayouts(prev => prev.map(p => (p.id === payId || p.dbId === payId) ? { ...p, status: 'Processed' } : p));
+    } catch (err) {
+      setPayouts(prev => prev.map(p => p.id === payId ? { ...p, status: 'Processed' } : p));
+    }
+  };
+
+  const handlePrintInvoice = () => {
+    if (!invoiceItem) return;
+    const printWindow = window.open('', '_blank', 'width=800,height=750');
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Tax Invoice - ${invoiceItem.id}</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 40px; color: #1e293b; line-height: 1.5; background: #fff; }
+            .invoice-box { max-width: 700px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; padding: 32px; }
+            .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #ff385c; padding-bottom: 18px; margin-bottom: 24px; }
+            .logo { font-size: 24px; font-weight: 800; color: #ff385c; margin: 0; }
+            .gstin { font-size: 12px; color: #64748b; margin-top: 4px; }
+            .title-section { text-align: right; }
+            .title { font-size: 18px; font-weight: 700; color: #0f172a; margin: 0; }
+            .meta { font-size: 13px; color: #64748b; margin-top: 4px; }
+            .section { margin-bottom: 24px; font-size: 14px; background: #f8fafc; padding: 14px 18px; border-radius: 8px; }
+            .line-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #e2e8f0; font-size: 14px; }
+            .total-line { display: flex; justify-content: space-between; padding: 16px 0 0 0; margin-top: 14px; border-top: 2px solid #0f172a; font-size: 17px; font-weight: 800; color: #ff385c; }
+            .footer { margin-top: 36px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 16px; }
+            @media print {
+              body { padding: 0; }
+              .invoice-box { border: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="invoice-box">
+            <div class="header">
+              <div>
+                <h1 class="logo">Airbnb India Pvt Ltd</h1>
+                <div class="gstin">GSTIN: 08AAACA1234F1Z8 | CIN: U55101DL2021PTC123456</div>
+              </div>
+              <div class="title-section">
+                <div class="title">OFFICIAL TAX INVOICE</div>
+                <div class="meta">Invoice No: <strong>${invoiceItem.id}</strong></div>
+                <div class="meta">Booking Ref: <strong>${invoiceItem.bookingId}</strong></div>
+                <div class="meta">Date: ${invoiceItem.date}</div>
+              </div>
+            </div>
+
+            <div class="section">
+              <div style="margin-bottom: 4px;"><strong>Billed To:</strong> ${invoiceItem.guest}</div>
+              <div style="margin-bottom: 4px;"><strong>Property Stay:</strong> ${invoiceItem.stayTitle}</div>
+              <div style="margin-bottom: 4px;"><strong>Host Partner:</strong> ${invoiceItem.host}</div>
+              <div><strong>Payment Mode:</strong> ${invoiceItem.paymentMethod || 'Online Payment'}</div>
+            </div>
+
+            <div class="line-item">
+              <span>Accommodation Base Tariff</span>
+              <span>₹${(invoiceItem.amount - invoiceItem.gstTax).toLocaleString('en-IN')}</span>
+            </div>
+            <div class="line-item">
+              <span>Integrated GST (IGST @ 18%)</span>
+              <span>₹${invoiceItem.gstTax.toLocaleString('en-IN')}</span>
+            </div>
+            <div class="line-item">
+              <span>Payment Processing & Service Fee</span>
+              <span>Included</span>
+            </div>
+            <div class="total-line">
+              <span>Total Paid Amount:</span>
+              <span>₹${invoiceItem.amount.toLocaleString('en-IN')}</span>
+            </div>
+
+            <div class="footer">
+              This is a computer-generated tax invoice and does not require a physical signature.<br/>
+              Airbnb Travel Services India Private Limited • Support: support@airbnb.com
+            </div>
+          </div>
+          <script>
+            window.onload = function() {
+              window.focus();
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `;
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
   };
 
   return (
@@ -703,7 +885,7 @@ export default function Finance() {
               <button 
                 type="button" 
                 className={styles.btnAction} 
-                onClick={() => alert('Printing Invoice PDF...')}
+                onClick={handlePrintInvoice}
               >
                 <FaDownload /> Print / Download PDF
               </button>

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { 
   FaBullhorn, 
   FaTag, 
@@ -335,43 +336,127 @@ export default function Marketing() {
     setShowCouponModal(true);
   };
 
-  // Save Coupon (Create / Update)
-  const handleSaveCoupon = (e) => {
+  // Backend API URL
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
+  // Fetch Coupons from Backend API on mount
+  const fetchCoupons = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/coupons`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        setCoupons(data.data);
+      }
+    } catch (err) {
+      console.warn('Backend unavailable, using local coupons:', err.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchCoupons();
+  }, []);
+
+  // Save Coupon (Create / Update via Backend API)
+  const handleSaveCoupon = async (e) => {
     e.preventDefault();
     if (!couponFormData.code) return;
 
-    if (editingCoupon) {
-      setCoupons(prev => prev.map(c => c.id === editingCoupon.id ? { ...c, ...couponFormData } : c));
-    } else {
-      const newCoupon = {
-        id: Date.now(),
-        ...couponFormData,
-        code: couponFormData.code.toUpperCase().trim(),
-        usedCount: 0,
-        status: 'Active'
-      };
-      setCoupons(prev => [newCoupon, ...prev]);
+    const payload = {
+      ...couponFormData,
+      code: couponFormData.code.toUpperCase().trim()
+    };
+
+    try {
+      if (editingCoupon) {
+        const res = await fetch(`${API_BASE}/coupons/${editingCoupon.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          toast.success(`Coupon ${payload.code} updated successfully!`);
+          fetchCoupons();
+        } else {
+          toast.error(data.message || 'Failed to update coupon');
+          // Optimistic local update fallback
+          setCoupons(prev => prev.map(c => c.id === editingCoupon.id ? { ...c, ...payload } : c));
+        }
+      } else {
+        const res = await fetch(`${API_BASE}/coupons`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          toast.success(`Coupon ${payload.code} created successfully!`);
+          fetchCoupons();
+        } else {
+          toast.error(data.message || 'Failed to create coupon');
+          // Optimistic local fallback
+          const newCoupon = {
+            id: Date.now(),
+            ...payload,
+            usedCount: 0,
+            status: 'Active'
+          };
+          setCoupons(prev => [newCoupon, ...prev]);
+        }
+      }
+    } catch (err) {
+      toast.error('Network error. Updated locally.');
+      if (editingCoupon) {
+        setCoupons(prev => prev.map(c => c.id === editingCoupon.id ? { ...c, ...payload } : c));
+      } else {
+        setCoupons(prev => [{ id: Date.now(), ...payload, usedCount: 0, status: 'Active' }, ...prev]);
+      }
     }
     setShowCouponModal(false);
   };
 
   // Toggle Coupon Active / Expired
-  const handleToggleCoupon = (couponId) => {
-    setCoupons(prev => prev.map(c => {
-      if (c.id === couponId) {
-        return {
-          ...c,
-          status: c.status === 'Active' ? 'Expired' : 'Active'
-        };
+  const handleToggleCoupon = async (couponId) => {
+    const target = coupons.find(c => c.id === couponId);
+    if (!target) return;
+    const newStatus = target.status === 'Active' ? 'Expired' : 'Active';
+
+    try {
+      const res = await fetch(`${API_BASE}/coupons/${couponId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Coupon marked as ${newStatus}`);
+        fetchCoupons();
+      } else {
+        setCoupons(prev => prev.map(c => c.id === couponId ? { ...c, status: newStatus } : c));
       }
-      return c;
-    }));
+    } catch (e) {
+      setCoupons(prev => prev.map(c => c.id === couponId ? { ...c, status: newStatus } : c));
+    }
   };
 
   // Delete Coupon
-  const handleDeleteCoupon = (couponId) => {
+  const handleDeleteCoupon = async (couponId) => {
     if (window.confirm('Are you sure you want to delete this coupon code?')) {
-      setCoupons(prev => prev.filter(c => c.id !== couponId));
+      try {
+        const res = await fetch(`${API_BASE}/coupons/${couponId}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (data.success) {
+          toast.success('Coupon deleted successfully!');
+          fetchCoupons();
+        } else {
+          setCoupons(prev => prev.filter(c => c.id !== couponId));
+        }
+      } catch (e) {
+        setCoupons(prev => prev.filter(c => c.id !== couponId));
+        toast.success('Coupon removed locally');
+      }
     }
   };
 

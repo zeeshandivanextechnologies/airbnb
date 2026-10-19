@@ -1,0 +1,217 @@
+.container {
+  min-height: 100vh;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+}
+
+.topHeader {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+  border-bottom: 1px solid transparent;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 180px;
+}
+
+.backBtn {
+  background-color: #f7f7f7;
+  border: 1px solid #ebebeb;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #222222;
+  transition: all 0.2s ease;
+}
+
+.backBtn:hover {
+  background-color: #ebebeb;
+}
+
+.deselectPillBtn {
+  background-color: #f7f7f7;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #222222;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.deselectPillBtn:hover {
+  background-color: #ebebeb;
+}
+
+.headerCenter {
+  text-align: center;
+}
+
+.selectedCountText {
+  font-size: 20px;
+  font-weight: 700;
+  color: #222222;
+  margin: 0;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 180px;
+  justify-content: flex-end;
+}
+
+.actionPillBtn {
+  background-color: #f7f7f7;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #222222;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.actionPillBtn:hover:not(:disabled) {
+  background-color: #ebebeb;
+}
+
+.actionPillBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.iconActionBtn {
+  background-color: #f7f7f7;
+  border: none;
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #222222;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.iconActionBtn:hover:not(:disabled) {
+  background-color: #ebebeb;
+  color: #dc2626;
+}
+
+.iconActionBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mainContent {
+  flex: 1;
+  padding: 24px 40px 60px 40px;
+  overflow-y: auto;
+}
+
+/* Horizontal scrollable or wrapping row */
+.photoGrid {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  padding-bottom: 20px;
+  scrollbar-width: thin;
+}
+
+.photoGrid::-webkit-scrollbar {
+  height: 6px;
+}
+.photoGrid::-webkit-scrollbar-thumb {
+  background-color: #dddddd;
+  border-radius: 4px;
+}
+
+.cardWrapper {
+  flex: 0 0 240px;
+  width: 240px;
+  height: 240px;
+  border-radius: 20px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.cardSelected {
+  outline: 3px solid #222222;
+  outline-offset: -1px;
+}
+
+.imageInner {
+  width: 100%;
+  height: 100%;
+  border-radius: 18px;
+  overflow: hidden;
+  position: relative;
+  background-color: #f7f7f7;
+}
+
+.photoImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Red Dot Not Approved Badge */
+.badgeNotApproved {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #222222;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.redDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #dc2626;
+  display: inline-block;
+}
+
+/* Top Right Checkmark Circle */
+.checkmarkCircle {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
