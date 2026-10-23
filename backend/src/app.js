@@ -7,6 +7,7 @@ import paymentsRouter from './routes/payments.js';
 import couponsRouter from './routes/coupons.js';
 import financeRouter from './routes/finance.js';
 import securityRouter from './routes/security.js';
+import supportRouter from './routes/support.js';
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.use('/api/payments', paymentsRouter);
 app.use('/api/coupons', couponsRouter);
 app.use('/api/finance', financeRouter);
 app.use('/api/security', securityRouter);
+app.use('/api/support', supportRouter);
 
 // 404 Handler
 app.use((req, res) => {

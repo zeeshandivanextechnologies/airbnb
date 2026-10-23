@@ -33,7 +33,7 @@ function Wishlists() {
   };
 
   return (
-    <div className={`container ${styles.pageContainer}`}>
+    <div className='container py-3'>
       <h1 className={styles.pageTitle}>Wishlists</h1>
       <div className="row">
         {wishlists.map((wl) => {
@@ -50,7 +50,7 @@ function Wishlists() {
           const countLabel = items.length === 1 ? '1 saved' : `${items.length} saved`;
 
           return (
-            <div key={wl.id} className="col-sm-6 col-md-4 col-lg-3 mb-4">
+            <div key={wl.id} className="col-sm-6 col-md-4 col-lg-3 mb-lg-3 mb-0">
               <div 
                 className={styles.wishlistCard} 
                 onClick={() => navigate(`/wishlists/${wl.id}`)}

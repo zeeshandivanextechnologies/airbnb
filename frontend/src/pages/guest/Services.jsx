@@ -65,11 +65,17 @@ export default function Services() {
 
   useEffect(() => {
     const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-    fetch(`${baseUrl}/listings`)
+    fetch(`${baseUrl}/listings?type=Service&status=Active`)
       .then(res => res.json())
       .then(data => {
         if (data.success && Array.isArray(data.data)) {
-          setDynamicListings(data.data);
+          // Strictly keep only Service items (exclude Stays and Experiences)
+          const servicesOnly = data.data.filter(item => {
+            const t = (item.type || '').toLowerCase();
+            const c = (item.category || '').toLowerCase();
+            return !t.includes('experience') && !c.includes('experience');
+          });
+          setDynamicListings(servicesOnly);
         }
       })
       .catch(err => console.error('Failed to load dynamic listings for services:', err));

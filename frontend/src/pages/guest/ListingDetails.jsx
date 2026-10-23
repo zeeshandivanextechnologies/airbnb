@@ -30,6 +30,13 @@ import { useEffect } from 'react';
 
 import styles from '../../components/styles/ListingDetails.module.css';
 import Loader from '../../components/Loader';
+import { 
+  getStoredWishlists, 
+  addWishlist, 
+  isItemInAnyWishlist, 
+  removeItemFromWishlists,
+  trackRecentlyViewedItem
+} from '../../utils/wishlistStorage';
 
 export default function ListingDetails() {
   const { id } = useParams();
@@ -61,7 +68,8 @@ export default function ListingDetails() {
   // State for save (wishlist) modal
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [isSaveModalClosing, setIsSaveModalClosing] = useState(false);
-  const [wishlistName, setWishlistName] = useState('Rishikesh 2026');
+  const [wishlistName, setWishlistName] = useState('');
+  const [isSaved, setIsSaved] = useState(false);
 
   // State for description modal
   const [isDescModalOpen, setIsDescModalOpen] = useState(false);
@@ -699,6 +707,66 @@ safari office is 3.5 kms
     }
   };
 
+  // Sync wishlist status across components & storage
+  useEffect(() => {
+    if (listingData) {
+      setIsSaved(isItemInAnyWishlist(listingData.id, title, type));
+    }
+    const handleWishlistUpdate = () => {
+      if (listingData) {
+        setIsSaved(isItemInAnyWishlist(listingData.id, title, type));
+      }
+    };
+    window.addEventListener('airbnb_wishlists_updated', handleWishlistUpdate);
+    return () => window.removeEventListener('airbnb_wishlists_updated', handleWishlistUpdate);
+  }, [listingData, title, type]);
+
+  // Track recently viewed listing
+  useEffect(() => {
+    if (listingData && title) {
+      trackRecentlyViewedItem({
+        id: listingData.id || id,
+        title: title,
+        category: type || 'Stays',
+        host: hostName,
+        image: images[0],
+        price: `₹${basePrice.toLocaleString('en-IN')}`
+      });
+    }
+  }, [listingData, title, type, hostName, images, basePrice, id]);
+
+  // Wishlist toggle handler
+  const handleToggleWishlist = () => {
+    if (isSaved) {
+      removeItemFromWishlists(listingData?.id || id, title, type);
+      setIsSaved(false);
+      toast.success('Removed from wishlist');
+    } else {
+      setWishlistName(city ? `${city} ${new Date().getFullYear()}` : 'My Wishlist');
+      setIsSaveModalOpen(true);
+    }
+  };
+
+  // Handle Save / Create Wishlist submission
+  const handleCreateWishlist = () => {
+    const trimmed = wishlistName.trim();
+    if (!trimmed) {
+      toast.error('Please enter a wishlist name');
+      return;
+    }
+    addWishlist(trimmed, {
+      id: listingData?.id || id,
+      title: title,
+      category: type || 'Stays',
+      host: hostName,
+      image: images[0],
+      price: `₹${basePrice.toLocaleString('en-IN')}`
+    });
+    setIsSaved(true);
+    closeSaveModal();
+    toast.success(`Saved to "${trimmed}"!`);
+  };
+
   // If listing details are still loading from backend, show universal Airbnb loader
   if (loadingListing) {
     return (
@@ -734,9 +802,9 @@ safari office is 3.5 kms
           <h1 className={styles['rtb-page-title']}>Request to book</h1>
         </div>
 
-        <div className="row g-5 align-items-start">
+        <div className="row  align-items-start">
           {/* Left Column: Message host & Proceed to payment */}
-          <div className="col-12 col-lg-7">
+          <div className="col-lg-7 mb-3">
             
             {/* Message the Host Card */}
             <div className={styles['rtb-message-card']}>
@@ -800,7 +868,7 @@ safari office is 3.5 kms
           </div>
 
           {/* Right Column: Listing Card & Price Breakdown */}
-          <div className="col-12 col-lg-5">
+          <div className="col-lg-5">
             
             {/* Price green banner */}
             <div className={styles['rtb-avg-banner']}>
@@ -1020,7 +1088,7 @@ safari office is 3.5 kms
   }
 
   return (
-    <div className='container pt-4'>
+    <div className='container pt-3'>
       
       {/* Header Section */}
       <div className={styles['title-section']}>
@@ -1029,8 +1097,17 @@ safari office is 3.5 kms
           <button className={styles['action-btn']} onClick={() => setIsShareModalOpen(true)}>
             <FiShare size={16} /> Share
           </button>
-          <button className={styles['action-btn']} onClick={() => setIsSaveModalOpen(true)}>
-            <FiHeart size={16} /> Save
+          <button 
+            className={styles['action-btn']} 
+            onClick={handleToggleWishlist}
+            title={isSaved ? 'Saved in wishlist' : 'Save to wishlist'}
+          >
+            <FiHeart 
+              size={16} 
+              fill={isSaved ? '#ff385c' : 'none'} 
+              color={isSaved ? '#ff385c' : '#222222'} 
+            /> 
+            {isSaved ? 'Saved' : 'Save'}
           </button>
         </div>
       </div>
@@ -1497,7 +1574,7 @@ safari office is 3.5 kms
       {/* Meet your host */}
       <div className={styles['host-details-section']}>
         <h2 className={styles['section-title']}>Meet your host</h2>
-        <div className={`row align-items-start ${styles['host-card-large']}`}>
+        <div className={`row align-items-start`}>
           <div className="col-md-5 col-lg-4 mb-3">
             <div className={styles['host-card-left']}>
               <img 
@@ -1506,7 +1583,7 @@ safari office is 3.5 kms
                 className={styles['host-card-avatar']} 
                 onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200&q=80'; }} 
               />
-              <h3 className={styles.title} style={{fontSize: '24px', margin: '4px 0'}}>{hostName}</h3>
+              <h3 className={styles.title} style={{fontSize: '24px', margin: '4px 0', textAlign : 'center'}}>{hostName}</h3>
               <p className={styles['host-status']} >
                 {isSuperhost ? 'Superhost' : 'Verified Host'}
               </p>
@@ -1566,8 +1643,8 @@ safari office is 3.5 kms
       {/* Things to know */}
       <div className={styles['things-to-know']}>
         <h2 className={styles['section-title']}>Things to know</h2>
-        <div className={`row g-4 ${styles['rules-grid']}`}>
-          <div className="col-12 col-md-4">
+        <div className={`row `}>
+          <div className="col-md-4 mb-3">
             <div className={styles['rule-column']}>
               <h4>Cancellation policy</h4>
               <div className={styles['rule-item']}>Policy: {listingData?.cancellation_policy || 'Free cancellation for 24 hours. After that, the reservation is non-refundable.'}</div>
@@ -1575,7 +1652,7 @@ safari office is 3.5 kms
               <div className={styles['rule-link']}>Learn more</div>
             </div>
           </div>
-          <div className="col-12 col-md-4">
+          <div className="col-md-4 mb-3">
             <div className={styles['rule-column']}>
               <h4>House rules</h4>
               <div className={styles['rule-item']}>Check-in: 1:00 pm – 9:00 pm</div>
@@ -1584,7 +1661,7 @@ safari office is 3.5 kms
               <div className={styles['rule-link']}>Learn more</div>
             </div>
           </div>
-          <div className="col-12 col-md-4">
+          <div className="col-md-4 mb-3">
             <div className={styles['rule-column']}>
               <h4>Safety & property</h4>
               <div className={styles['rule-item']}>Carbon monoxide alarm not reported</div>
@@ -1603,11 +1680,24 @@ safari office is 3.5 kms
               className={styles['gallery-back-btn']} 
               onClick={() => setGalleryState({ isOpen: false })}
             >
-              <FaChevronLeft size={20} />
+              <FaChevronLeft size={20} />  
             </button>
             <div className={styles['gallery-header-right']}>
-              <button className={styles['action-btn']}><FiShare size={16} /> Share</button>
-              <button className={styles['action-btn']}><FiHeart size={16} /> Save</button>
+              <button className={styles['action-btn']} onClick={() => setIsShareModalOpen(true)}>
+                <FiShare size={16} /> Share
+              </button>
+              <button 
+                className={styles['action-btn']} 
+                onClick={handleToggleWishlist}
+                title={isSaved ? 'Saved in wishlist' : 'Save to wishlist'}
+              >
+                <FiHeart 
+                  size={16} 
+                  fill={isSaved ? '#ff385c' : 'none'} 
+                  color={isSaved ? '#ff385c' : '#222222'} 
+                /> 
+                {isSaved ? 'Saved' : 'Save'}
+              </button>
             </div>
           </div>
           
@@ -1832,7 +1922,7 @@ safari office is 3.5 kms
 
             <div className={styles['wishlist-footer']}>
               <button className={styles['wishlist-cancel-btn']} onClick={closeSaveModal}>Cancel</button>
-              <button className={styles['wishlist-create-btn']} onClick={closeSaveModal}>Create</button>
+              <button className={styles['wishlist-create-btn']} onClick={handleCreateWishlist}>Create</button>
             </div>
           </div>
         </div>

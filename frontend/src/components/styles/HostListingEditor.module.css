@@ -1857,3 +1857,20 @@
 }
 
 
+@media (max-width : 767px) {
+  .leftSidebar{
+    padding: 16px;
+  }
+
+  .headerRow{
+    margin-bottom: 16px;
+  }
+
+  .tabsContainer{
+    margin-bottom: 16px;
+  }
+
+ 
+
+}
+

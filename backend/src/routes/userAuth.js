@@ -1112,4 +1112,137 @@ router.post('/block-user', async (req, res) => {
   }
 });
 
+/**
+ * GET User Notifications
+ * GET /api/auth/notifications?userId=...&email=...
+ */
+router.get('/notifications', async (req, res) => {
+  const { userId, email } = req.query;
+
+  try {
+    // Ensure notifications table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER,
+        user_email VARCHAR(150),
+        title VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL,
+        type VARCHAR(50) DEFAULT 'account',
+        is_read BOOLEAN DEFAULT false,
+        link VARCHAR(255),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    let query = 'SELECT * FROM notifications';
+    let params = [];
+
+    if (userId && email) {
+      query += ' WHERE user_id = $1 OR LOWER(user_email) = LOWER($2) ORDER BY created_at DESC LIMIT 50';
+      params = [userId, email];
+    } else if (userId) {
+      query += ' WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50';
+      params = [userId];
+    } else if (email) {
+      query += ' WHERE LOWER(user_email) = LOWER($1) ORDER BY created_at DESC LIMIT 50';
+      params = [email];
+    } else {
+      query += ' ORDER BY created_at DESC LIMIT 50';
+    }
+
+    const result = await pool.query(query, params);
+    
+    // If no notifications exist for this user, seed sensible default onboarding/welcome notifications
+    if (result.rows.length === 0 && (userId || email)) {
+      const welcomeNotifications = [
+        {
+          title: 'Welcome to Airbnb! 🎉',
+          message: 'Your account is ready. Explore stays, unique experiences, and local services in your favorite destinations.',
+          type: 'account',
+          link: '/'
+        },
+        {
+          title: 'Complete your profile for a smoother experience',
+          message: 'Add a profile photo and verify your identity so hosts can get to know you before accepting reservations.',
+          type: 'security',
+          link: '/account-settings'
+        },
+        {
+          title: 'Special Offer: 10% off your first booking',
+          message: 'Use coupon code FIRST10 on checkout to enjoy instant discount on your next stay.',
+          type: 'promotion',
+          link: '/'
+        }
+      ];
+
+      for (const notif of welcomeNotifications) {
+        await pool.query(
+          `INSERT INTO notifications (user_id, user_email, title, message, type, link)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [userId || null, email || null, notif.title, notif.message, notif.type, notif.link]
+        );
+      }
+
+      const refreshed = await pool.query(query, params);
+      return res.status(200).json({
+        success: true,
+        notifications: refreshed.rows
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      notifications: result.rows
+    });
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    return res.status(500).json({ success: false, message: 'Failed to load notifications' });
+  }
+});
+
+/**
+ * MARK Notification as Read / Mark All as Read
+ * POST /api/auth/notifications/mark-read
+ */
+router.post('/notifications/mark-read', async (req, res) => {
+  const { id, userId, email, markAll } = req.body;
+
+  try {
+    if (markAll) {
+      if (userId && email) {
+        await pool.query('UPDATE notifications SET is_read = true WHERE user_id = $1 OR LOWER(user_email) = LOWER($2)', [userId, email]);
+      } else if (userId) {
+        await pool.query('UPDATE notifications SET is_read = true WHERE user_id = $1', [userId]);
+      } else if (email) {
+        await pool.query('UPDATE notifications SET is_read = true WHERE LOWER(user_email) = LOWER($1)', [email]);
+      } else {
+        await pool.query('UPDATE notifications SET is_read = true');
+      }
+    } else if (id) {
+      await pool.query('UPDATE notifications SET is_read = true WHERE id = $1', [id]);
+    }
+
+    return res.status(200).json({ success: true, message: 'Notification(s) updated' });
+  } catch (error) {
+    console.error('Error marking notifications:', error);
+    return res.status(500).json({ success: false, message: 'Failed to update notifications' });
+  }
+});
+
+/**
+ * DELETE Notification
+ * DELETE /api/auth/notifications/:id
+ */
+router.delete('/notifications/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM notifications WHERE id = $1', [id]);
+    return res.status(200).json({ success: true, message: 'Notification deleted' });
+  } catch (error) {
+    console.error('Error deleting notification:', error);
+    return res.status(500).json({ success: false, message: 'Failed to delete notification' });
+  }
+});
+
 export default router;

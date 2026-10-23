@@ -129,6 +129,7 @@ export async function initFullDatabase() {
       ALTER TABLE listings ADD COLUMN IF NOT EXISTS beds INT DEFAULT 3;
       ALTER TABLE listings ADD COLUMN IF NOT EXISTS bathrooms INT DEFAULT 2;
       ALTER TABLE listings ADD COLUMN IF NOT EXISTS categorized_photos JSONB DEFAULT '[]'::jsonb;
+      ALTER TABLE listings ADD COLUMN IF NOT EXISTS time VARCHAR(100);
     `);
 
     // 3. Bookings Table
@@ -1058,6 +1059,141 @@ export async function initFullDatabase() {
         ) VALUES (true, true, true, true, false, 8, false, 5, true);
       `);
     }
+
+    // 14. Support Tickets & Live Chat Messages
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS support_tickets (
+        id VARCHAR(50) PRIMARY KEY,
+        subject TEXT NOT NULL,
+        category VARCHAR(100) DEFAULT 'General Inquiry',
+        user_type VARCHAR(50) DEFAULT 'Guest',
+        user_name VARCHAR(150) NOT NULL,
+        user_email VARCHAR(150),
+        user_phone VARCHAR(50),
+        priority VARCHAR(30) DEFAULT 'Medium',
+        status VARCHAR(30) DEFAULT 'Open',
+        assigned_to VARCHAR(150) DEFAULT 'Support Team',
+        listing_name VARCHAR(255),
+        booking_id VARCHAR(50),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS support_messages (
+        id SERIAL PRIMARY KEY,
+        ticket_id VARCHAR(50) REFERENCES support_tickets(id) ON DELETE CASCADE,
+        sender VARCHAR(50) NOT NULL, -- 'Guest', 'Host', 'Support', 'Admin'
+        text TEXT NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Seed default support tickets if empty
+    const checkTickets = await pool.query('SELECT COUNT(*) FROM support_tickets');
+    if (parseInt(checkTickets.rows[0].count, 10) === 0) {
+      await pool.query(`
+        INSERT INTO support_tickets (id, subject, category, user_type, user_name, user_email, user_phone, priority, status, assigned_to, listing_name, booking_id)
+        VALUES 
+        ('TCK-9401', 'Host did not provide key / passcode at midnight check-in', 'Check-in & Access', 'Guest', 'Kunal Singhania', 'kunal.s@gmail.com', '+91 98201 12345', 'Critical', 'Open', 'Ananya Verma', 'Luxury Sea-Facing Villa, Goa', 'BK-8902'),
+        ('TCK-9402', 'Request for full refund: AC broken in 42°C Jaipur weather', 'Refund & Billing', 'Guest', 'Meera Deshmukh', 'meera.d@outlook.com', '+91 98112 54321', 'High', 'In Progress', 'Rohan Kapoor', 'Royal Heritage Haveli, Jaipur', 'BK-8750'),
+        ('TCK-9403', 'Guest brought 8 people for a 2-guest booking, damaged sofa', 'Property Damage & Host Safety', 'Host', 'Vikramaditya Rathore', 'rathore.stays@heritage.in', '+91 94140 98765', 'High', 'Open', 'Pooja Nair', 'Rathore Heritage Villa, Udaipur', 'BK-8611');
+
+        INSERT INTO support_messages (ticket_id, sender, text)
+        VALUES
+        ('TCK-9401', 'Guest', 'I have arrived at the property but the host is not answering calls. The keypad lock shows error code 404. I am stranded outside with my family.'),
+        ('TCK-9402', 'Guest', 'The AC unit in master bedroom leaked water all over our luggage and stopped cooling completely. Host is unresponsive.'),
+        ('TCK-9403', 'Host', 'Check-out inspection revealed extensive burn marks on living room Italian leather sofa and 6 unregistered extra guests.');
+      `);
+    }
+
+    // 15. User Notifications Table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        user_email VARCHAR(150),
+        title VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL,
+        type VARCHAR(50) DEFAULT 'account', -- 'booking', 'payment', 'security', 'account', 'promotion'
+        is_read BOOLEAN DEFAULT false,
+        link VARCHAR(255),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      -- 16. Intro to Hosting: Webinars & FAQs Table
+      CREATE TABLE IF NOT EXISTS intro_webinars (
+        id SERIAL PRIMARY KEY,
+        country VARCHAR(150) NOT NULL,
+        language VARCHAR(100) NOT NULL,
+        button_text VARCHAR(100) DEFAULT 'View webinars',
+        zoom_link VARCHAR(255) DEFAULT 'https://zoom.us',
+        is_active BOOLEAN DEFAULT true,
+        display_order INTEGER DEFAULT 0,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS intro_faqs (
+        id SERIAL PRIMARY KEY,
+        question TEXT NOT NULL,
+        answer TEXT NOT NULL,
+        category VARCHAR(100) DEFAULT 'general',
+        is_active BOOLEAN DEFAULT true,
+        display_order INTEGER DEFAULT 0,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Seed intro webinars if empty
+    const checkWebinars = await pool.query('SELECT COUNT(*) FROM intro_webinars');
+    if (parseInt(checkWebinars.rows[0].count, 10) === 0) {
+      await pool.query(`
+        INSERT INTO intro_webinars (country, language, button_text, zoom_link, display_order)
+        VALUES
+        ('Australia & New Zealand', 'English', 'View webinars', 'https://zoom.us', 1),
+        ('Brasil', 'Português', 'Ver webinarios', 'https://zoom.us', 2),
+        ('Canada', 'English and French', 'View webinars', 'https://zoom.us', 3),
+        ('España', 'Español', 'Ver webinarios', 'https://zoom.us', 4),
+        ('France', 'Français', 'Voir les webinaires', 'https://zoom.us', 5),
+        ('Germany, Austria & Switzerland', 'Deutsch', 'Webinare ansehen', 'https://zoom.us', 6),
+        ('Greece', 'Ελληνικά', 'Προβολή webinars', 'https://zoom.us', 7),
+        ('Italia', 'Italiano', 'Visualizza i webinar', 'https://zoom.us', 8),
+        ('Japan', '日本語', 'ウェビナーを見る', 'https://zoom.us', 9),
+        ('Mexico', 'Español', 'Ver webinarios', 'https://zoom.us', 10),
+        ('Nordics', 'English', 'View webinars', 'https://zoom.us', 11),
+        ('United Kingdom & Ireland', 'English', 'View webinars', 'https://zoom.us', 12),
+        ('United States', 'English', 'View webinars', 'https://zoom.us', 13),
+        ('United States', 'Español', 'Ver webinarios', 'https://zoom.us', 14);
+      `);
+    }
+
+    // Seed intro faqs if empty
+    const checkFaqs = await pool.query('SELECT COUNT(*) FROM intro_faqs');
+    if (parseInt(checkFaqs.rows[0].count, 10) === 0) {
+      await pool.query(`
+        INSERT INTO intro_faqs (question, answer, display_order)
+        VALUES
+        ('What is a Superhost Ambassador?', 'Superhost Ambassadors are experienced hosts who help new hosts get started. They can offer one-on-one guidance, tips, and support during your first hosting journey.', 1),
+        ('How do I join a webinar?', 'Simply click the ''View webinars'' button for your region above. You''ll be directed to a Zoom link where you can register and attend the session.', 2),
+        ('Is there any cost to attend?', 'No, all introductory webinars presented by Superhost Ambassadors are completely free of charge.', 3),
+        ('What if I can''t find a webinar in my language?', 'We are constantly expanding our resources. In the meantime, you can access the Airbnb Resource Centre for articles and videos in multiple languages.', 4);
+      `);
+    }
+
+    // 17. Host Calendar Dynamic Dates (Availability, Custom Price, Notes)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS host_calendar_dates (
+        id SERIAL PRIMARY KEY,
+        host_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        listing_id INTEGER REFERENCES listings(id) ON DELETE CASCADE,
+        calendar_date DATE NOT NULL,
+        is_available BOOLEAN DEFAULT true,
+        price NUMERIC(10, 2),
+        note TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(host_id, listing_id, calendar_date)
+      );
+    `);
 
     console.log('✅ PostgreSQL Shared Database Schema is ready!');
   } catch (err) {

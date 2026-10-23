@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Splide, SplideSlide, SplideTrack } from '@splidejs/react-splide';
 import '@splidejs/react-splide/css';
 import { 
@@ -359,6 +359,7 @@ function MapControls({ baseCenter, userCoords, onLocateMe, isLocating }) {
 
 export default function SearchResults() {
   const { location } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -471,36 +472,29 @@ export default function SearchResults() {
 
   const mapCenter = computeBaseCenter();
 
-  // Fetch dynamic listings from Backend filtered by location
+  // Fetch dynamic listings from Backend filtered strictly by location
   useEffect(() => {
     const fetchSearchResults = async () => {
       try {
         setLoading(true);
         const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
         
-        // Pass location filter to backend
+        // Pass strictly location filter to backend
         const queryParam = isNearbyOrAll ? '' : `?location=${encodeURIComponent(decodedLocation)}`;
         const res = await fetch(`${baseUrl}/listings${queryParam}`);
         const data = await res.json();
         
-        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+        if (data.success && Array.isArray(data.data)) {
           setListings(data.data);
           setActiveListingId(data.data[0]?.id || null);
         } else {
-          // If no specific match for this query, fetch all active listings as fallback
-          const allRes = await fetch(`${baseUrl}/listings`);
-          const allData = await allRes.json();
-          if (allData.success && Array.isArray(allData.data)) {
-            setListings(allData.data);
-            setActiveListingId(allData.data[0]?.id || null);
-          } else {
-            setListings([]);
-            setActiveListingId(null);
-          }
+          setListings([]);
+          setActiveListingId(null);
         }
       } catch (err) {
         console.error('Error fetching search results:', err);
         setListings([]);
+        setActiveListingId(null);
       } finally {
         setLoading(false);
       }

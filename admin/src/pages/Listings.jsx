@@ -205,13 +205,19 @@ export default function Listings() {
       tagFilter === 'guest_fav' ? item.isGuestFavourite :
       tagFilter === 'featured' ? item.isFeatured : true;
 
-    const isItemService = (item.type || '').toLowerCase().includes('service') ||
-      serviceCategories.some(sc => (item.category || '').toLowerCase().includes(sc));
+    const isItemExperience = (item.type || '').toLowerCase().includes('experience') ||
+      experienceCategoriesList.some(ec => (item.category || '').toLowerCase().includes(ec.toLowerCase()));
+
+    const isItemService = !isItemExperience && (
+      (item.type || '').toLowerCase().includes('service') ||
+      serviceCategories.some(sc => (item.category || '').toLowerCase().includes(sc.toLowerCase()))
+    );
 
     const matchesType = 
       typeFilter === 'all' ? true :
       typeFilter === 'services' ? isItemService :
-      typeFilter === 'stays' ? !isItemService : true;
+      typeFilter === 'experiences' ? isItemExperience :
+      typeFilter === 'stays' ? (!isItemService && !isItemExperience) : true;
 
     return matchesSearch && matchesTab && matchesTag && matchesType;
   });
@@ -384,6 +390,7 @@ export default function Listings() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: editListing.title,
+          type: editListing.type || 'Home',
           category: editListing.category,
           price: editListing.price,
           city: editListing.city,
@@ -633,7 +640,8 @@ export default function Listings() {
               className={styles.filterSelect}
             >
               <option value="all">Type: All Listings</option>
-              <option value="services">Services & Experiences Only</option>
+              <option value="experiences">Experiences Only</option>
+              <option value="services">Services Only</option>
               <option value="stays">Properties / Stays Only</option>
             </select>
 
@@ -680,8 +688,12 @@ export default function Listings() {
                 </tr>
               ) : (
                 filteredListings.map((item, idx) => {
-                  const isServiceItem = (item.type || '').toLowerCase().includes('service') ||
-                    serviceCategories.some(sc => (item.category || '').toLowerCase().includes(sc));
+                  const isExperienceItem = (item.type || '').toLowerCase().includes('experience') ||
+                    experienceCategoriesList.some(ec => (item.category || '').toLowerCase().includes(ec.toLowerCase()));
+                  const isServiceItem = !isExperienceItem && (
+                    (item.type || '').toLowerCase().includes('service') ||
+                    serviceCategories.some(sc => (item.category || '').toLowerCase().includes(sc.toLowerCase()))
+                  );
 
                   return (
                     <tr key={item.id}>
@@ -698,15 +710,15 @@ export default function Listings() {
                             </span>
                             <span className={styles.propertySub}>
                               <span style={{
-                                backgroundColor: isServiceItem ? '#eff6ff' : '#f3f4f6',
-                                color: isServiceItem ? '#2563eb' : '#4b5563',
+                                backgroundColor: isExperienceItem ? '#fef3c7' : isServiceItem ? '#eff6ff' : '#f3f4f6',
+                                color: isExperienceItem ? '#b45309' : isServiceItem ? '#2563eb' : '#4b5563',
                                 padding: '2px 6px',
                                 borderRadius: '4px',
                                 fontSize: '10px',
                                 fontWeight: '700',
                                 marginRight: '6px'
                               }}>
-                                {isServiceItem ? 'SERVICE' : 'STAY'}
+                                {isExperienceItem ? 'EXPERIENCE' : isServiceItem ? 'SERVICE' : 'STAY'}
                               </span>
                               {item.category ? `${item.category} · ` : ''}{item.type}
                             </span>
@@ -1129,6 +1141,20 @@ export default function Listings() {
                       >
                         <option value="yes">Yes (Guest Favourite)</option>
                         <option value="no">No</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="col-md-6 col-12">
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>Listing Type</label>
+                      <select 
+                        value={editListing.type || 'Home'}
+                        onChange={(e) => setEditListing({ ...editListing, type: e.target.value })}
+                        className={styles.formInput}
+                      >
+                        <option value="Home">Home / Stay</option>
+                        <option value="Experience">Experience</option>
+                        <option value="Service">Service</option>
                       </select>
                     </div>
                   </div>

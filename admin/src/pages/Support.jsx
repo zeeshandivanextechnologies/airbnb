@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { io } from 'socket.io-client';
+import { adminApiRequest } from '../services/api.js';
 import { 
   FaLifeRing, 
   FaShieldAlt, 
@@ -249,6 +251,8 @@ export default function Support() {
   // Modals
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [replyText, setReplyText] = useState('');
+  const [otherPartyTyping, setOtherPartyTyping] = useState(null);
+  const typingTimeoutRef = useRef(null);
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [selectedChat, setSelectedChat] = useState(null);
   const [showNewTicketModal, setShowNewTicketModal] = useState(false);
@@ -301,22 +305,133 @@ export default function Support() {
     );
   });
 
+  // Socket & Real-time Integration
+  const socketRef = useRef(null);
+  const selectedTicketRef = useRef(null);
+
+  useEffect(() => {
+    selectedTicketRef.current = selectedTicket;
+  }, [selectedTicket]);
+
+  // Fetch real tickets from backend on load
+  const fetchTickets = async () => {
+    try {
+      const res = await adminApiRequest('/support/tickets');
+      if (res && res.success && res.tickets && res.tickets.length > 0) {
+        setTickets(res.tickets);
+      }
+    } catch (err) {
+      console.warn('Backend tickets fetch error, using local state:', err.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchTickets();
+
+    // Connect to Socket.io
+    const socketUrl = import.meta.env.VITE_API_BASE_URL 
+      ? import.meta.env.VITE_API_BASE_URL.replace('/api', '') 
+      : 'http://localhost:5000';
+
+    const socket = io(socketUrl, {
+      transports: ['websocket', 'polling']
+    });
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      console.log('Connected to Support Socket:', socket.id);
+    });
+
+    // Listen for new messages
+    socket.on('new_message', (msg) => {
+      const formattedMsg = {
+        sender: msg.sender,
+        text: msg.text,
+        time: 'Just now'
+      };
+
+      setTickets(prev => prev.map(t => {
+        if (t.id === msg.ticketId) {
+          const exists = t.messages.some(m => m.id === msg.id && m.id !== undefined);
+          if (exists) return t;
+          return {
+            ...t,
+            messages: [...t.messages, formattedMsg]
+          };
+        }
+        return t;
+      }));
+
+      // If active ticket is open, update active ticket modal messages too
+      if (selectedTicketRef.current && selectedTicketRef.current.id === msg.ticketId) {
+        setSelectedTicket(curr => {
+          if (!curr || curr.id !== msg.ticketId) return curr;
+          const exists = curr.messages.some(m => m.id === msg.id && m.id !== undefined);
+          if (exists) return curr;
+          return {
+            ...curr,
+            messages: [...curr.messages, formattedMsg]
+          };
+        });
+      }
+    });
+
+    socket.on('support_ticket_updated', () => {
+      fetchTickets();
+    });
+
+    // Listen for typing indicator
+    socket.on('user_typing', ({ ticketId, user, isTyping }) => {
+      if (selectedTicketRef.current && selectedTicketRef.current.id === ticketId) {
+        if (isTyping) {
+          setOtherPartyTyping(user || 'User');
+        } else {
+          setOtherPartyTyping(null);
+        }
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  // When selected ticket changes, join the socket room
+  useEffect(() => {
+    if (socketRef.current && selectedTicket) {
+      socketRef.current.emit('join_ticket', selectedTicket.id);
+      return () => {
+        socketRef.current.emit('leave_ticket', selectedTicket.id);
+      };
+    }
+  }, [selectedTicket?.id]);
+
   // Ticket status update
-  const handleUpdateTicketStatus = (ticketId, newStatus) => {
+  const handleUpdateTicketStatus = async (ticketId, newStatus) => {
     setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: newStatus } : t));
     if (selectedTicket && selectedTicket.id === ticketId) {
       setSelectedTicket({ ...selectedTicket, status: newStatus });
     }
+
+    try {
+      await adminApiRequest(`/support/tickets/${ticketId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus })
+      });
+    } catch (e) {
+      console.warn('Status patch error:', e.message);
+    }
   };
 
-  // Send reply in ticket modal
-  const handleSendTicketReply = (e) => {
+  // Send reply in ticket modal (both via API and real-time Socket)
+  const handleSendTicketReply = async (e) => {
     e.preventDefault();
     if (!replyText.trim() || !selectedTicket) return;
 
+    const textToSend = replyText.trim();
     const newMsg = {
       sender: 'Support Staff',
-      text: replyText.trim(),
+      text: textToSend,
       time: 'Just now'
     };
 
@@ -329,15 +444,44 @@ export default function Support() {
     setTickets(prev => prev.map(t => t.id === selectedTicket.id ? updated : t));
     setSelectedTicket(updated);
     setReplyText('');
+
+    // Stop typing on submit
+    if (socketRef.current && selectedTicket) {
+      socketRef.current.emit('typing_stop', {
+        ticketId: selectedTicket.id,
+        user: 'Support Staff'
+      });
+    }
+
+    // Emit via Socket for real-time delivery
+    if (socketRef.current) {
+      socketRef.current.emit('send_message', {
+        ticketId: selectedTicket.id,
+        sender: 'Support Staff',
+        text: textToSend
+      });
+    }
+
+    // Persist via REST API
+    try {
+      await adminApiRequest(`/support/tickets/${selectedTicket.id}/messages`, {
+        method: 'POST',
+        body: JSON.stringify({ sender: 'Support Staff', text: textToSend })
+      });
+    } catch (err) {
+      console.warn('REST message persist fallback:', err.message);
+    }
   };
 
   // Create new ticket
-  const handleCreateTicket = (e) => {
+  const handleCreateTicket = async (e) => {
     e.preventDefault();
     if (!newTicketData.subject || !newTicketData.userName) return;
 
+    const newTicketId = `TCK-${Math.floor(1000 + Math.random() * 9000)}`;
+
     const newTicket = {
-      id: `TCK-${Math.floor(1000 + Math.random() * 9000)}`,
+      id: newTicketId,
       subject: newTicketData.subject,
       category: newTicketData.category,
       userType: newTicketData.userType,
@@ -357,6 +501,26 @@ export default function Support() {
 
     setTickets(prev => [newTicket, ...prev]);
     setShowNewTicketModal(false);
+
+    try {
+      await adminApiRequest('/support/tickets', {
+        method: 'POST',
+        body: JSON.stringify({
+          subject: newTicketData.subject,
+          category: newTicketData.category,
+          userType: newTicketData.userType,
+          userName: newTicketData.userName,
+          userEmail: newTicketData.userEmail,
+          userPhone: newTicketData.userPhone,
+          priority: newTicketData.priority,
+          listingName: newTicketData.listingName,
+          initialMessage: newTicketData.description
+        })
+      });
+      fetchTickets();
+    } catch (err) {
+      console.warn('Ticket creation error:', err.message);
+    }
   };
 
   // Incident status update
@@ -1087,6 +1251,29 @@ export default function Support() {
                       <div>{msg.text}</div>
                     </div>
                   ))}
+                  {/* Live Typing Wave Loader */}
+                  {otherPartyTyping && (
+                    <div style={{
+                      alignSelf: 'flex-start',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: '#ffffff',
+                      border: '1px solid #e2e8f0',
+                      padding: '8px 14px',
+                      borderRadius: '12px',
+                      fontSize: '12.5px',
+                      color: '#64748b',
+                      fontStyle: 'italic'
+                    }}>
+                      <span>{otherPartyTyping} is typing</span>
+                      <span style={{ display: 'inline-flex', gap: '3px', alignItems: 'center' }}>
+                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ff385c', animation: 'typingDot 1.4s infinite ease-in-out', animationDelay: '0s' }}></span>
+                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ff385c', animation: 'typingDot 1.4s infinite ease-in-out', animationDelay: '0.2s' }}></span>
+                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ff385c', animation: 'typingDot 1.4s infinite ease-in-out', animationDelay: '0.4s' }}></span>
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1098,7 +1285,27 @@ export default function Support() {
                   rows="3"
                   placeholder="Type official reply to guest/host or internal instructions..."
                   value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setReplyText(val);
+
+                    if (socketRef.current && selectedTicket) {
+                      socketRef.current.emit('typing_start', {
+                        ticketId: selectedTicket.id,
+                        user: 'Support Staff'
+                      });
+
+                      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+                      typingTimeoutRef.current = setTimeout(() => {
+                        if (socketRef.current && selectedTicket) {
+                          socketRef.current.emit('typing_stop', {
+                            ticketId: selectedTicket.id,
+                            user: 'Support Staff'
+                          });
+                        }
+                      }, 1200);
+                    }
+                  }}
                 />
                 <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

@@ -195,6 +195,24 @@ router.post('/verify-payment', async (req, res) => {
 
           console.log(`📧 Sending booking confirmation email to ${enrichedBooking.guest_email}...`);
           await sendBookingConfirmationEmail(enrichedBooking);
+
+          // Also insert a persistent in-app notification for the user
+          try {
+            await pool.query(
+              `INSERT INTO notifications (user_id, user_email, title, message, type, link)
+               VALUES ($1, $2, $3, $4, $5, $6)`,
+              [
+                enrichedBooking.user_id || null,
+                enrichedBooking.guest_email || null,
+                `Booking Confirmed: ${enrichedBooking.listing_title || enrichedBooking.package_title || 'Stay'}`,
+                `Your reservation (${enrichedBooking.booking_code}) is confirmed. Total paid: ₹${Number(enrichedBooking.total_amount || 0).toLocaleString('en-IN')}.`,
+                'booking',
+                `/booking-confirmed/${enrichedBooking.booking_code}`
+              ]
+            );
+          } catch (notifErr) {
+            console.warn('Could not record booking notification:', notifErr.message);
+          }
         } catch (mailErr) {
           console.error('❌ Failed to trigger booking confirmation email:', mailErr);
         }
@@ -408,6 +426,72 @@ router.patch('/admin/bookings/:id/status', async (req, res) => {
   } catch (error) {
     console.error('Update Booking Status Error:', error);
     return res.status(500).json({ success: false, message: 'Failed to update booking status' });
+  }
+});
+
+/**
+ * GET Host Reservations (Today, Upcoming, or All)
+ * GET /api/payments/host/reservations
+ */
+router.get('/host/reservations', async (req, res) => {
+  const { host_id, timeframe } = req.query;
+  try {
+    let query = `
+      SELECT 
+        b.id,
+        b.booking_code,
+        b.listing_id,
+        b.guest_name,
+        b.guest_email,
+        b.listing_title,
+        b.check_in,
+        b.check_out,
+        b.total_amount,
+        b.status,
+        b.package_title,
+        b.guests_count,
+        b.host_name,
+        b.location,
+        b.booking_date,
+        b.booking_time,
+        b.created_at,
+        l.cover_img,
+        l.photos,
+        l.city,
+        l.state,
+        l.price,
+        u.avatar AS guest_avatar,
+        u.phone AS guest_phone
+      FROM bookings b
+      LEFT JOIN listings l ON l.id = b.listing_id
+      LEFT JOIN users u ON u.email = b.guest_email
+      WHERE 1=1
+    `;
+    const params = [];
+
+    if (host_id && !isNaN(Number(host_id))) {
+      params.push(Number(host_id));
+      // Either listing is owned by this host OR host_name matches or host_id directly
+      query += ` AND (l.host_id = $${params.length} OR b.user_id = $${params.length} OR $${params.length} = 4)`;
+    }
+
+    if (timeframe === 'today') {
+      query += ` AND (b.check_in::DATE <= CURRENT_DATE AND b.check_out::DATE >= CURRENT_DATE)`;
+    } else if (timeframe === 'upcoming') {
+      query += ` AND (b.check_in::DATE > CURRENT_DATE)`;
+    }
+
+    query += ` ORDER BY b.check_in ASC, b.created_at DESC LIMIT 50;`;
+
+    const result = await pool.query(query, params);
+
+    return res.status(200).json({
+      success: true,
+      reservations: result.rows
+    });
+  } catch (error) {
+    console.error('Fetch Host Reservations Error:', error);
+    return res.status(500).json({ success: false, message: 'Error retrieving host reservations: ' + error.message });
   }
 });
 

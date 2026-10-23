@@ -215,3 +215,32 @@
   justify-content: center;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
+
+
+
+@media (max-width : 767px) {
+  .topHeader{
+    padding: 16px;
+  }
+
+  .mainContent{
+    padding: 16px;
+  }
+
+  .topHeader{
+    flex-wrap: wrap;
+  }
+
+  .headerRight{
+    min-width: auto;
+  }
+
+  .headerLeft{
+    min-width: auto;
+  }
+
+  .selectedCountText{
+    font-size: 16px;
+  }
+
+}

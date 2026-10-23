@@ -27,6 +27,7 @@ import {
   FaTrash, FaCheck,
   FaChevronDown, FaChevronLeft, FaBookOpen,
   FaCamera, FaImages, FaShoppingBag, FaBars,
+  FaSave, FaCalendarAlt
 } from "react-icons/fa";
 import { BsThreeDots } from 'react-icons/bs';
 import { IoMdClose } from 'react-icons/io';
@@ -322,6 +323,90 @@ export default function HostSetup() {
   const [cityInput, setCityInput] = useState("");
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [locationStatusText, setLocationStatusText] = useState("");
+  const [backendCitySuggestions, setBackendCitySuggestions] = useState([]);
+  const [dynamicCitySearchResults, setDynamicCitySearchResults] = useState([]);
+  const [isSearchingCity, setIsSearchingCity] = useState(false);
+
+  // 1. Fetch initial active locations / cities from backend for showCityModal suggested list
+  useEffect(() => {
+    const fetchBackendCities = async () => {
+      try {
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+        const res = await fetch(`${baseUrl}/listings/locations/search`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data)) {
+            const uniqueCities = [];
+            const seen = new Set();
+            json.data.forEach((loc) => {
+              const label = loc.city && loc.state ? `${loc.city}, ${loc.state}` : (loc.city || loc.full_address || "");
+              if (label && !seen.has(label.toLowerCase())) {
+                seen.add(label.toLowerCase());
+                uniqueCities.push(label);
+              }
+            });
+            if (uniqueCities.length > 0) {
+              setBackendCitySuggestions(uniqueCities.slice(0, 8));
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to fetch initial backend cities:", err);
+      }
+    };
+
+    fetchBackendCities();
+  }, []);
+
+  // 2. Debounced dynamic backend search for cityInput in showCityModal
+  useEffect(() => {
+    if (!cityInput || cityInput.trim().length === 0) {
+      setDynamicCitySearchResults([]);
+      setIsSearchingCity(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setIsSearchingCity(true);
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+        const query = encodeURIComponent(cityInput.trim());
+        const res = await fetch(`${baseUrl}/listings/locations/search?q=${query}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+            const results = [];
+            const seen = new Set();
+            json.data.forEach((loc) => {
+              const primary = loc.city && loc.state 
+                ? `${loc.city}, ${loc.state}` 
+                : (loc.city || loc.district || loc.street || loc.full_address || "");
+              const full = loc.full_address || primary;
+              if (primary && !seen.has(primary.toLowerCase())) {
+                seen.add(primary.toLowerCase());
+                results.push({
+                  display: primary,
+                  fullAddress: full,
+                  city: loc.city || primary,
+                  state: loc.state || ""
+                });
+              }
+            });
+            setDynamicCitySearchResults(results);
+          } else {
+            setDynamicCitySearchResults([]);
+          }
+        }
+      } catch (err) {
+        console.warn("Backend city search failed:", err);
+        setDynamicCitySearchResults([]);
+      } finally {
+        setIsSearchingCity(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [cityInput]);
 
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -553,16 +638,30 @@ export default function HostSetup() {
     street: "",
     landmark: "",
     district: "",
-    city: "Sawai Madhopur",
-    state: "Rajasthan",
+    city: "",
+    state: "",
     pin: "",
     locationName: "",
   });
 
+  // Sync meetupAddress city & state whenever selectedCity changes
+  useEffect(() => {
+    if (selectedCity && selectedCity.trim()) {
+      const parts = selectedCity.split(",").map((s) => s.trim());
+      const c = parts[0] || selectedCity;
+      const s = parts[1] || "";
+      setMeetupAddress((prev) => ({
+        ...prev,
+        city: prev.city && prev.city !== "Sawai Madhopur" ? prev.city : c,
+        state: prev.state && prev.state !== "Rajasthan" ? prev.state : s,
+      }));
+    }
+  }, [selectedCity]);
+
   // Debounced dynamic location search for Meeting Place
   useEffect(() => {
     if (!locationSearch || locationSearch.trim().length < 2) {
-      const baseCity = selectedCity || "Sawai Madhopur, Rajasthan, India";
+      const baseCity = selectedCity || "Jaipur, Rajasthan, India";
       setDynamicLocationSuggestions([
         baseCity,
         "Sawariya Seth Mandir, Mandphiya, Rajasthan, India",
@@ -574,28 +673,24 @@ export default function HostSetup() {
     const timer = setTimeout(async () => {
       try {
         setIsSearchingLocation(true);
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
         const query = encodeURIComponent(locationSearch.trim());
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${query}&format=json&addressdetails=1&countrycodes=in&limit=5`,
-          {
-            headers: {
-              "Accept-Language": "en",
-            },
+        const res = await fetch(`${baseUrl}/listings/locations/search?q=${query}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+            const suggestions = json.data.map((item) => item.full_address || `${item.street ? item.street + ", " : ""}${item.city}, ${item.state}`);
+            setDynamicLocationSuggestions(suggestions);
+          } else {
+            setDynamicLocationSuggestions([locationSearch.trim()]);
           }
-        );
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          const suggestions = data.map((item) => item.display_name);
-          setDynamicLocationSuggestions(suggestions);
-        } else {
-          setDynamicLocationSuggestions([locationSearch.trim()]);
         }
       } catch (err) {
         console.warn("Location suggestions lookup failed:", err);
       } finally {
         setIsSearchingLocation(false);
       }
-    }, 350);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [locationSearch, selectedCity]);
@@ -603,7 +698,7 @@ export default function HostSetup() {
   // Debounced dynamic search for Service Area starting location
   useEffect(() => {
     if (!serviceAreaSearch || serviceAreaSearch.trim().length < 2) {
-      const baseCity = selectedCity || "Sawai Madhopur, Rajasthan, India";
+      const baseCity = selectedCity || "Jaipur, Rajasthan, India";
       setServiceAreaSuggestions([
         baseCity,
         "Jaipur, Rajasthan, India",
@@ -615,32 +710,28 @@ export default function HostSetup() {
     const timer = setTimeout(async () => {
       try {
         setIsSearchingServiceArea(true);
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
         const query = encodeURIComponent(serviceAreaSearch.trim());
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${query}&format=json&addressdetails=1&countrycodes=in&limit=5`,
-          {
-            headers: {
-              "Accept-Language": "en",
-            },
+        const res = await fetch(`${baseUrl}/listings/locations/search?q=${query}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+            setServiceAreaSuggestions(json.data.map((item) => item.full_address || `${item.city}, ${item.state}`));
+          } else {
+            setServiceAreaSuggestions([serviceAreaSearch.trim()]);
           }
-        );
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          setServiceAreaSuggestions(data.map((item) => item.display_name));
-        } else {
-          setServiceAreaSuggestions([serviceAreaSearch.trim()]);
         }
       } catch (err) {
         console.warn("Service area search lookup failed:", err);
       } finally {
         setIsSearchingServiceArea(false);
       }
-    }, 350);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [serviceAreaSearch, selectedCity]);
 
-  // Use current location helper for both modals
+  // Accurate current location helper using backend reverse geocoding
   const handleUseCurrentLocationForModal = (modalType) => {
     if (!navigator.geolocation) {
       toast.error("Geolocation is not supported by your browser.");
@@ -651,16 +742,38 @@ export default function HostSetup() {
       async (position) => {
         try {
           const { latitude, longitude } = position.coords;
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
-            {
-              headers: {
-                "Accept-Language": "en",
-              },
+          const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+          
+          let addrData = null;
+          try {
+            const apiRes = await fetch(`${baseUrl}/listings/locations/search?lat=${latitude}&lng=${longitude}`);
+            if (apiRes.ok) {
+              const apiJson = await apiRes.json();
+              if (apiJson.success && Array.isArray(apiJson.data) && apiJson.data[0]) {
+                addrData = apiJson.data[0];
+              }
             }
-          );
-          const data = await response.json();
-          const placeName = data.display_name || `${data.address?.city || "Jaipur"}, ${data.address?.state || "Rajasthan"}`;
+          } catch (e) {
+            console.warn("Backend reverse geocode fallback:", e);
+          }
+
+          if (!addrData) {
+            const bdcRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
+            if (bdcRes.ok) {
+              const bdcJson = await bdcRes.json();
+              addrData = {
+                country: bdcJson.countryName || "India",
+                city: bdcJson.city || bdcJson.locality || "",
+                state: bdcJson.principalSubdivision || "",
+                district: bdcJson.localityInfo?.administrative?.[2]?.name || "",
+                street: bdcJson.locality || "",
+                pin: bdcJson.postcode || "",
+                full_address: `${bdcJson.locality ? bdcJson.locality + ", " : ""}${bdcJson.city || ""}, ${bdcJson.principalSubdivision || ""}`
+              };
+            }
+          }
+
+          const placeName = addrData?.full_address || (selectedCity || "India");
 
           if (modalType === "service_area") {
             setServiceAreaSearch(placeName);
@@ -669,25 +782,17 @@ export default function HostSetup() {
               startingLocation: placeName,
             }));
           } else {
-            // Detailed address parts from reverse geocoding
-            const addr = data.address || {};
-            const streetGuess = addr.road || addr.suburb || addr.neighbourhood || addr.amenity || placeName.split(",")[0] || "";
-            const localityGuess = addr.suburb || addr.neighbourhood || addr.residential || "";
-            const cityGuess = addr.city || addr.town || addr.village || addr.city_district || addr.county || "Jaipur";
-            const stateGuess = addr.state || "Rajasthan";
-            const pinGuess = addr.postcode || "";
-
             setMeetupAddress((prev) => ({
               ...prev,
-              country: addr.country || "India",
-              flat: prev.flat || "",
-              street: streetGuess || prev.street || placeName.split(",")[0],
-              landmark: prev.landmark || "",
-              district: localityGuess || prev.district || "",
-              city: cityGuess,
-              state: stateGuess,
-              pin: pinGuess || prev.pin || "",
-              locationName: prev.locationName || streetGuess || "",
+              country: addrData?.country || "India",
+              flat: addrData?.flat || prev.flat || "",
+              street: addrData?.street || prev.street || placeName.split(",")[0],
+              landmark: addrData?.landmark || prev.landmark || "",
+              district: addrData?.district || prev.district || "",
+              city: addrData?.city || prev.city || selectedCity.split(",")[0] || "",
+              state: addrData?.state || prev.state || selectedCity.split(",")[1]?.trim() || "",
+              pin: addrData?.pin || prev.pin || "",
+              locationName: prev.locationName || addrData?.street || "",
             }));
 
             setLocationSearch(placeName);
@@ -695,31 +800,59 @@ export default function HostSetup() {
           }
         } catch (err) {
           console.error("Failed to detect location:", err);
+          toast.error("Could not determine precise location. Please enter details.");
         }
       },
       (error) => {
         console.warn("Geolocation permission denied:", error);
-      }
+        toast.error("Location permission denied. Please enter address manually.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
     );
   };
 
-  // Helper to parse suggestion into meetupAddress
-  const handleSelectLocationSuggestion = (sug) => {
+  // Helper to parse suggestion into meetupAddress using smart parsing
+  const handleSelectLocationSuggestion = async (sug) => {
     setLocationSearch(sug);
     setShowLocationSuggestions(false);
 
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+      const res = await fetch(`${baseUrl}/listings/locations/search?q=${encodeURIComponent(sug)}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          const match = json.data[0];
+          setMeetupAddress((prev) => ({
+            ...prev,
+            country: match.country || "India",
+            flat: match.flat || prev.flat || "",
+            street: match.street || prev.street || sug.split(",")[0],
+            landmark: match.landmark || prev.landmark || "",
+            district: match.district || prev.district || "",
+            city: match.city || prev.city || selectedCity.split(",")[0] || "",
+            state: match.state || prev.state || selectedCity.split(",")[1]?.trim() || "",
+            pin: match.pin || prev.pin || "",
+            locationName: match.street || prev.locationName || sug.split(",")[0],
+          }));
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("Structured suggestion match failed:", err);
+    }
+
     const parts = sug.split(",").map((s) => s.trim());
     const primaryTitle = parts[0] || "";
-    const cityGuess = parts.length > 2 ? parts[parts.length - 3] : (parts[1] || selectedCity || "Sawai Madhopur");
-    const stateGuess = parts.length > 1 ? parts[parts.length - 2] : "Rajasthan";
     const pinMatch = sug.match(/\b\d{6}\b/);
+    const selectedCityParts = selectedCity ? selectedCity.split(",").map((s) => s.trim()) : [];
 
     setMeetupAddress((prev) => ({
       ...prev,
       country: "India",
       street: primaryTitle,
-      city: cityGuess,
-      state: stateGuess,
+      city: selectedCityParts[0] || (parts.length > 2 ? parts[parts.length - 3] : prev.city),
+      state: selectedCityParts[1] || (parts.length > 1 ? parts[parts.length - 2] : prev.state),
       pin: pinMatch ? pinMatch[0] : prev.pin,
       locationName: primaryTitle,
     }));
@@ -908,6 +1041,10 @@ export default function HostSetup() {
   });
   const [expandedHoursSection, setExpandedHoursSection] = useState(null); // 'days' | 'from' | 'to' | null
 
+  // Experience scheduling / badge time (e.g. '8am', '4pm', 'Fri - 11am')
+  const [experienceTimeBadge, setExperienceTimeBadge] = useState("8am");
+  const [showExpScheduleModal, setShowExpScheduleModal] = useState(false);
+
   const toggleVehicleType = (type) => {
     if (vehicleTypes.includes(type)) {
       setVehicleTypes(vehicleTypes.filter(t => t !== type));
@@ -1007,6 +1144,26 @@ export default function HostSetup() {
 
       const hostEmail = currentUser?.email || null;
 
+      // Determine Experience Time Badge (e.g. '8am', '4pm', 'Fri - 11am')
+      let finalTimeBadge = experienceTimeBadge;
+      if (hostingType === 'service') {
+        finalTimeBadge = null;
+      } else {
+        if (!finalTimeBadge && Array.isArray(businessHoursList) && businessHoursList.length > 0) {
+          const bh = businessHoursList[0];
+          const rawTime = bh.from || bh.open || '11:00 am';
+          const cleanTime = rawTime.toLowerCase().replace(':00', '').replace(/\s+/g, '');
+          if (bh.days && bh.days.length > 0) {
+            finalTimeBadge = `${bh.days[0].slice(0, 3)} - ${cleanTime}`;
+          } else {
+            finalTimeBadge = cleanTime;
+          }
+        }
+        if (!finalTimeBadge) {
+          finalTimeBadge = 'Fri - 11am';
+        }
+      }
+
       const payload = {
         title: experienceTitle || 'Creative Experience & Host Tour',
         type: listingType,
@@ -1042,7 +1199,8 @@ export default function HostSetup() {
         service_offerings: serviceOfferings,
         business_hours: businessHoursList,
         review_requirements_agreed: true,
-        status: redirectToDone ? 'Active' : 'In progress'
+        status: redirectToDone ? 'Active' : 'In progress',
+        time: finalTimeBadge
       };
 
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
@@ -1058,13 +1216,25 @@ export default function HostSetup() {
       const method = existingDraftId ? 'PUT' : 'POST';
       const endpoint = existingDraftId ? `${baseUrl}/listings/${existingDraftId}` : `${baseUrl}/listings`;
 
-      const res = await fetch(endpoint, {
+      let res = await fetch(endpoint, {
         method,
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(payload)
       });
+
+      // If PUT fails (e.g. stale/deleted draft id), fallback to creating fresh listing via POST
+      if (!res.ok && method === 'PUT') {
+        localStorage.removeItem('host_draft_listing_id');
+        res = await fetch(`${baseUrl}/listings`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+      }
 
       const data = await res.json();
       if (data.success && data.data) {
@@ -1594,7 +1764,7 @@ export default function HostSetup() {
           </div>
 
           <div className={styles.sidebarMain}>
-            {serviceStep !== 24 && (
+            {serviceStep !== 24 && serviceStep !== 25 && (
             <div className={styles.sidebarHeader}>
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <button
@@ -1710,13 +1880,22 @@ export default function HostSetup() {
                   </span>
                 </div>
               </div>
-              <button 
-                className={styles.sidebarSaveBtn}
-                onClick={() => handleSaveListingToBackend(false)}
-                disabled={isSubmittingListing}
-              >
-                {isSubmittingListing ? 'Saving...' : 'Save and exit'}
-              </button>
+             <button
+  className={styles.sidebarSaveBtn}
+  onClick={() => handleSaveListingToBackend(false)}
+  disabled={isSubmittingListing}
+>
+  {isSubmittingListing ? (
+    "Saving..."
+  ) : (
+    <>
+      <span className={styles.desktopSaveText}>Save and exit</span>
+      <span className={styles.mobileSaveIcon}>
+        <FaSave size={16} />
+      </span>
+    </>
+  )}
+</button>
             </div>
             )}
 
@@ -2141,6 +2320,12 @@ export default function HostSetup() {
                                   desc: experienceTitle || 'Title & details', 
                                   step: 21 
                                 },
+                                { 
+                                  icon: <div className={`${styles.publishItemIconWrapper} ${styles.publishIconPricing}`}><FaCalendarAlt size={18}/></div>, 
+                                  title: 'Schedule & Time Badge', 
+                                  desc: experienceTimeBadge ? `Badge: ${experienceTimeBadge}` : 'Set time / day badge', 
+                                  onClick: () => setShowExpScheduleModal(true)
+                                },
                                 {
                                   icon: <div className={`${styles.publishItemIconWrapper} ${styles.publishIconAvatar}`}><FaCheck size={18}/></div>,
                                   title: 'Publish',
@@ -2151,7 +2336,13 @@ export default function HostSetup() {
                           ).map((item, i) => (
                             <div 
                               key={i} 
-                              onClick={() => setServiceStep(item.step)} 
+                              onClick={() => {
+                                if (item.onClick) {
+                                  item.onClick();
+                                } else if (item.step !== undefined) {
+                                  setServiceStep(item.step);
+                                }
+                              }} 
                               className={styles.publishTabItem}
                             >
                               <div className={styles.publishTabLeft}>
@@ -2868,8 +3059,8 @@ export default function HostSetup() {
               </div>
               )
             ) : serviceStep === 13 ? (
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: '#ffffff' }}>
-                <div style={{ flex: 1, overflowY: 'auto', padding: '36px 24px 130px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div className={styles.autoStyle401} >
+                <div className={styles.step4OuterContainer}>
                   {photos.length === 0 ? (
                     <div className={step1Styles.step6Container} style={{ width: '100%', maxWidth: '640px' }}>
                       <h1 className={step1Styles.step2Title} style={{ marginBottom: '8px' }}>
@@ -5018,8 +5209,8 @@ export default function HostSetup() {
                   >
                     Make sure this address is correct. You can't change it once
                     you
-                    <br />
-                    submit your listing.
+                    
+                    <span className="d-lg-block d-sm-inline">submit your listing.</span>
                   </p>
 
                   <div
@@ -5156,33 +5347,16 @@ export default function HostSetup() {
               <>
                 {hostingType !== "service" ? (
                   /* EXPERIENCE FLOW: Where should guests meet you? */
-                  <div
-                    style={{
-                      flex: 1,
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      padding: "40px 24px 100px",
-                      position: "relative",
-                      width: "100%",
-                      maxWidth: "680px",
-                      margin: "0 auto",
-                    }}
+                  <div className={styles.hostGuest}
+                    
                   >
-                    <div style={{ width: "100%", textAlign: "center", marginBottom: "36px" }}>
-                      <h1
-                        style={{
-                          fontSize: "36px",
-                          fontWeight: 700,
-                          color: "#222",
-                          marginBottom: "12px",
-                          letterSpacing: "-0.5px",
-                        }}
+                    <div className={styles.hostGuestTitleContainer} >
+                      <h1 
+                        
                       >
                         Where should guests meet
-                        <br />
-                        you?
+                       
+                       <span className="d-lg-block d-sm-inline"> you?</span>
                       </h1>
                       <p style={{ fontSize: "16px", color: "#717171", margin: 0 }}>
                         Guests will see this address on your listing.
@@ -6357,16 +6531,16 @@ export default function HostSetup() {
                     className={styles.autoStyle82}
                   >
                     Let us know a bit more
-                    <br />
-                    about you
+                    
+                   <span className="d-lg-block d-sm-inline"> about you</span>
                   </h1>
                   <p
                     className={styles.autoStyle83}
                   >
                     This is required to comply with financial regulations and
                     helps us
-                    <br />
-                    prevent fraud.
+                    <span className="d-lg-block d-sm-inline"> prevent fraud.</span>
+                   
                   </p>
 
                   <div className={styles.autoStyle84}>
@@ -6490,38 +6664,30 @@ export default function HostSetup() {
                     <div className={styles.autoStyle96}>
                       <button
                         onClick={() => setHostingAsBusiness("yes")}
+
+                        className={styles.hostingButton}
+
                         style={{
-                          flex: 1,
-                          padding: "24px 16px",
-                          borderRadius: "12px",
-                          background: "white",
+                     
                           border:
                             hostingAsBusiness === "yes"
                               ? "2px solid #222"
                               : "1px solid #b0b0b0",
-                          fontWeight: 600,
-                          fontSize: "16px",
-                          cursor: "pointer",
-                          transition: "0.2s",
+                          
                         }}
                       >
                         Yes
                       </button>
                       <button
                         onClick={() => setHostingAsBusiness("no")}
+                        className={styles.hostingButton}
                         style={{
-                          flex: 1,
-                          padding: "24px 16px",
-                          borderRadius: "12px",
-                          background: "white",
+                         
                           border:
                             hostingAsBusiness === "no"
                               ? "2px solid #222"
                               : "1px solid #b0b0b0",
-                          fontWeight: 600,
-                          fontSize: "16px",
-                          cursor: "pointer",
-                          transition: "0.2s",
+                          
                         }}
                       >
                         No
@@ -6694,21 +6860,10 @@ export default function HostSetup() {
                 </footer>
               </div>
             ) : serviceStep === 7 ? (
-              <div
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  flexDirection: "column",
-                  overflowY: "auto",
-                }}
+              <div className={styles['host-setup-section']}           
               >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    marginTop: "64px",
-                    marginBottom: "24px",
-                  }}
+                <div className={styles.hostSetupHeader}
+                 
                 >
                   {user?.avatar ? (
                     <img
@@ -6742,24 +6897,13 @@ export default function HostSetup() {
                     </div>
                   )}
                 </div>
-                <h1
-                  style={{
-                    fontSize: "32px",
-                    fontWeight: 600,
-                    color: "#222",
-                    textAlign: "center",
-                    marginBottom: "8px",
-                  }}
+                <h1 className={styles.hostTitle}
+                 
                 >
                   Showcase your expertise
                 </h1>
-                <p
-                  style={{
-                    fontSize: "16px",
-                    color: "#717171",
-                    textAlign: "center",
-                    marginBottom: "48px",
-                  }}
+                <p className={styles.subPara}
+                 
                 >
                   Let guests know why you're a great host for this{" "}
                   {hostingType === "service" ? "service" : "experience"}.
@@ -6943,27 +7087,15 @@ export default function HostSetup() {
                 </footer>
               </div>
             ) : (
-              <div
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
+              <div className={styles.hostMainStep}
+              
               >
                 <h1
-                  style={{
-                    fontSize: "32px",
-                    fontWeight: 600,
-                    color: "#222",
-                    textAlign: "center",
-                    marginBottom: "24px",
-                  }}
+                 
                 >
                   How many years have you
-                  <br />
-                  worked in {selectedExperience?.name?.toLowerCase()}?
+                
+                 <span className="d-lg-block d-sm-inline"> worked in {selectedExperience?.name?.toLowerCase()}?</span>
                 </h1>
                 <div className={styles.counterWrap}>
                   <button
@@ -7581,7 +7713,7 @@ export default function HostSetup() {
           <main className={styles.mainContent}>
             <div className={`container ${styles.subExpContainer}`}>
               <div className="row">
-                <div className="col-md-7 d-flex flex-column justify-content-center">
+                <div className="col-md-7 mb-3">
                   <h1 className={styles.subExpTitle}>
                     {expStepSettings.exp_step4_city?.title || (
                       <>
@@ -7707,62 +7839,138 @@ export default function HostSetup() {
                     </div>
                   )}
 
-                  <div style={{ marginTop: "8px" }}>
+                  <div style={{ marginTop: "8px", maxHeight: "320px", overflowY: "auto" }}>
                     {cityInput ? (
-                      <div
-                        style={{
-                          padding: "12px",
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "16px",
-                          borderBottom: "1px solid #ebebeb",
-                        }}
-                        onClick={() => {
-                          setSelectedCity(cityInput);
-                          setShowCityModal(false);
-                          setCityInput("");
-                        }}
-                      >
+                      <div>
+                        {isSearchingCity && (
+                          <div style={{ padding: "12px", fontSize: "13px", color: "#717171" }}>
+                            Searching locations...
+                          </div>
+                        )}
+
+                        {/* Top Direct Selection */}
                         <div
                           style={{
-                            background: "#f7f7f7",
-                            padding: "16px",
-                            borderRadius: "12px",
+                            padding: "12px",
+                            cursor: "pointer",
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: "center",
+                            gap: "16px",
+                            borderBottom: "1px solid #ebebeb",
+                            borderRadius: "8px",
+                            transition: "background 0.15s ease",
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = "#f7f7f7"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                          onClick={() => {
+                            setSelectedCity(cityInput);
+                            setShowCityModal(false);
+                            setCityInput("");
                           }}
                         >
-                          <FaMapMarkerAlt size={20} color="#222" />
+                          <div
+                            style={{
+                              background: "#f7f7f7",
+                              padding: "12px",
+                              borderRadius: "12px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            <FaMapMarkerAlt size={18} color="#222" />
+                          </div>
+                          <div>
+                            <span
+                              style={{
+                                fontWeight: 600,
+                                fontSize: "15px",
+                                color: "#222",
+                                display: "block",
+                              }}
+                            >
+                              {cityInput}
+                            </span>
+                            <span style={{ fontSize: "12px", color: "#717171" }}>
+                              Use this custom location
+                            </span>
+                          </div>
                         </div>
-                        <span
-                          style={{
-                            fontWeight: 600,
-                            fontSize: "16px",
-                            color: "#222",
-                          }}
-                        >
-                          {cityInput}
-                        </span>
+
+                        {/* Dynamic Backend Search Matches */}
+                        {dynamicCitySearchResults.map((resItem, idx) => (
+                          <div
+                            key={idx}
+                            style={{
+                              padding: "12px",
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "16px",
+                              borderBottom: "1px solid #f0f0f0",
+                              borderRadius: "8px",
+                              transition: "background 0.15s ease",
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = "#f7f7f7"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                            onClick={() => {
+                              setSelectedCity(resItem.display);
+                              setShowCityModal(false);
+                              setCityInput("");
+                            }}
+                          >
+                            <div
+                              style={{
+                                background: "#f0fdf4",
+                                padding: "12px",
+                                borderRadius: "12px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <FaMapMarkerAlt size={18} color="#16a34a" />
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <span
+                                style={{
+                                  fontWeight: 600,
+                                  fontSize: "15px",
+                                  color: "#222",
+                                  display: "block",
+                                }}
+                              >
+                                {resItem.display}
+                              </span>
+                              {resItem.fullAddress && resItem.fullAddress !== resItem.display && (
+                                <span style={{ fontSize: "12px", color: "#717171", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {resItem.fullAddress}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     ) : (
                       <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                         <div style={{ fontSize: "12px", fontWeight: 600, color: "#717171", textTransform: "uppercase", letterSpacing: "0.5px", padding: "8px 0 4px" }}>
                           Suggested cities
                         </div>
-                        {[
-                          "Jaipur, Rajasthan",
-                          "Mumbai, Maharashtra",
-                          "New Delhi, Delhi",
-                          "Bengaluru, Karnataka",
-                          "Goa, India",
-                          "Udaipur, Rajasthan"
-                        ].map((suggested) => (
+                        {(backendCitySuggestions.length > 0
+                          ? backendCitySuggestions
+                          : [
+                              "Jaipur, Rajasthan",
+                              "Mumbai, Maharashtra",
+                              "New Delhi, Delhi",
+                              "Bengaluru, Karnataka",
+                              "Goa, India",
+                              "Udaipur, Rajasthan",
+                            ]
+                        ).map((suggested) => (
                           <div
                             key={suggested}
                             style={{
-                              padding: "10px 0px",
+                              padding: "10px 12px",
                               cursor: "pointer",
                               display: "flex",
                               alignItems: "center",
@@ -7797,7 +8005,7 @@ export default function HostSetup() {
           <main className={styles.mainContent}>
             <div className={`container ${styles.subExpContainer}`}>
               <div className="row">
-                <div className="col-md-7 d-flex flex-column justify-content-center">
+                <div className="col-md-7 ">
                   <h1 className={styles.subExpTitle}>
                     {expStepSettings.exp_step3_describe?.title || (
                       <>
@@ -8416,6 +8624,86 @@ export default function HostSetup() {
                 onClick={() => setActiveDiscountModal(null)}
               >
                 Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Experience Schedule / Time Badge Selection Modal */}
+      {showExpScheduleModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999 }}>
+          <div style={{ width: '90%', maxWidth: '480px', background: 'white', borderRadius: '16px', padding: '24px', position: 'relative', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 600, color: '#222', margin: 0 }}>Select Schedule Badge</h2>
+              <button 
+                onClick={() => setShowExpScheduleModal(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: '#222' }}
+              >
+                <IoMdClose />
+              </button>
+            </div>
+            <p style={{ fontSize: '14px', color: '#717171', marginBottom: '20px' }}>
+              Choose how your experience time or day badge appears to guests on the Experiences card (e.g., <strong>8am</strong>, <strong>4pm</strong>, or <strong>Fri - 11am</strong>).
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px', maxHeight: '320px', overflowY: 'auto' }}>
+              {[
+                { label: "8am (Morning Session)", val: "8am" },
+                { label: "9am (Morning Session)", val: "9am" },
+                { label: "11am (Late Morning)", val: "11am" },
+                { label: "12pm (Afternoon Session)", val: "12pm" },
+                { label: "3pm (Afternoon Session)", val: "3pm" },
+                { label: "4pm (Evening Session)", val: "4pm" },
+                { label: "5pm (Sunset Session)", val: "5pm" },
+                { label: "7pm (Night Session)", val: "7pm" },
+                { label: "8pm (Night Festival)", val: "8pm" },
+                { label: "Fri - 11am (Friday Weekend Prep)", val: "Fri - 11am" },
+                { label: "Sat - 1pm (Saturday Weekend)", val: "Sat - 1pm" },
+                { label: "Sat - 6pm (Saturday Evening)", val: "Sat - 6pm" },
+                { label: "Sun - 6am (Sunday Sunrise)", val: "Sun - 6am" },
+                { label: "Sun - 5pm (Sunday Sunset)", val: "Sun - 5pm" }
+              ].map((item) => (
+                <div 
+                  key={item.val}
+                  onClick={() => setExperienceTimeBadge(item.val)}
+                  style={{
+                    padding: '12px 16px',
+                    borderRadius: '10px',
+                    border: experienceTimeBadge === item.val ? '2px solid #222' : '1px solid #ebebeb',
+                    background: experienceTimeBadge === item.val ? '#f7f7f7' : 'white',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}
+                >
+                  <span style={{ fontSize: '14px', fontWeight: experienceTimeBadge === item.val ? 600 : 400, color: '#222' }}>
+                    {item.label}
+                  </span>
+                  <span style={{ fontSize: '12px', fontWeight: 600, padding: '4px 10px', borderRadius: '12px', background: '#222', color: 'white' }}>
+                    {item.val}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '24px' }}>
+              <input 
+                type="text"
+                placeholder="Or custom e.g. Fri - 4pm"
+                value={experienceTimeBadge}
+                onChange={(e) => setExperienceTimeBadge(e.target.value)}
+                style={{ flex: 1, padding: '10px 14px', border: '1px solid #ccc', borderRadius: '8px', fontSize: '14px' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button 
+                onClick={() => setShowExpScheduleModal(false)}
+                style={{ padding: '10px 24px', background: '#222', color: 'white', borderRadius: '8px', fontSize: '14px', fontWeight: 600, border: 'none', cursor: 'pointer' }}
+              >
+                Apply Badge
               </button>
             </div>
           </div>

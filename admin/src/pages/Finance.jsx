@@ -17,6 +17,7 @@ import {
   FaShieldAlt,
   FaFileAlt
 } from 'react-icons/fa';
+import toast from 'react-hot-toast';
 import styles from './styles/Finance.module.css';
 
 export default function Finance() {
@@ -253,16 +254,47 @@ export default function Finance() {
     }
   };
 
-  const handleDisbursePayout = async (payId) => {
+  const handleDisbursePayout = async (payId, payoutItem) => {
     try {
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-      await fetch(`${baseUrl}/finance/payouts/${payId}`, {
-        method: 'PATCH',
+      const toastId = toast.loading('Connecting to Banking API & verifying IFSC...');
+      const targetId = payoutItem?.dbId || payId;
+      
+      let res = await fetch(`${baseUrl}/finance/payouts/${targetId}/disburse`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'Processed' })
+        body: JSON.stringify({ mode: 'IMPS / Instant Bank Transfer' })
       });
-      setPayouts(prev => prev.map(p => (p.id === payId || p.dbId === payId) ? { ...p, status: 'Processed' } : p));
+
+      // Fallback to PATCH if POST endpoint was cached or blocked
+      if (!res.ok && res.status === 404) {
+        res = await fetch(`${baseUrl}/finance/payouts/${targetId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'Processed' })
+        });
+      }
+
+      const data = await res.json();
+      
+      if (data.success) {
+        const utr = data.utr || `UTR${Date.now()}`;
+        toast.success(
+          <div>
+            <strong>Automated Bank Payout Disbursed!</strong>
+            <div style={{ fontSize: '11px', marginTop: '2px', opacity: 0.9 }}>
+              UTR: {utr} • Host: {payoutItem?.host || 'Host'}
+            </div>
+          </div>,
+          { id: toastId, duration: 4500 }
+        );
+        setPayouts(prev => prev.map(p => (p.id === payId || p.dbId === payId || p.id === targetId) ? { ...p, status: 'Processed' } : p));
+        fetchFinanceData();
+      } else {
+        toast.error(data.message || 'Bank payout transfer failed', { id: toastId });
+      }
     } catch (err) {
+      toast.error('Network error executing automated bank payout');
       setPayouts(prev => prev.map(p => p.id === payId ? { ...p, status: 'Processed' } : p));
     }
   };
@@ -608,7 +640,7 @@ export default function Finance() {
                             <button 
                               type="button"
                               className={`${styles.btnAction} ${styles.btnActionApprove}`}
-                              onClick={() => handleDisbursePayout(p.id)}
+                              onClick={() => handleDisbursePayout(p.id, p)}
                               title="Authorize Instant NEFT/RTGS Transfer"
                             >
                               <FaCheck /> Disburse

@@ -1,5 +1,5 @@
 .messagePage {
-  height: calc(100vh - 80px); /* Adjust based on your header height */
+  height: calc(100vh - 80px); /* Adjust based on header height */
   display: flex;
   flex-direction: column;
   background-color: white;
@@ -8,17 +8,18 @@
 
 .topBannerWrapper {
   background-color: #f7f7f7;
-  padding: 16px;
+  padding: 12px 16px;
   display: flex;
   justify-content: center;
   border-bottom: 1px solid #ebebeb;
+  flex-shrink: 0;
 }
 
 .topBanner {
   background-color: white;
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  padding: 12px 24px;
+  padding: 10px 20px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -75,27 +76,32 @@
   flex: 1;
   margin: 0;
   height: 100%;
+  min-height: 0; /* Crucial for nested flexbox scrolling */
+  overflow: hidden;
 }
 
 .sidebar {
   border-right: 1px solid #ebebeb;
   height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 24px;
+  padding: 20px;
   background-color: white;
+  overflow: hidden;
 }
 
 .sidebarHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 40px;
+  margin-bottom: 20px;
+  flex-shrink: 0;
 }
 
 .sidebarTitle {
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 700;
   color: #222222;
   margin: 0;
 }
@@ -103,6 +109,7 @@
 .iconBtnGroup {
   display: flex;
   gap: 8px;
+  align-items: center;
 }
 
 .iconBtn {
@@ -199,8 +206,9 @@
 .sidebarFooter {
   margin-top: auto;
   border-top: 1px solid #ebebeb;
-  padding-top: 24px;
-  padding-bottom: 8px;
+  padding-top: 16px;
+  padding-bottom: 4px;
+  flex-shrink: 0;
 }
 
 .pastLink {
@@ -220,4 +228,36 @@
 .mainContent {
   background-color: white;
   height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+@keyframes hostTypingDot {
+  0%, 80%, 100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  40% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+/* Mobile & Tablet Responsive Enhancements */
+@media (max-width: 768px) {
+  .messagePage {
+    height: calc(100vh - 65px);
+  }
+
+  .sidebar {
+    padding: 16px;
+    border-right: none;
+    border-bottom: 1px solid #ebebeb;
+  }
+
+  .mainRow {
+    flex-direction: column;
+  }
 }

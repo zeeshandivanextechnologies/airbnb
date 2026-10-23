@@ -108,27 +108,34 @@ export const addItemToWishlist = (wishlistId, item) => {
 
 export const isItemInAnyWishlist = (itemId, itemTitle = '', itemCategory = '') => {
   const current = getStoredWishlists();
-  return current.some(wl => 
-    wl.items && wl.items.some(i => {
-      if (itemId && String(i.id) === String(itemId)) return true;
-      if (itemTitle && i.title === itemTitle) {
-        if (itemCategory && i.category) {
-          return i.category === itemCategory;
+  // IMPORTANT: Exclude 'recently-viewed' - browsing or recently viewed items must NOT turn the heart red!
+  return current
+    .filter(wl => wl.id !== 'recently-viewed')
+    .some(wl => 
+      wl.items && wl.items.some(i => {
+        if (itemId && i.id && String(i.id) === String(itemId)) return true;
+        if (itemTitle && i.title === itemTitle) {
+          if (itemCategory && i.category) {
+            return i.category === itemCategory;
+          }
+          return true;
         }
-        return true;
-      }
-      return false;
-    })
-  );
+        return false;
+      })
+    );
 };
 
 export const removeItemFromWishlists = (itemId, itemTitle = '', itemCategory = '') => {
   const current = getStoredWishlists();
   const updated = current.map(wl => {
+    // Only remove from actual wishlists, leave recently-viewed intact unless it explicitly matches
+    if (wl.id === 'recently-viewed') {
+      return wl;
+    }
     return {
       ...wl,
       items: (wl.items || []).filter(i => {
-        if (itemId && String(i.id) === String(itemId)) return false;
+        if (itemId && i.id && String(i.id) === String(itemId)) return false;
         if (itemTitle && i.title === itemTitle) {
           if (itemCategory && i.category) {
             return i.category !== itemCategory;

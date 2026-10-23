@@ -936,7 +936,21 @@ function WishlistDetail() {
                 <div key={item.id || idx} className="col-lg-4 col-md-4 col-sm-12 mb-3">
                   <div 
                     className={styles.listingCard}
-                    onClick={() => navigate(item.id && !isNaN(Number(item.id)) ? `/service/${item.id}` : '/services')}
+                    onClick={() => {
+                      const isExp = item.type === 'Experience' || 
+                        (item.category && (
+                          item.category.toLowerCase().includes('experience') || 
+                          item.category.toLowerCase().includes('tour') || 
+                          item.category.toLowerCase().includes('jaipur') || 
+                          item.category.toLowerCase().includes('goa') ||
+                          item.category.toLowerCase().includes('outdoors')
+                        ));
+                      if (item.id && !isNaN(Number(item.id))) {
+                        navigate(isExp ? `/experience/${item.id}` : `/service/${item.id}`);
+                      } else {
+                        navigate(isExp ? '/experiences' : '/services');
+                      }
+                    }}
                     style={{ cursor: 'pointer' }}
                   >
                     <div className={styles.listingImageWrapper}>

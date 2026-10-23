@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { Splide, SplideSlide, SplideTrack } from '@splidejs/react-splide';
 import '@splidejs/react-splide/css';
 import { FaHeart, FaStar, FaChevronLeft, FaChevronRight, FaArrowRight } from 'react-icons/fa';
@@ -5,6 +6,25 @@ import styles from '../../components/styles/HomeSecond.module.css';
 import { NavLink } from 'react-router-dom';
 
 export default function HomeSecond() {
+  const [dynamicStays, setDynamicStays] = useState([]);
+
+  useEffect(() => {
+    const fetchStays = async () => {
+      try {
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+        const res = await fetch(`${baseUrl}/listings?type=Stay&status=Active`);
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          setDynamicStays(json.data);
+        }
+      } catch (e) {
+        console.warn('Failed to fetch stays in HomeSecond:', e);
+      }
+    };
+
+    fetchStays();
+  }, []);
+
   const images = [
     "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=720&q=80",
     "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=720&q=80",
@@ -60,8 +80,24 @@ export default function HomeSecond() {
     { title: "Snow View Room", rating: "4.91", subtitle: "", price: "₹9,200", image: images[5] }
   ];
 
+  const liveStayItems = dynamicStays.map(item => {
+    const revCount = Number(item.reviews_count) || 0;
+    const numRating = Number(item.rating) || 0;
+    return {
+      id: item.id,
+      title: item.title,
+      type: 'Stay',
+      rating: revCount > 0 && numRating > 0 ? numRating.toFixed(2) : null,
+      reviewsCount: revCount,
+      subtitle: item.is_guest_favourite ? "Guest favourite" : (item.city || ""),
+      price: item.price ? `₹${Number(item.price).toLocaleString('en-IN')}` : "",
+      duration: item.duration || "for 2 nights",
+      image: item.cover_img || (Array.isArray(item.photos) && item.photos[0]) || ""
+    };
+  });
+
   const rowsData = [
-    { category: "Explore experiences nearby", listings: baseListings4 },
+    ...(liveStayItems.length > 0 ? [{ category: "Newly Added Homes & Stays", listings: liveStayItems }] : []),
     { category: "Popular homes in Manali", listings: baseListings4 },
     { category: "Popular homes in Gurgaon District", listings: baseListings3 },
     { category: "Homes in Noida", listings: baseListings3 },
@@ -117,49 +153,59 @@ export default function HomeSecond() {
               </div>
 
               <SplideTrack>
-              {row.listings.map((listing, index) => (
-                <SplideSlide key={index}>
-                  <div className={styles['listing-card']}>
-                    
-                    {/* Image Container with Badges */}
-                    <div className={styles['image-container']}>
-                      <img 
-                        src={listing.image} 
-                        alt={listing.title}
-                        className={styles['listing-image']}
-                      />
-                      
-                      {/* Guest Favourite Pill */}
-                      {listing.subtitle && (
-                        <div className={styles['guest-favourite']}>
-                          {listing.subtitle}
+              {row.listings.map((listing, index) => {
+                const targetPath = `/listing/${listing.id || index + 1}`;
+
+                return (
+                  <SplideSlide key={listing.id || index}>
+                    <NavLink to={targetPath} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+                      <div className={styles['listing-card']}>
+                        
+                        {/* Image Container with Badges */}
+                        <div className={styles['image-container']}>
+                          <img 
+                            src={listing.image} 
+                            alt={listing.title}
+                            className={styles['listing-image']}
+                          />
+                          
+                          {/* Guest Favourite Pill */}
+                          {listing.subtitle && (
+                            <div className={styles['guest-favourite']}>
+                              {listing.subtitle}
+                            </div>
+                          )}
+                          
+                          {/* Heart Button */}
+                          <div className={styles['heart-btn']}>
+                            <FaHeart size={24} className={styles['heart-icon']} />
+                          </div>
                         </div>
-                      )}
-                      
-                      {/* Heart Button */}
-                      <div className={styles['heart-btn']}>
-                        <FaHeart size={24} className={styles['heart-icon']} />
+                        
+                        {/* Listing Details */}
+                        <div className={styles['listing-info']}>
+                          <h3 className={styles['listing-title']}>
+                            {listing.title}
+                          </h3>
+                          <div className={styles['listing-details']}>
+                            <span className={styles.price}>{listing.price}</span> 
+                            <span className={styles.duration}>
+                              {listing.duration ? (listing.duration.startsWith('for') ? listing.duration : `/${listing.duration}`) : 'for 2 nights'}
+                            </span>
+                            {listing.rating && (
+                              <span className={styles['rating-container']}>
+                                <FaStar size={10} className={styles['star-icon']} />
+                                {listing.rating}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
                       </div>
-                    </div>
-                    
-                    {/* Listing Details */}
-                    <div className={styles['listing-info']}>
-                      <h3 className={styles['listing-title']}>
-                        {listing.title}
-                      </h3>
-                      <div className={styles['listing-details']}>
-                        <span className={styles.price}>{listing.price}</span> 
-                        <span className={styles.duration}>for 2 nights</span>
-                        <span className={styles['rating-container']}>
-                          <FaStar size={10} className={styles['star-icon']} />
-                          {listing.rating}
-                        </span>
-                      </div>
-                    </div>
-                    
-                  </div>
-                </SplideSlide>
-              ))}
+                    </NavLink>
+                  </SplideSlide>
+                );
+              })}
               </SplideTrack>
             </Splide>
           </div>
@@ -168,3 +214,4 @@ export default function HomeSecond() {
     </div>
   );
 }
+

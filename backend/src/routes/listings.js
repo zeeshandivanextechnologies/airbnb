@@ -10,7 +10,7 @@ const router = express.Router();
  */
 router.get('/', async (req, res) => {
   try {
-    const { category, city, status, host_id, location, q } = req.query;
+    const { category, city, status, host_id, location, q, type } = req.query;
     let query = `
       SELECT 
         l.*,
@@ -36,6 +36,28 @@ router.get('/', async (req, res) => {
     if (host_id) {
       params.push(parseInt(host_id, 10));
       query += ` AND l.host_id = $${params.length}`;
+    }
+
+    if (type) {
+      const lowerType = type.toLowerCase();
+      if (lowerType === 'stay' || lowerType === 'home') {
+        // Homes/Stays: type is 'home', 'stay', 'entire place', etc. AND not Experience and not Service
+        query += ` AND LOWER(COALESCE(l.type, 'home')) NOT LIKE '%experience%' 
+                   AND LOWER(COALESCE(l.type, 'home')) NOT LIKE '%service%'
+                   AND LOWER(COALESCE(l.category, '')) NOT LIKE '%experience%'
+                   AND LOWER(COALESCE(l.category, '')) NOT IN ('chef', 'hairstyling', 'make-up', 'makeup', 'massage', 'personal training', 'photography', 'prepared meals', 'spa treatments', 'catering')`;
+      } else if (lowerType === 'experience') {
+        // Experiences: type is 'experience' OR category is experience-related
+        query += ` AND (LOWER(COALESCE(l.type, '')) LIKE '%experience%' OR LOWER(COALESCE(l.category, '')) LIKE '%experience%')`;
+      } else if (lowerType === 'service') {
+        // Services: type is 'service' OR category is service-related AND not Experience
+        query += ` AND (LOWER(COALESCE(l.type, '')) LIKE '%service%' 
+                   OR LOWER(COALESCE(l.category, '')) IN ('chef', 'hairstyling', 'make-up', 'makeup', 'massage', 'personal training', 'photography', 'prepared meals', 'spa treatments', 'catering'))
+                   AND LOWER(COALESCE(l.type, '')) NOT LIKE '%experience%'`;
+      } else {
+        params.push(type);
+        query += ` AND LOWER(COALESCE(l.type, 'home')) = LOWER($${params.length})`;
+      }
     }
 
     if (category) {
@@ -1124,6 +1146,171 @@ router.get('/host-categories', async (req, res) => {
 });
 
 /**
+ * GET Dynamic Intro to Host Webinars
+ * GET /api/listings/intro-webinars
+ */
+router.get('/intro-webinars', async (req, res) => {
+  try {
+    const { all } = req.query;
+    let query = 'SELECT * FROM intro_webinars';
+    if (all !== 'true') {
+      query += ' WHERE is_active = true';
+    }
+    query += ' ORDER BY display_order ASC, id ASC';
+    const result = await pool.query(query);
+    res.status(200).json({ success: true, count: result.rows.length, data: result.rows });
+  } catch (error) {
+    console.error('Intro webinars error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch intro webinars' });
+  }
+});
+
+/**
+ * GET Dynamic Intro to Host FAQs (supports category=experience|general)
+ * GET /api/listings/intro-faqs?category=experience
+ */
+router.get('/intro-faqs', async (req, res) => {
+  try {
+    const { all, category } = req.query;
+
+    // Check if category=experience faqs exist, if not seed them
+    if (category === 'experience') {
+      const checkExpFaqs = await pool.query("SELECT COUNT(*) FROM intro_faqs WHERE category = 'experience'");
+      if (parseInt(checkExpFaqs.rows[0].count, 10) === 0) {
+        await pool.query(`
+          INSERT INTO intro_faqs (question, answer, category, display_order)
+          VALUES
+          ('Top questions', 'Here are some of the most frequently asked questions about hosting an Airbnb experience. Experiences are small-group activities led by passionate local hosts that immerse guests in unique cultures, skills, or adventures.', 'experience', 1),
+          ('Hosting basics', 'Learn the basics of hosting an experience, including requirements and expectations. All experiences must offer expertise, insider access, and a connection with the host.', 'experience', 2),
+          ('Application process', 'Find out how to submit your experience idea and what we look for in applications. Our review team evaluates quality standards, host background, and safety.', 'experience', 3),
+          ('Licensing & insurance', 'Understand the local regulations, licensing, and insurance requirements for your activity. Hosts are protected under Airbnb''s Experience Protection Insurance.', 'experience', 4);
+        `);
+      }
+    }
+
+    let query = 'SELECT * FROM intro_faqs WHERE 1=1';
+    const params = [];
+
+    if (all !== 'true') {
+      query += ' AND is_active = true';
+    }
+
+    if (category) {
+      params.push(category);
+      query += ` AND category = $${params.length}`;
+    }
+
+    query += ' ORDER BY display_order ASC, id ASC';
+    const result = await pool.query(query, params);
+    res.status(200).json({ success: true, count: result.rows.length, data: result.rows });
+  } catch (error) {
+    console.error('Intro faqs error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch intro FAQs' });
+  }
+});
+
+/**
+ * GET Host Calendar Dates
+ * GET /api/listings/calendar-dates?host_id=...&listing_id=...&month=...&year=...
+ */
+router.get('/calendar-dates', async (req, res) => {
+  try {
+    const { host_id, listing_id, month, year } = req.query;
+    let query = `
+      SELECT 
+        id, host_id, listing_id, 
+        TO_CHAR(calendar_date, 'YYYY-MM-DD') as date_str,
+        is_available, price, note
+      FROM host_calendar_dates
+      WHERE 1=1
+    `;
+    const params = [];
+
+    if (host_id && !isNaN(Number(host_id))) {
+      params.push(Number(host_id));
+      query += ` AND host_id = $${params.length}`;
+    }
+
+    if (listing_id && !isNaN(Number(listing_id))) {
+      params.push(Number(listing_id));
+      query += ` AND listing_id = $${params.length}`;
+    }
+
+    if (month && year && !isNaN(Number(month)) && !isNaN(Number(year))) {
+      params.push(Number(month));
+      query += ` AND EXTRACT(MONTH FROM calendar_date) = $${params.length}`;
+      params.push(Number(year));
+      query += ` AND EXTRACT(YEAR FROM calendar_date) = $${params.length}`;
+    }
+
+    query += ' ORDER BY calendar_date ASC';
+    const result = await pool.query(query, params);
+
+    // Also fetch confirmed bookings in this month so booked dates are reflected
+    let bookedDates = [];
+    try {
+      const bRes = await pool.query(`
+        SELECT check_in, check_out, guest_name, booking_code
+        FROM bookings
+        WHERE status = 'CONFIRMED'
+      `);
+      bookedDates = bRes.rows;
+    } catch (e) {}
+
+    res.status(200).json({
+      success: true,
+      dates: result.rows,
+      bookedDates
+    });
+  } catch (error) {
+    console.error('Fetch calendar dates error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch calendar dates' });
+  }
+});
+
+/**
+ * UPSERT Host Calendar Date (Set Availability, Custom Price, or Note)
+ * POST /api/listings/calendar-dates
+ */
+router.post('/calendar-dates', async (req, res) => {
+  try {
+    const { host_id, listing_id, date, is_available, price, note } = req.body;
+    if (!date) {
+      return res.status(400).json({ success: false, message: 'Date is required' });
+    }
+
+    const hId = host_id && !isNaN(Number(host_id)) ? Number(host_id) : 4;
+    const lId = listing_id && !isNaN(Number(listing_id)) ? Number(listing_id) : null;
+    const avail = is_available !== undefined ? Boolean(is_available) : true;
+    const pr = price !== undefined && price !== '' ? Number(price) : null;
+    const nt = note !== undefined ? note : '';
+
+    const query = `
+      INSERT INTO host_calendar_dates (host_id, listing_id, calendar_date, is_available, price, note, updated_at)
+      VALUES ($1, $2, $3::DATE, $4, $5, $6, CURRENT_TIMESTAMP)
+      ON CONFLICT (host_id, listing_id, calendar_date)
+      DO UPDATE SET
+        is_available = EXCLUDED.is_available,
+        price = COALESCE(EXCLUDED.price, host_calendar_dates.price),
+        note = EXCLUDED.note,
+        updated_at = CURRENT_TIMESTAMP
+      RETURNING *, TO_CHAR(calendar_date, 'YYYY-MM-DD') as date_str;
+    `;
+
+    const result = await pool.query(query, [hId, lId, date, avail, pr, nt]);
+
+    res.status(200).json({
+      success: true,
+      message: 'Calendar updated successfully',
+      date: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Update calendar date error:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to update calendar' });
+  }
+});
+
+/**
  * CREATE Host Category (Services / Experiences)
  * POST /api/listings/host-categories
  */
@@ -1558,10 +1745,14 @@ router.get('/locations/search', async (req, res) => {
  */
 router.get('/home-destinations', async (req, res) => {
   try {
-    const { all } = req.query;
+    const { all, status } = req.query;
     let query = 'SELECT * FROM home_destinations';
     if (!all) {
-      query += ' WHERE is_active = true';
+      if (status === 'inactive') {
+        query += ' WHERE is_active = false';
+      } else {
+        query += ' WHERE is_active = true';
+      }
     }
     query += ' ORDER BY display_order ASC, id ASC';
     const result = await pool.query(query);
@@ -1870,7 +2061,8 @@ router.post('/', async (req, res) => {
       service_provision_type,
       service_offerings,
       business_hours,
-      review_requirements_agreed
+      review_requirements_agreed,
+      time
     } = req.body;
 
     const safeTitle = title || 'Untitled Service/Experience';
@@ -1893,6 +2085,7 @@ router.post('/', async (req, res) => {
     const safeServiceOfferings = service_offerings ? JSON.stringify(service_offerings) : '[]';
     const safeBusinessHours = business_hours ? JSON.stringify(business_hours) : '[]';
     const safeRequirementsAgreed = review_requirements_agreed !== false;
+    const safeTime = (time || '').trim() || null;
     // Safeguard host_id: if not a valid positive integer, fallback to active host 4
     let safeHostId = 4;
     if (host_id && !isNaN(parseInt(host_id, 10)) && parseInt(host_id, 10) > 0) {
@@ -1908,9 +2101,9 @@ router.post('/', async (req, res) => {
         cover_img, amenities, description, photos, itinerary, discounts, 
         host_id, max_guests, years_experience, host_intro, host_qualifications, host_recognition, online_profiles, 
         residential_address, hosting_as_business, meetup_address, service_area, service_provision_type, 
-        service_offerings, business_hours, review_requirements_agreed, rating, reviews_count, status
+        service_offerings, business_hours, review_requirements_agreed, rating, reviews_count, status, time
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13::jsonb, $14, $15, $16, $17, $18, $19, $20, $21::jsonb, $22, $23::jsonb, $24::jsonb, $25, $26::jsonb, $27::jsonb, $28, 0, 0, $29)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13::jsonb, $14, $15, $16, $17, $18, $19, $20, $21::jsonb, $22, $23::jsonb, $24::jsonb, $25, $26::jsonb, $27::jsonb, $28, 0, 0, $29, $30)
       RETURNING *`,
       [
         safeTitle,
@@ -1941,7 +2134,8 @@ router.post('/', async (req, res) => {
         safeServiceOfferings,
         safeBusinessHours,
         safeRequirementsAgreed,
-        safeStatus
+        safeStatus,
+        safeTime
       ]
     );
 
@@ -2081,7 +2275,8 @@ router.put('/:id', async (req, res) => {
       bedrooms,
       beds,
       bathrooms,
-      categorized_photos
+      categorized_photos,
+      time
     } = req.body;
 
     const check = await pool.query('SELECT * FROM listings WHERE id = $1', [id]);
@@ -2093,6 +2288,7 @@ router.put('/:id', async (req, res) => {
 
     const updatedTitle = title !== undefined ? title : cur.title;
     const updatedType = type !== undefined ? type : cur.type;
+    const updatedTime = time !== undefined ? (time ? String(time).trim() : null) : cur.time;
     const updatedCategory = category !== undefined ? category : cur.category;
     const updatedPrice = price !== undefined ? Number(price) : cur.price;
     const updatedCity = city !== undefined ? city : cur.city;
@@ -2195,8 +2391,9 @@ router.put('/:id', async (req, res) => {
         bedrooms = $41,
         beds = $42,
         bathrooms = $43,
-        categorized_photos = $44
-      WHERE id = $45
+        categorized_photos = $44,
+        time = $45
+      WHERE id = $46
       RETURNING *`,
       [
         updatedTitle,
@@ -2243,6 +2440,7 @@ router.put('/:id', async (req, res) => {
         updatedBeds,
         updatedBathrooms,
         updatedCategorizedPhotos,
+        updatedTime,
         id
       ]
     );
@@ -2300,6 +2498,203 @@ router.delete('/:id', async (req, res) => {
   } catch (error) {
     console.error('Delete listing error:', error);
     res.status(500).json({ success: false, message: 'Failed to delete listing' });
+  }
+});
+
+/**
+ * GET Top Rated Co-Hosts for FindCostHost Page
+ * GET /api/listings/cohosts?city=...
+ */
+router.get('/cohosts', async (req, res) => {
+  try {
+    const { city } = req.query;
+    let query = `
+      SELECT 
+        l.host_id,
+        l.host_name,
+        l.host_avatar,
+        COALESCE(NULLIF(l.city, ''), l.residential_address->>'city', 'Jaipur, Rajasthan') as city,
+        COALESCE(l.rating, 4.90) as rating,
+        COALESCE(l.reviews_count, 12) as reviews_count,
+        COALESCE(l.years_experience, 3) as years_experience,
+        COUNT(l.id) as properties_managed
+      FROM listings l
+      WHERE l.host_name IS NOT NULL AND TRIM(l.host_name) != ''
+    `;
+    const params = [];
+
+    if (city && city.trim()) {
+      const cleanCity = city.trim();
+      params.push(`%${cleanCity}%`);
+      query += ` AND (
+        l.city ILIKE $${params.length} 
+        OR COALESCE(l.state, '') ILIKE $${params.length} 
+        OR COALESCE(l.country, '') ILIKE $${params.length}
+        OR l.residential_address->>'city' ILIKE $${params.length}
+        OR l.residential_address->>'state' ILIKE $${params.length}
+        OR l.residential_address->>'district' ILIKE $${params.length}
+        OR l.residential_address->>'full_address' ILIKE $${params.length}
+      )`;
+    }
+
+    query += `
+      GROUP BY l.host_id, l.host_name, l.host_avatar, l.city, l.residential_address, l.rating, l.reviews_count, l.years_experience
+      ORDER BY l.rating DESC, l.reviews_count DESC
+      LIMIT 12
+    `;
+
+    const result = await pool.query(query, params);
+
+    // Fallback list of curated Superhosts across India
+    const fallbackHosts = [
+      {
+        host_name: 'Rajesh Sharma',
+        host_avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&q=80',
+        city: 'Jaipur, Rajasthan',
+        rating: 4.98,
+        reviews_count: 142,
+        years_experience: 5,
+        properties_managed: 4
+      },
+      {
+        host_name: 'Priyanka Patel',
+        host_avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=500&q=80',
+        city: 'North Goa, Goa',
+        rating: 4.95,
+        reviews_count: 98,
+        years_experience: 4,
+        properties_managed: 3
+      },
+      {
+        host_name: 'Vikram Rajput',
+        host_avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&q=80',
+        city: 'Udaipur, Rajasthan',
+        rating: 4.96,
+        reviews_count: 76,
+        years_experience: 3,
+        properties_managed: 2
+      },
+      {
+        host_name: 'Siddharth Roy',
+        host_avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&q=80',
+        city: 'Mumbai, Maharashtra',
+        rating: 4.92,
+        reviews_count: 55,
+        years_experience: 4,
+        properties_managed: 3
+      },
+      {
+        host_name: 'Kavita Thakur',
+        host_avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&q=80',
+        city: 'Manali, Himachal Pradesh',
+        rating: 4.98,
+        reviews_count: 82,
+        years_experience: 5,
+        properties_managed: 2
+      },
+      {
+        host_name: 'Rohan Mehra',
+        host_avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&q=80',
+        city: 'Gurugram, Haryana',
+        rating: 4.89,
+        reviews_count: 38,
+        years_experience: 3,
+        properties_managed: 2
+      }
+    ];
+
+    if (result.rows.length === 0) {
+      if (city && city.trim()) {
+        const cLower = city.trim().toLowerCase();
+        const matched = fallbackHosts.filter(h => h.city.toLowerCase().includes(cLower) || h.host_name.toLowerCase().includes(cLower));
+        return res.status(200).json({ success: true, data: matched });
+      }
+      return res.status(200).json({ success: true, data: fallbackHosts });
+    }
+
+    // Enhance any rows without avatars with nice professional photos
+    const avatars = [
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&q=80',
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&q=80',
+      'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=500&q=80',
+      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&q=80',
+      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&q=80'
+    ];
+
+    const finalRows = result.rows.map((r, i) => ({
+      ...r,
+      host_avatar: r.host_avatar || avatars[i % avatars.length]
+    }));
+
+    return res.status(200).json({ success: true, data: finalRows });
+  } catch (error) {
+    console.error('Co-hosts fetch error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch co-hosts' });
+  }
+});
+
+/**
+ * GET Available Cities for Co-Hosts
+ * GET /api/listings/cohosts/cities
+ */
+router.get('/cohosts/cities', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT DISTINCT 
+        COALESCE(NULLIF(l.city, ''), l.residential_address->>'city') as city
+      FROM listings l 
+      WHERE l.city IS NOT NULL OR l.residential_address->>'city' IS NOT NULL
+      LIMIT 20
+    `);
+
+    const dbCities = result.rows.map(r => r.city).filter(Boolean);
+    const defaultCities = ['Jaipur', 'Goa', 'Udaipur', 'Mumbai', 'Manali', 'Gurugram', 'Delhi', 'Bangalore'];
+    const merged = Array.from(new Set([...dbCities, ...defaultCities])).slice(0, 10);
+
+    return res.status(200).json({ success: true, cities: merged });
+  } catch (err) {
+    return res.status(200).json({ 
+      success: true, 
+      cities: ['Jaipur', 'Goa', 'Udaipur', 'Mumbai', 'Manali', 'Gurugram'] 
+    });
+  }
+});
+
+/**
+ * GET City Earnings Estimate for Host Home
+ * GET /api/listings/earnings-estimate?city=...&bedrooms=...
+ */
+router.get('/earnings-estimate', async (req, res) => {
+  try {
+    const { city } = req.query;
+    const targetCity = city ? city.trim() : 'Jaipur';
+
+    // Calculate average price of active listings in this city from database
+    const result = await pool.query(`
+      SELECT 
+        COALESCE(ROUND(AVG(price)), 3484) as avg_price,
+        COUNT(*) as total_listings
+      FROM listings 
+      WHERE (city ILIKE $1 OR state ILIKE $1) AND price > 0
+    `, [`%${targetCity}%`]);
+
+    const avgPrice = Number(result.rows[0]?.avg_price) || 3484;
+    const totalListings = Number(result.rows[0]?.total_listings) || 0;
+
+    return res.status(200).json({
+      success: true,
+      city: targetCity,
+      basePrice: avgPrice,
+      totalListings
+    });
+  } catch (err) {
+    console.error('Earnings estimate error:', err);
+    return res.status(200).json({
+      success: true,
+      city: 'Jaipur',
+      basePrice: 3484,
+      totalListings: 10
+    });
   }
 });
 

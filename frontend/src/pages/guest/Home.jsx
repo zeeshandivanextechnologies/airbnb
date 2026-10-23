@@ -8,25 +8,49 @@ import { useTranslation } from 'react-i18next';
 
 export default function Home() {
   const { t } = useTranslation();
-  const [dynamicListings, setDynamicListings] = useState([]);
+  const [dynamicStays, setDynamicStays] = useState([]);
+  const [dynamicExperiences, setDynamicExperiences] = useState([]);
+  const [dynamicServices, setDynamicServices] = useState([]);
   const [destinationsData, setDestinationsData] = useState([]);
 
   useEffect(() => {
     const fetchHomeData = async () => {
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
       
-      // Fetch dynamic listings
+      // 1. Fetch Stays/Homes
       try {
-        const res = await fetch(`${baseUrl}/listings?status=Active`);
+        const res = await fetch(`${baseUrl}/listings?type=Stay&status=Active`);
         const json = await res.json();
         if (json.success && Array.isArray(json.data)) {
-          setDynamicListings(json.data);
+          setDynamicStays(json.data);
         }
       } catch (e) {
-        console.warn('Failed to fetch home listings from backend:', e);
+        console.warn('Failed to fetch stays from backend:', e);
       }
 
-      // Fetch dynamic destinations slider
+      // 2. Fetch Experiences
+      try {
+        const expRes = await fetch(`${baseUrl}/listings?type=Experience&status=Active`);
+        const expJson = await expRes.json();
+        if (expJson.success && Array.isArray(expJson.data)) {
+          setDynamicExperiences(expJson.data);
+        }
+      } catch (e) {
+        console.warn('Failed to fetch experiences from backend:', e);
+      }
+
+      // 3. Fetch Services
+      try {
+        const srvRes = await fetch(`${baseUrl}/listings?type=Service&status=Active`);
+        const srvJson = await srvRes.json();
+        if (srvJson.success && Array.isArray(srvJson.data)) {
+          setDynamicServices(srvJson.data);
+        }
+      } catch (e) {
+        console.warn('Failed to fetch services from backend:', e);
+      }
+
+      // 4. Fetch Destinations
       try {
         const destRes = await fetch(`${baseUrl}/listings/home-destinations?status=active`);
         const destJson = await destRes.json();
@@ -36,7 +60,6 @@ export default function Home() {
           setDestinationsData(fallbackDestinations);
         }
       } catch (e) {
-        console.warn('Failed to fetch destinations from backend:', e);
         setDestinationsData(fallbackDestinations);
       }
     };
@@ -114,29 +137,32 @@ export default function Home() {
     { title: "Snow View Room", rating: "4.91", subtitle: "", price: "₹9,200", image: images[5] }
   ];
 
-  const liveListingItems = dynamicListings.map(item => {
+  const formatItem = (item, defaultType) => {
     const revCount = Number(item.reviews_count) || 0;
     const numRating = Number(item.rating) || 0;
+    const itemType = (item.type || defaultType || 'Stay').toLowerCase();
     return {
       id: item.id,
       title: item.title,
-      type: item.type || 'Stay',
+      itemType: itemType,
+      type: item.type || defaultType || 'Stay',
       rating: revCount > 0 && numRating > 0 ? numRating.toFixed(2) : null,
       reviewsCount: revCount,
-      subtitle: item.is_guest_favourite ? "Guest favourite" : (item.city || ""),
+      subtitle: item.is_guest_favourite ? "Guest favourite" : (item.city || item.category || ""),
       price: item.price ? `₹${Number(item.price).toLocaleString('en-IN')}` : "",
-      duration: item.duration || "",
+      duration: item.duration || (itemType === 'experience' ? "person" : itemType === 'service' ? "service" : ""),
       image: item.cover_img || (Array.isArray(item.photos) && item.photos[0]) || ""
     };
-  });
+  };
 
-  const liveExperienceItems = liveListingItems.filter(item => item.type === 'Experience');
-  const liveStayAndServiceItems = liveListingItems.filter(item => item.type !== 'Experience');
+  const stayItems = dynamicStays.map(item => formatItem(item, 'Stay'));
+  const experienceItems = dynamicExperiences.map(item => formatItem(item, 'Experience'));
+  const serviceItems = dynamicServices.map(item => formatItem(item, 'Service'));
 
   const rowsData = [
-    ...(liveExperienceItems.length > 0 ? [{ category: "Newly Created Experiences", listings: liveExperienceItems }] : []),
-    ...(liveStayAndServiceItems.length > 0 ? [{ category: "Newly Added Homes & Services", listings: liveStayAndServiceItems }] : []),
-    { category: "Explore experiences nearby", listings: baseListings4 },
+    ...(stayItems.length > 0 ? [{ category: "Newly Added Homes & Stays", listings: stayItems }] : []),
+    ...(experienceItems.length > 0 ? [{ category: "Popular Experiences", listings: experienceItems }] : []),
+    ...(serviceItems.length > 0 ? [{ category: "Featured Guest Services", listings: serviceItems }] : []),
     { category: "Popular homes in Manali", listings: baseListings4 },
     { category: "Popular homes in Gurgaon District", listings: baseListings3 },
     { category: "Homes in Noida", listings: baseListings3 },
@@ -255,7 +281,11 @@ export default function Home() {
 
               <SplideTrack>
               {row.listings.map((listing, index) => {
-                const targetPath = `/listing/${listing.id || index + 1}`;
+                const targetPath = listing.itemType === 'experience'
+                  ? `/experience/${listing.id || index + 1}`
+                  : listing.itemType === 'service'
+                  ? `/service/${listing.id || index + 1}`
+                  : `/listing/${listing.id || index + 1}`;
 
                 return (
                   <SplideSlide key={listing.id || index}>

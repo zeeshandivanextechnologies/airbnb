@@ -27,7 +27,8 @@ import {
   FaRegCalendarCheck,
   FaBolt,
   FaTag,
-  FaShieldAlt
+  FaShieldAlt,
+  FaUpload
 } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import { renderCategoryIcon, AVAILABLE_ICONS } from '../utils/categoryIcons.jsx';
@@ -269,7 +270,8 @@ export default function MasterData() {
   const fetchHomeDestinations = async () => {
     try {
       setLoadingHomeDestinations(true);
-      const res = await fetch('http://localhost:5000/api/listings/home-destinations?all=true');
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+      const res = await fetch(`${baseUrl}/listings/home-destinations?all=true`);
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setHomeDestinations(data.data.map(d => ({
@@ -456,7 +458,8 @@ export default function MasterData() {
       }
       if (type === 'homeDestinations') {
         try {
-          const res = await fetch(`http://localhost:5000/api/listings/home-destinations/${id}`, {
+          const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+          const res = await fetch(`${baseUrl}/listings/home-destinations/${id}`, {
             method: 'DELETE'
           });
           const data = await res.json();
@@ -850,6 +853,11 @@ export default function MasterData() {
       }
     } else if (modalType === 'homeDestination') {
       try {
+        if (!editingItem.image) {
+          toast.error('Please enter an image URL or upload an image file');
+          return;
+        }
+
         const payload = {
           country: editingItem.country,
           title: editingItem.title,
@@ -858,8 +866,9 @@ export default function MasterData() {
           is_active: editingItem.status === 'Active' || editingItem.is_active !== false
         };
 
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
         if (editingItem.id && typeof editingItem.id === 'number' && editingItem.id < 1000000000000) {
-          const res = await fetch(`http://localhost:5000/api/listings/home-destinations/${editingItem.id}`, {
+          const res = await fetch(`${baseUrl}/listings/home-destinations/${editingItem.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -872,7 +881,7 @@ export default function MasterData() {
             toast.error(data.message || 'Failed to update destination');
           }
         } else {
-          const res = await fetch('http://localhost:5000/api/listings/home-destinations', {
+          const res = await fetch(`${baseUrl}/listings/home-destinations`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -3233,15 +3242,107 @@ export default function MasterData() {
                       />
                     </div>
                     <div className={styles.formGroup}>
-                      <label className={styles.formLabel}>Image URL</label>
-                      <input 
-                        type="url" 
-                        value={editingItem.image} 
-                        onChange={(e) => setEditingItem({ ...editingItem, image: e.target.value })} 
-                        required 
-                        className={styles.formInput} 
-                        placeholder="https://images.unsplash.com/..."
-                      />
+                      <label className={styles.formLabel}>Destination Image (URL or Upload from Device)</label>
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                        <input 
+                          type="text" 
+                          value={editingItem.image || ''} 
+                          onChange={(e) => setEditingItem({ ...editingItem, image: e.target.value })} 
+                          className={styles.formInput} 
+                          style={{ flex: 1 }}
+                          placeholder="Paste image URL (https://...)"
+                        />
+                        <label 
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            background: '#f3f4f6',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '8px',
+                            padding: '8px 14px',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            color: '#374151',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                            transition: 'all 0.2s'
+                          }}
+                          title="Upload image from computer"
+                        >
+                          <FaUpload size={13} /> Upload File
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            style={{ display: 'none' }}
+                            onChange={(e) => {
+                              const file = e.target.files && e.target.files[0];
+                              if (file) {
+                                if (file.size > 5 * 1024 * 1024) {
+                                  toast.error('Image size must be less than 5MB');
+                                  return;
+                                }
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  setEditingItem({ ...editingItem, image: reader.result });
+                                  toast.success('Image loaded from device!');
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+
+                      {/* Live Image Preview */}
+                      {editingItem.image && (
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          background: '#f9fafb',
+                          padding: '10px',
+                          borderRadius: '8px',
+                          border: '1px solid #e5e7eb'
+                        }}>
+                          <img 
+                            src={editingItem.image} 
+                            alt="Destination preview" 
+                            style={{
+                              width: '60px',
+                              height: '60px',
+                              borderRadius: '8px',
+                              objectFit: 'cover',
+                              border: '1px solid #d1d5db'
+                            }}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <span style={{ fontSize: '12px', fontWeight: '600', color: '#111827', display: 'block' }}>
+                              Image Preview
+                            </span>
+                            <span style={{ fontSize: '11px', color: '#6b7280', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {editingItem.image.startsWith('data:') ? 'Uploaded local image file' : editingItem.image}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setEditingItem({ ...editingItem, image: '' })}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: '#ef4444',
+                              fontSize: '12px',
+                              fontWeight: '600',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <div className="row g-2">
                       <div className="col-6">

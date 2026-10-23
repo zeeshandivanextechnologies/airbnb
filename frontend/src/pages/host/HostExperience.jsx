@@ -1,27 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from '../../components/styles/HostExperience.module.css';
+
+const defaultFaqs = [
+  {
+    question: "Top questions",
+    answer: "Here are some of the most frequently asked questions about hosting an Airbnb experience. Experiences are small-group activities led by passionate local hosts that immerse guests in unique cultures, skills, or adventures."
+  },
+  {
+    question: "Hosting basics",
+    answer: "Learn the basics of hosting an experience, including requirements and expectations. All experiences must offer expertise, insider access, and a connection with the host."
+  },
+  {
+    question: "Application process",
+    answer: "Find out how to submit your experience idea and what we look for in applications. Our review team evaluates quality standards, host background, and safety."
+  },
+  {
+    question: "Licensing & insurance",
+    answer: "Understand the local regulations, licensing, and insurance requirements for your activity. Hosts are protected under Airbnb's Experience Protection Insurance."
+  }
+];
 
 function HostExperience() {
   const [openFaq, setOpenFaq] = useState(null);
+  const [faqs, setFaqs] = useState(defaultFaqs);
 
-  const faqs = [
-    {
-      question: "Top questions",
-      answer: "Here are some of the most frequently asked questions about hosting an Airbnb experience."
-    },
-    {
-      question: "Hosting basics",
-      answer: "Learn the basics of hosting an experience, including requirements and expectations."
-    },
-    {
-      question: "Application process",
-      answer: "Find out how to submit your experience idea and what we look for in applications."
-    },
-    {
-      question: "Licensing & insurance",
-      answer: "Understand the local regulations, licensing, and insurance requirements for your activity."
-    }
-  ];
+  useEffect(() => {
+    let isMounted = true;
+    const fetchFaqs = async () => {
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      try {
+        const res = await fetch(`${baseUrl}/listings/intro-faqs?category=experience`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.data) && data.data.length > 0 && isMounted) {
+            setFaqs(data.data.map(item => ({
+              question: item.question,
+              answer: item.answer
+            })));
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching experience FAQs:', err);
+      }
+    };
+
+    fetchFaqs();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const toggleFaq = (index) => {
     setOpenFaq(openFaq === index ? null : index);

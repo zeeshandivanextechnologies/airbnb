@@ -2102,7 +2102,15 @@
 }
 
 @media (max-width : 767px) {
-  
+  .infoItem{
+    padding: 12px 0;
+  }
+  .sidebarCard{
+    padding: 16px;
+  }
+  .modalOverlay{
+    padding: 16px;
+  }
 }
 
 @media (max-width : 576px) {

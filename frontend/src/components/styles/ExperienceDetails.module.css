@@ -58,9 +58,7 @@
 }
 
 @media (max-width: 991px) {
-  .photo-grid-2x2 {
-    margin-bottom: 24px;
-  }
+ 
 }
 
 /* --- PACKAGE COMPONENT (from ServiceDetails) --- */
@@ -113,6 +111,7 @@
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  word-break: break-all;
 }
 
 .packageMeta {
@@ -464,7 +463,7 @@
 }
 
 .hostCardName {
-  font-size: 32px;
+  font-size: 20px;
   font-weight: 700;
   color: #222222;
   margin-bottom: 4px;
@@ -877,6 +876,80 @@
   font-size: 1rem;
 }
 
+
+/* Fullscreen Gallery Modal */
+.galleryModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ffffff;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.galleryModalHeader {
+  position: sticky;
+  top: 0;
+  background: #ffffff;
+  z-index: 10;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.galleryModalCloseBtn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.galleryModalCloseBtn:hover {
+  background: #f7f7f7;
+}
+
+.galleryGridContainer {
+  max-width: 1050px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.galleryModalImg {
+  width: 100%;
+  height: 380px;
+  object-fit: cover;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.galleryModalImg:hover {
+  opacity: 0.95;
+}
+
+/* Heart & Share Active States */
+.heartActive {
+  color: #ff385c !important;
+}
+
+
+
 @media (max-width: 768px) {
   .sliderModalContainer {
     flex-direction: column;
@@ -897,5 +970,50 @@
     padding: 24px;
   }
 
-  .servicesPage{}
+  .container{
+    padding: 16px;
+  }
+
+  .reviewsTitle{
+    margin-bottom: 16px;
+  }
+
+  .showAllReviewsBtn{
+    margin-top: 0;
+  }
+  .thingsToKnowSection{
+    margin-bottom: 0;
+  }
+
+
+  .sectionTitle{
+    margin-bottom: 16px;
+  }
+
+   .photo-grid-2x2 {
+    margin-bottom: 0px;
+  }
+
+  .galleryGridContainer {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+  .galleryModalImg {
+    height: 260px;
+  }
+
+  .galleryModalHeader{
+    padding: 16px;
+  }
+
+  .galleryModalCloseBtn{
+    padding: 0px;
+  }
+
 }
+
+
+@media (max-width: 576px) {
+  
+}
+

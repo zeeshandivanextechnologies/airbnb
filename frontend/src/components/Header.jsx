@@ -77,6 +77,8 @@ export default function Header() {
 
   // Dynamic Destinations state from Backend API (Home Destinations & popular cities)
   const [backendDestinations, setBackendDestinations] = useState([]);
+  const [liveLocationResults, setLiveLocationResults] = useState([]);
+  const [isSearchingLiveLocation, setIsSearchingLiveLocation] = useState(false);
   const [loadingDestinations, setLoadingDestinations] = useState(false);
 
   // Sync user profile settings (language, currency, translation) from Backend
@@ -120,23 +122,56 @@ export default function Header() {
   const [automaticTranslation, setAutomaticTranslation] = useState(true);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
 
+  // Live Location Search as the user types in "Where" input
   useEffect(() => {
-    const fetchDestinations = async () => {
+    if (!selectedDestination || !selectedDestination.trim() || selectedDestination.trim().length < 2) {
+      setLiveLocationResults([]);
+      setIsSearchingLiveLocation(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setIsSearchingLiveLocation(true);
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+        const res = await fetch(`${baseUrl}/listings/locations/search?q=${encodeURIComponent(selectedDestination.trim())}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+            setLiveLocationResults(json.data);
+          } else {
+            setLiveLocationResults([]);
+          }
+        }
+      } catch (err) {
+        console.warn('Live location autocomplete failed:', err);
+      } finally {
+        setIsSearchingLiveLocation(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [selectedDestination]);
+
+  useEffect(() => {
+    const fetchLocations = async () => {
       try {
         setLoadingDestinations(true);
         const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-        const res = await fetch(`${baseUrl}/listings/home-destinations`);
-        const json = await res.json();
-        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-          setBackendDestinations(json.data);
+        const res = await fetch(`${baseUrl}/listings/locations/search`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+            setBackendDestinations(json.data);
+          }
         }
       } catch (e) {
-        console.warn('Failed to load home destinations for header dropdown:', e);
+        // quiet fallback
       } finally {
         setLoadingDestinations(false);
       }
     };
-    fetchDestinations();
+    fetchLocations();
   }, []);
 
   const handleSearchNavigation = (destParam) => {
@@ -146,11 +181,32 @@ export default function Header() {
     setShowGuestsDropdown(false);
     setIsSearchExpanded(false);
 
+    const queryParams = new URLSearchParams();
+    if (checkInDate) {
+      queryParams.set('checkIn', format(checkInDate, 'yyyy-MM-dd'));
+    }
+    if (checkOutDate) {
+      queryParams.set('checkOut', format(checkOutDate, 'yyyy-MM-dd'));
+    }
+    if (datesTab === 'flexible' && selectedFlexibleMonths.length > 0) {
+      queryParams.set('flexibleMonths', selectedFlexibleMonths.join(','));
+    }
+    const totalGuests = adultsCount + childrenCount;
+    if (totalGuests > 0) {
+      queryParams.set('guests', totalGuests);
+    }
+    if (adultsCount > 0) queryParams.set('adults', adultsCount);
+    if (childrenCount > 0) queryParams.set('children', childrenCount);
+    if (infantsCount > 0) queryParams.set('infants', infantsCount);
+    if (petsCount > 0) queryParams.set('pets', petsCount);
+
+    const qs = queryParams.toString() ? `?${queryParams.toString()}` : '';
+
     if (targetLoc && targetLoc.trim()) {
       const cleanLoc = targetLoc.trim();
-      navigate(`/search/${encodeURIComponent(cleanLoc)}`);
+      navigate(`/search/${encodeURIComponent(cleanLoc)}${qs}`);
     } else {
-      navigate('/search/all');
+      navigate(`/search/all${qs}`);
     }
   };
 
@@ -215,6 +271,7 @@ export default function Header() {
   const isHostMode = location.pathname.startsWith('/host');
 
   const dropdownRef = useRef(null);
+  const locationSectionRef = useRef(null);
   const locationDropdownRef = useRef(null);
   const guestsDropdownRef = useRef(null);
   const datesDropdownRef = useRef(null);
@@ -325,7 +382,9 @@ export default function Header() {
         setCheckOutDate(null);
       } else {
         setCheckOutDate(day);
-        setShowDatesDropdown(false); // Optionally close after selecting check-out
+        // Seamlessly move to Guests dropdown
+        setShowDatesDropdown(false);
+        setShowGuestsDropdown(true);
       }
     }
   };
@@ -428,9 +487,14 @@ export default function Header() {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowUserDropdown(false);
       }
-      if (locationDropdownRef.current && !locationDropdownRef.current.contains(event.target)) {
+      
+      // Ensure clicks inside either the location input section OR the location dropdown do NOT close it
+      const clickedInsideLocationSection = locationSectionRef.current && locationSectionRef.current.contains(event.target);
+      const clickedInsideLocationDropdown = locationDropdownRef.current && locationDropdownRef.current.contains(event.target);
+      if (!clickedInsideLocationSection && !clickedInsideLocationDropdown) {
         setShowLocationDropdown(false);
       }
+
       if (guestsDropdownRef.current && !guestsDropdownRef.current.contains(event.target)) {
         setShowGuestsDropdown(false);
       }
@@ -442,7 +506,7 @@ export default function Header() {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [dropdownRef, locationDropdownRef, guestsDropdownRef, datesDropdownRef, isSearchExpanded]);
+  }, [dropdownRef, locationSectionRef, locationDropdownRef, guestsDropdownRef, datesDropdownRef, isSearchExpanded]);
 
 
 
@@ -706,8 +770,9 @@ export default function Header() {
         ref={searchContainerRef}
         className={`${styles['search-container']} ${(isScrolled && !isSearchExpanded) ? styles.hidden : ''}`}
       >
-        <div className={styles['search-bar']} ref={locationDropdownRef}>
+        <div className={styles['search-bar']}>
           <div 
+            ref={locationSectionRef}
             className={`${styles['search-section']} ${showLocationDropdown ? styles['search-section-active'] : ''}`}
             onClick={() => {
               setShowLocationDropdown(true);
@@ -721,7 +786,15 @@ export default function Header() {
               className={styles['search-input-field']}
               placeholder="Search destinations"
               value={selectedDestination}
-              onChange={(e) => setSelectedDestination(e.target.value)}
+              onFocus={() => {
+                setShowLocationDropdown(true);
+                setShowDatesDropdown(false);
+                setShowGuestsDropdown(false);
+              }}
+              onChange={(e) => {
+                setSelectedDestination(e.target.value);
+                if (!showLocationDropdown) setShowLocationDropdown(true);
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   handleSearchNavigation(selectedDestination);
@@ -731,7 +804,10 @@ export default function Header() {
             {selectedDestination && (
               <div 
                 className={styles['clear-btn']} 
-                onClick={(e) => { e.stopPropagation(); setSelectedDestination(''); }}
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  setSelectedDestination(''); 
+                }}
               >
                 <FaTimes size={10} />
               </div>
@@ -740,7 +816,11 @@ export default function Header() {
 
           {/* Location Dropdown - Dynamic from Backend */}
           {showLocationDropdown && (
-            <div className={styles['location-dropdown']}>
+            <div 
+              ref={locationDropdownRef}
+              className={styles['location-dropdown']}
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className={styles['loc-dropdown-header']}>
                 <span className={styles['loc-dropdown-title']}>Suggested destinations</span>
                 <button 
@@ -757,12 +837,49 @@ export default function Header() {
                 </button>
               </div>
               <div className={styles['loc-list']}>
-                {/* Nearby option */}
+                {/* Nearby option with Real Geolocation & navigation */}
                 <div 
                   className={styles['loc-item']}
-                  onClick={() => {
-                    setSelectedDestination('Nearby');
-                    handleSearchNavigation('Nearby');
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (navigator.geolocation) {
+                      navigator.geolocation.getCurrentPosition(
+                        async (pos) => {
+                          const { latitude, longitude } = pos.coords;
+                          try {
+                            const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+                            const geoRes = await fetch(`${baseUrl}/listings/locations/search?lat=${latitude}&lng=${longitude}`);
+                            const geoData = await geoRes.json();
+                            if (geoData.success && geoData.data?.[0]?.city) {
+                              const foundCity = geoData.data[0].city;
+                              setSelectedDestination(foundCity);
+                              setShowLocationDropdown(false);
+                              setShowDatesDropdown(true);
+                              setShowGuestsDropdown(false);
+                              return;
+                            }
+                          } catch (err) {
+                            // quiet fallback
+                          }
+                          setSelectedDestination('Nearby');
+                          setShowLocationDropdown(false);
+                          setShowDatesDropdown(true);
+                          setShowGuestsDropdown(false);
+                        },
+                        () => {
+                          setSelectedDestination('Nearby');
+                          setShowLocationDropdown(false);
+                          setShowDatesDropdown(true);
+                          setShowGuestsDropdown(false);
+                        },
+                        { timeout: 5000 }
+                      );
+                    } else {
+                      setSelectedDestination('Nearby');
+                      setShowLocationDropdown(false);
+                      setShowDatesDropdown(true);
+                      setShowGuestsDropdown(false);
+                    }
                   }}
                 >
                   <div className={`${styles['loc-icon']} ${styles['loc-icon-nav']}`}>
@@ -774,79 +891,111 @@ export default function Header() {
                   </div>
                 </div>
 
-                {/* Dynamic destinations from Backend (home_destinations / listings) */}
-                {backendDestinations && backendDestinations.length > 0 ? (
-                  backendDestinations
-                    .filter(item => {
-                      if (!selectedDestination || !selectedDestination.trim()) return true;
-                      const q = selectedDestination.toLowerCase();
-                      return (
-                        (item.country || '').toLowerCase().includes(q) ||
-                        (item.title || '').toLowerCase().includes(q) ||
-                        (item.city || '').toLowerCase().includes(q)
-                      );
-                    })
-                    .map((item, idx) => {
-                      const displayName = item.country || item.city || item.name;
-                      const desc = item.title || item.desc || 'Popular destination';
-                      const isBeach = desc.toLowerCase().includes('beach') || desc.toLowerCase().includes('coastal') || desc.toLowerCase().includes('island') || desc.toLowerCase().includes('paradise');
-                      const isCity = desc.toLowerCase().includes('urban') || desc.toLowerCase().includes('nightlife') || desc.toLowerCase().includes('sight');
-                      const iconClass = isBeach ? 'loc-icon-beach' : isCity ? 'loc-icon-city2' : 'loc-icon-city';
-                      const IconComp = isBeach ? <TbBeach /> : <BsBuildings />;
+                {/* Dynamic live location results from Backend / OpenStreetMap or Home Destinations */}
+                {(() => {
+                  const hasTypedQuery = Boolean(selectedDestination && selectedDestination.trim().length >= 2);
+
+                  // 1. If user typed a search term and we have real-time live location results from backend
+                  if (hasTypedQuery && liveLocationResults && liveLocationResults.length > 0) {
+                    return liveLocationResults.map((loc, idx) => {
+                      const placeTitle = loc.city || loc.district || loc.street || loc.state || 'Location';
+                      const fullSubtitle = loc.full_address || [loc.district, loc.city, loc.state, loc.country].filter(Boolean).join(', ');
 
                       return (
                         <div 
-                          key={item.id || idx} 
+                          key={idx} 
                           className={styles['loc-item']}
                           onClick={() => {
-                            setSelectedDestination(displayName);
-                            handleSearchNavigation(displayName);
+                            const chosen = placeTitle || fullSubtitle;
+                            setSelectedDestination(chosen);
+                            setShowLocationDropdown(false);
+                            setShowDatesDropdown(true);
+                            setShowGuestsDropdown(false);
                           }}
                         >
-                          {item.image ? (
-                            <img 
-                              src={item.image} 
-                              alt={displayName} 
-                              className={styles['loc-icon']} 
-                              style={{ objectFit: 'cover' }} 
-                            />
-                          ) : (
-                            <div className={`${styles['loc-icon']} ${styles[iconClass]}`}>
-                              {IconComp}
-                            </div>
-                          )}
+                          <div className={`${styles['loc-icon']} ${styles['loc-icon-city']}`}>
+                            <BsBuildings />
+                          </div>
                           <div className={styles['loc-text']}>
-                            <div className={styles['loc-name']}>{displayName}</div>
-                            <div className={styles['loc-desc']}>{desc}</div>
+                            <div className={styles['loc-name']}>{placeTitle}</div>
+                            <div className={styles['loc-desc']} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '300px' }}>
+                              {fullSubtitle}
+                            </div>
                           </div>
                         </div>
                       );
-                    })
-                ) : (
-                  [
-                    { name: "Jaipur, Rajasthan", desc: "For sights like Amber Fort", icon: <BsBuildings />, iconClass: 'loc-icon-city' },
-                    { name: "North Goa, Goa", desc: "Popular beach destination", icon: <TbBeach />, iconClass: 'loc-icon-beach' },
-                    { name: "Udaipur, Rajasthan", desc: "For its stunning architecture", icon: <BsBuildings />, iconClass: 'loc-icon-city' },
-                    { name: "Dubai, United Arab Emirates", desc: "For its bustling nightlife", icon: <BsBuildings />, iconClass: 'loc-icon-city2' },
-                    { name: "Gurgaon District, Haryana", desc: "Popular with travellers near you", icon: <TbBeach />, iconClass: 'loc-icon-beach' },
-                    { name: "Mumbai, Maharashtra", desc: "For sights like Gateway of India", icon: <BsBuildings />, iconClass: 'loc-icon-city2' }
-                  ].map((item, idx) => (
-                    <div 
-                      key={idx} 
-                      className={styles['loc-item']}
-                      onClick={() => {
-                        setSelectedDestination(item.name);
-                        handleSearchNavigation(item.name);
-                      }}
-                    >
-                      <div className={`${styles['loc-icon']} ${styles[item.iconClass]}`}>{item.icon}</div>
-                      <div className={styles['loc-text']}>
-                        <div className={styles['loc-name']}>{item.name}</div>
-                        <div className={styles['loc-desc']}>{item.desc}</div>
+                    });
+                  }
+
+                  // 2. If user is currently typing and API is in progress
+                  if (hasTypedQuery && isSearchingLiveLocation) {
+                    return (
+                      <div className={styles['loc-item']} style={{ cursor: 'default' }}>
+                        <div className={styles['loc-icon']}>
+                          <FaSearch size={16} color="#ff385c" />
+                        </div>
+                        <div className={styles['loc-text']}>
+                          <div className={styles['loc-name']}>Searching live locations...</div>
+                          <div className={styles['loc-desc']}>Fetching verified places matching "{selectedDestination}"</div>
+                        </div>
                       </div>
-                    </div>
-                  ))
-                )}
+                    );
+                  }
+
+                  // 3. Otherwise show initial verified locations from backend locations endpoint
+                  const listToDisplay = (backendDestinations || []).filter(item => {
+                    if (!selectedDestination || !selectedDestination.trim()) return true;
+                    const q = selectedDestination.toLowerCase().trim();
+                    const full = (item.full_address || '').toLowerCase();
+                    const city = (item.city || '').toLowerCase();
+                    const state = (item.state || '').toLowerCase();
+                    const street = (item.street || '').toLowerCase();
+                    return full.includes(q) || city.includes(q) || state.includes(q) || street.includes(q);
+                  });
+
+                  if (listToDisplay.length === 0) {
+                    return (
+                      <div className={styles['loc-item']} style={{ cursor: 'default', opacity: 0.8 }}>
+                        <div className={styles['loc-icon']}>
+                          <FaSearch size={18} color="#717171" />
+                        </div>
+                        <div className={styles['loc-text']}>
+                          <div className={styles['loc-name']}>Search for "{selectedDestination}"</div>
+                          <div className={styles['loc-desc']}>Press Search button to find all matching stays</div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return listToDisplay.map((item, idx) => {
+                    const placeTitle = item.city || item.district || item.street || item.state || 'Location';
+                    const fullSubtitle = item.full_address || [item.street, item.district, item.city, item.state].filter(Boolean).join(', ');
+
+                    return (
+                      <div 
+                        key={item.id || idx} 
+                        className={styles['loc-item']}
+                        onClick={() => {
+                          const chosen = placeTitle || fullSubtitle;
+                          setSelectedDestination(chosen);
+                          setShowLocationDropdown(false);
+                          setShowDatesDropdown(true);
+                          setShowGuestsDropdown(false);
+                        }}
+                      >
+                        <div className={`${styles['loc-icon']} ${styles['loc-icon-city']}`}>
+                          <BsBuildings />
+                        </div>
+                        <div className={styles['loc-text']}>
+                          <div className={styles['loc-name']}>{placeTitle}</div>
+                          <div className={styles['loc-desc']} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '300px' }}>
+                            {fullSubtitle}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
           )}
