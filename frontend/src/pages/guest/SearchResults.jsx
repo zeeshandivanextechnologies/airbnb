@@ -26,32 +26,87 @@ import homeStyles from '../../components/styles/Home.module.css';
 // City Coordinates Dictionary for precision centering & realistic distribution
 const CITY_COORDINATES = {
   'jaipur': [26.9124, 75.7873],
+  'sawai madhopur': [26.0189, 76.3522],
+  'ranthambore': [26.0189, 76.3522],
   'udaipur': [24.5854, 73.7125],
+  'jodhpur': [26.2389, 73.0243],
+  'jaisalmer': [26.9157, 70.9083],
+  'pushkar': [26.4897, 74.5511],
+  'ajmer': [26.4499, 74.6399],
   'goa': [15.2993, 74.1240],
   'north goa': [15.5494, 73.7535],
+  'south goa': [15.1950, 73.9680],
+  'calangute': [15.5439, 73.7554],
+  'baga': [15.5553, 73.7517],
+  'candolim': [15.5173, 73.7634],
+  'panaji': [15.4909, 73.8278],
   'gurugram': [28.4595, 77.0266],
   'gurgaon': [28.4595, 77.0266],
   'manali': [32.2432, 77.1892],
+  'shimla': [31.1048, 77.1734],
+  'dharamshala': [32.2190, 76.3234],
+  'kasol': [32.0100, 77.3150],
+  'rishikesh': [30.0869, 78.2676],
+  'dehradun': [30.3165, 78.0322],
+  'mussoorie': [30.4598, 78.0644],
+  'nainital': [29.3919, 79.4542],
+  'haridwar': [29.9457, 78.1642],
   'dubai': [25.2048, 55.2708],
   'mumbai': [19.0760, 72.8777],
   'delhi': [28.6139, 77.2090],
+  'new delhi': [28.6139, 77.2090],
+  'noida': [28.5355, 77.3910],
   'bengaluru': [12.9716, 77.5946],
   'bangalore': [12.9716, 77.5946],
+  'hyderabad': [17.3850, 78.4867],
+  'chennai': [13.0827, 80.2707],
+  'pune': [18.5204, 73.8567],
+  'kolkata': [22.5726, 88.3639],
+  'ahmedabad': [23.0225, 72.5714],
+  'surat': [21.1702, 72.8311],
+  'agra': [27.1767, 78.0081],
+  'varanasi': [25.3176, 82.9739],
+  'amritsar': [31.6340, 74.8723],
+  'chandigarh': [30.7333, 76.7794],
+  'kochi': [9.9312, 76.2673],
+  'cochin': [9.9312, 76.2673],
+  'munnar': [10.0889, 77.0595],
+  'alleppey': [9.4981, 76.3388],
+  'alappuzha': [9.4981, 76.3388],
+  'kerala': [10.8505, 76.2711],
+  'ooty': [11.4102, 76.6950],
   'switzerland': [46.8182, 8.2275],
   'maldives': [3.2028, 73.2207],
   'japan': [35.6762, 139.6503],
+  'tokyo': [35.6762, 139.6503],
   'italy': [41.8719, 12.5674],
+  'rome': [41.9028, 12.4964],
   'thailand': [13.7563, 100.5018],
+  'bangkok': [13.7563, 100.5018],
+  'phuket': [7.8804, 98.3923],
   'france': [48.8566, 2.3522],
+  'paris': [48.8566, 2.3522],
   'greece': [37.9838, 23.7275],
+  'santorini': [36.3932, 25.4615],
   'australia': [-33.8688, 151.2093],
+  'sydney': [-33.8688, 151.2093],
   'bali': [-8.4095, 115.1889],
   'spain': [40.4168, -3.7038],
+  'barcelona': [41.3879, 2.1699],
+  'madrid': [40.4168, -3.7038],
+  'london': [51.5074, -0.1278],
+  'united kingdom': [51.5074, -0.1278],
+  'singapore': [1.3521, 103.8198],
   'new zealand': [-40.9006, 174.8860]
 };
 
 // Offset generator so multiple listings in same city appear naturally spread across neighborhood map
 const getListingCoords = (item, idx, baseCenter) => {
+  // If listing has explicit lat & lng in DB
+  if (item.latitude && item.longitude && !isNaN(Number(item.latitude)) && !isNaN(Number(item.longitude))) {
+    return [Number(item.latitude), Number(item.longitude)];
+  }
+
   const cityKey = `${item.city || ''} ${item.state || ''} ${item.country || ''}`.toLowerCase();
   
   let center = baseCenter;
@@ -144,14 +199,24 @@ const createUserLiveLocationIcon = () => {
   });
 };
 
-// Smooth Map Centering Controller
-function MapFlyController({ center }) {
+// Smooth Map Centering & Auto-Bounds Controller
+function MapFlyController({ center, listingsCoords }) {
   const map = useMap();
+
   useEffect(() => {
-    if (center) {
+    // If we have listings with coordinates on the map, auto-fit bounds nicely
+    if (listingsCoords && listingsCoords.length > 0) {
+      if (listingsCoords.length === 1) {
+        map.flyTo(listingsCoords[0], 13, { animate: true, duration: 0.8 });
+      } else {
+        const bounds = L.latLngBounds(listingsCoords);
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14, animate: true, duration: 0.8 });
+      }
+    } else if (center) {
       map.flyTo(center, 12, { animate: true, duration: 0.8 });
     }
-  }, [center, map]);
+  }, [center, listingsCoords, map]);
+
   return null;
 }
 
@@ -459,8 +524,11 @@ export default function SearchResults() {
     handleLocateMe();
   }, []);
 
-  // Compute base map center according to searched location
+  const [searchLocationCoords, setSearchLocationCoords] = useState(null);
+
+  // Compute base map center according to searched location or dynamic geocode
   const computeBaseCenter = () => {
+    if (searchLocationCoords) return searchLocationCoords;
     if (userLiveCoords && isNearbyOrAll) return userLiveCoords;
     if (isNearbyOrAll) return [26.9124, 75.7873]; // default Jaipur/India
     const lower = decodedLocation.toLowerCase();
@@ -471,6 +539,51 @@ export default function SearchResults() {
   };
 
   const mapCenter = computeBaseCenter();
+
+  // If search query is not in static dictionary, geocode it dynamically via backend location search
+  useEffect(() => {
+    let isCancelled = false;
+    const resolveLocationCoordinates = async () => {
+      if (isNearbyOrAll) {
+        setSearchLocationCoords(null);
+        return;
+      }
+      const lower = decodedLocation.toLowerCase();
+      let matchedCoord = null;
+      for (const [key, coords] of Object.entries(CITY_COORDINATES)) {
+        if (lower.includes(key)) {
+          matchedCoord = coords;
+          break;
+        }
+      }
+      if (matchedCoord) {
+        setSearchLocationCoords(matchedCoord);
+        return;
+      }
+
+      // Try geocoding from backend location search
+      try {
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+        const geoRes = await fetch(`${baseUrl}/listings/locations/search?q=${encodeURIComponent(decodedLocation)}`);
+        if (geoRes.ok) {
+          const geoData = await geoRes.json();
+          if (!isCancelled && geoData.success && geoData.data && geoData.data.length > 0) {
+            const firstWithCoords = geoData.data.find(d => d.lat && d.lng);
+            if (firstWithCoords) {
+              setSearchLocationCoords([Number(firstWithCoords.lat), Number(firstWithCoords.lng)]);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Could not geocode searched location:', e);
+      }
+    };
+
+    resolveLocationCoordinates();
+    return () => {
+      isCancelled = true;
+    };
+  }, [decodedLocation, isNearbyOrAll]);
 
   // Fetch dynamic listings from Backend filtered strictly by location
   useEffect(() => {
@@ -749,87 +862,92 @@ export default function SearchResults() {
             {/* Right side: Dynamic Interactive Leaflet Map with Price Pins & Popup Card */}
             <div className="col-lg-6 col-md-12 col-sm-12">
               <div className={styles.mapContainer}>
-                <MapContainer 
-                  center={mapCenter} 
-                  zoom={12} 
-                  scrollWheelZoom={true}
-                  zoomControl={false}
-                  attributionControl={false}
-                  className={styles.mapFrame}
-                >
-                  <TileLayer
-                    url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
-                  />
-
-                  <MapFlyController center={mapCenter} />
-                  <MapControls 
-                    baseCenter={mapCenter} 
-                    userCoords={userLiveCoords}
-                    onLocateMe={handleLocateMe}
-                    isLocating={isLocating}
-                  />
-
-                  {/* Airbnb Live Location Blue Pulse Marker */}
-                  {userLiveCoords && (
-                    <Marker 
-                      position={userLiveCoords} 
-                      icon={createUserLiveLocationIcon()}
-                      zIndexOffset={1000}
+                {(() => {
+                  const renderedListingCoords = listings.map((item, idx) => getListingCoords(item, idx, mapCenter));
+                  return (
+                    <MapContainer 
+                      center={mapCenter} 
+                      zoom={12} 
+                      scrollWheelZoom={true}
+                      zoomControl={false}
+                      attributionControl={false}
+                      className={styles.mapFrame}
                     >
-                      <Popup closeButton={false} offset={[0, -6]}>
-                        <div style={{ padding: '6px 10px', fontSize: '12px', fontWeight: 600, color: '#222' }}>
-                          📍 You are here
-                        </div>
-                      </Popup>
-                    </Marker>
-                  )}
+                      <TileLayer
+                        url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
+                      />
 
-                  {/* Dynamic Price Pin Markers for each listing */}
-                  {listings.map((item, idx) => {
-                    const coords = getListingCoords(item, idx, mapCenter);
-                    const isSelected = activeListingId === item.id;
-                    const priceLabel = formatPrice(item.price);
-                    const images = getListingImages(item);
-                    const ratingScore = Number(item.rating) > 0 ? Number(item.rating).toFixed(2) : 'New';
-                    const bedrooms = item.bedrooms || 2;
-                    const beds = item.beds || 3;
-                    const bathrooms = item.bathrooms || 2;
-                    const listingCity = item.city || displayLocation;
-                    const isSaved = isItemInAnyWishlist(item.id, item.title, 'Places in ' + listingCity);
+                      <MapFlyController center={mapCenter} listingsCoords={renderedListingCoords} />
+                      <MapControls 
+                        baseCenter={mapCenter} 
+                        userCoords={userLiveCoords}
+                        onLocateMe={handleLocateMe}
+                        isLocating={isLocating}
+                      />
 
-                    return (
-                      <Marker 
-                        key={item.id} 
-                        position={coords}
-                        icon={createPricePinIcon(priceLabel, isSelected)}
-                        eventHandlers={{
-                          click: () => setActiveListingId(item.id)
-                        }}
-                      >
-                        <Popup 
-                          closeButton={false} 
-                          offset={[0, -10]}
-                          autoPan={true}
+                      {/* Airbnb Live Location Blue Pulse Marker */}
+                      {userLiveCoords && (
+                        <Marker 
+                          position={userLiveCoords} 
+                          icon={createUserLiveLocationIcon()}
+                          zIndexOffset={1000}
                         >
-                          <MapListingPopupCard 
-                            item={item}
-                            images={images}
-                            listingCity={listingCity}
-                            ratingScore={ratingScore}
-                            bedrooms={bedrooms}
-                            beds={beds}
-                            bathrooms={bathrooms}
-                            priceLabel={priceLabel}
-                            onClose={() => setActiveListingId(null)}
-                            onNavigate={navigate}
-                            onHeartClick={handleHeartClick}
-                            isSaved={isSaved}
-                          />
-                        </Popup>
-                      </Marker>
-                    );
-                  })}
-                </MapContainer>
+                          <Popup closeButton={false} offset={[0, -6]}>
+                            <div style={{ padding: '6px 10px', fontSize: '12px', fontWeight: 600, color: '#222' }}>
+                              📍 You are here
+                            </div>
+                          </Popup>
+                        </Marker>
+                      )}
+
+                      {/* Dynamic Price Pin Markers for each listing */}
+                      {listings.map((item, idx) => {
+                        const coords = renderedListingCoords[idx] || getListingCoords(item, idx, mapCenter);
+                        const isSelected = activeListingId === item.id;
+                        const priceLabel = formatPrice(item.price);
+                        const images = getListingImages(item);
+                        const ratingScore = Number(item.rating) > 0 ? Number(item.rating).toFixed(2) : 'New';
+                        const bedrooms = item.bedrooms || 2;
+                        const beds = item.beds || 3;
+                        const bathrooms = item.bathrooms || 2;
+                        const listingCity = item.city || displayLocation;
+                        const isSaved = isItemInAnyWishlist(item.id, item.title, 'Places in ' + listingCity);
+
+                        return (
+                          <Marker 
+                            key={item.id} 
+                            position={coords}
+                            icon={createPricePinIcon(priceLabel, isSelected)}
+                            eventHandlers={{
+                              click: () => setActiveListingId(item.id)
+                            }}
+                          >
+                            <Popup 
+                              closeButton={false} 
+                              offset={[0, -10]}
+                              autoPan={true}
+                            >
+                              <MapListingPopupCard 
+                                item={item}
+                                images={images}
+                                listingCity={listingCity}
+                                ratingScore={ratingScore}
+                                bedrooms={bedrooms}
+                                beds={beds}
+                                bathrooms={bathrooms}
+                                priceLabel={priceLabel}
+                                onClose={() => setActiveListingId(null)}
+                                onNavigate={navigate}
+                                onHeartClick={handleHeartClick}
+                                isSaved={isSaved}
+                              />
+                            </Popup>
+                          </Marker>
+                        );
+                      })}
+                    </MapContainer>
+                  );
+                })()}
               </div>
             </div>
           </div>

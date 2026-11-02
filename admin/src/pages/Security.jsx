@@ -58,12 +58,7 @@ export default function Security() {
     notifyOnNewDevice: true
   });
 
-  const [enrolledStaff, setEnrolledStaff] = useState([
-    { name: 'Aarav Sharma', role: 'Super Admin', method: 'Google Authenticator', status: 'Enrolled' },
-    { name: 'Pooja Mehta', role: 'Sub-Admin', method: 'SMS OTP Verified', status: 'Enrolled' },
-    { name: 'Ananya Verma', role: 'Support Staff', method: 'Google Authenticator', status: 'Enrolled' },
-    { name: 'Sneha Patel', role: 'Content Moderator', method: 'SMS OTP Verified', status: 'Enrolled' }
-  ]);
+  const [enrolledStaff, setEnrolledStaff] = useState([]);
 
   const [toastMessage, setToastMessage] = useState(null);
 

@@ -1,9 +1,29 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import styles from './styles/Footer.module.css';
 import { FaGlobe, FaFacebookSquare, FaTwitter, FaInstagram } from 'react-icons/fa';
 
 export default function Footer() {
   const [activeTab, setActiveTab] = useState('Popular');
+  const [footerSections, setFooterSections] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchFooter = async () => {
+      try {
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const res = await fetch(`${baseUrl}/listings/cms/footer`);
+        const data = await res.json();
+        if (data && data.success && Array.isArray(data.sections) && isMounted) {
+          setFooterSections(data.sections);
+        }
+      } catch (e) {
+        console.warn('Failed to load dynamic footer:', e);
+      }
+    };
+    fetchFooter();
+    return () => { isMounted = false; };
+  }, []);
 
   const tabs = ['Popular', 'Arts & culture', 'Beach', 'Mountains', 'Outdoors', 'Things to do'];
 
@@ -105,44 +125,61 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Main Links Section */}
+        {/* Main Links Section - Dynamic from Database */}
         <div className={styles['footer-main-links']}>
-          <div className={styles['footer-column']}>
-            <h3>Support</h3>
-            <ul>
-              <li><a href="#">Help Centre</a></li>
-              <li><a href="#">Get help with a safety issue</a></li>
-              <li><a href="#">AirCover</a></li>
-              <li><a href="#">Anti-discrimination</a></li>
-              <li><a href="#">Disability support</a></li>
-              <li><a href="#">Cancellation options</a></li>
-              <li><a href="#">Report neighbourhood concern</a></li>
-            </ul>
-          </div>
-          <div className={styles['footer-column']}>
-            <h3>Hosting</h3>
-            <ul>
-              <li><a href="#">Airbnb your home</a></li>
-              <li><a href="#">AirCover for Hosts</a></li>
-              <li><a href="#">Hosting resources</a></li>
-              <li><a href="#">Community forum</a></li>
-              <li><a href="#">Hosting responsibly</a></li>
-              <li><a href="#">Join a free hosting class</a></li>
-              <li><a href="#">Find a co-host</a></li>
-              <li><a href="#">Refer a host</a></li>
-            </ul>
-          </div>
-          <div className={styles['footer-column']}>
-            <h3>Airbnb</h3>
-            <ul>
-              <li><a href="#">Newsroom</a></li>
-              <li><a href="#">New features</a></li>
-              <li><a href="#">Careers</a></li>
-              <li><a href="#">Investors</a></li>
-              <li><a href="#">Gift cards</a></li>
-              <li><a href="#">Airbnb.org emergency stays</a></li>
-            </ul>
-          </div>
+          {footerSections && footerSections.length > 0 ? (
+            footerSections.map((section) => (
+              <div key={section.id} className={styles['footer-column']}>
+                <h3>{section.title}</h3>
+                <ul>
+                  {(section.links || []).filter(l => l.isLive !== false).map((link, lIdx) => (
+                    <li key={lIdx}>
+                      {link.url && link.url.startsWith('/') ? (
+                        <Link to={link.url}>{link.label}</Link>
+                      ) : (
+                        <a href={link.url || '#'} target={link.url && link.url.startsWith('http') ? '_blank' : '_self'} rel="noreferrer">
+                          {link.label}
+                        </a>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))
+          ) : (
+            <>
+              <div className={styles['footer-column']}>
+                <h3>Support</h3>
+                <ul>
+                  <li><Link to="/help">Help Centre</Link></li>
+                  <li><Link to="/aircover">AirCover</Link></li>
+                  <li><Link to="/anti-discrimination">Anti-discrimination</Link></li>
+                  <li><Link to="/accessibility">Disability support</Link></li>
+                  <li><Link to="/cancellations">Cancellation options</Link></li>
+                </ul>
+              </div>
+              <div className={styles['footer-column']}>
+                <h3>Hosting</h3>
+                <ul>
+                  <li><Link to="/host">Airbnb your home</Link></li>
+                  <li><Link to="/hosting/host-experience">Host an experience</Link></li>
+                  <li><Link to="/hosting/intro-to-host">Intro to hosting</Link></li>
+                  <li><Link to="/responsible-hosting">Hosting responsibly</Link></li>
+                  <li><Link to="/refer">Refer a host</Link></li>
+                </ul>
+              </div>
+              <div className={styles['footer-column']}>
+                <h3>Airbnb</h3>
+                <ul>
+                  <li><Link to="/about-us">About Us</Link></li>
+                  <li><Link to="/careers">Careers</Link></li>
+                  <li><Link to="/guest-refund-policy">Guest Refund Policy</Link></li>
+                  <li><Link to="/privacy-policy">Privacy Policy</Link></li>
+                  <li><Link to="/terms-of-service">Terms of Service</Link></li>
+                </ul>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Bottom Bar */}
@@ -150,10 +187,10 @@ export default function Footer() {
           <div className={styles['footer-bottom-left']}>
             <span>© 2026 Airbnb, Inc.</span>
             <ul>
-              <li><a href="#">Privacy</a></li>
-              <li><a href="#">Terms</a></li>
-              <li><a href="#">Sitemap</a></li>
-              <li><a href="#">Company details</a></li>
+              <li><Link to="/privacy-policy">Privacy</Link></li>
+              <li><Link to="/terms-of-service">Terms</Link></li>
+              <li><Link to="/sitemap">Sitemap</Link></li>
+              <li><Link to="/about-us">Company details</Link></li>
             </ul>
           </div>
           

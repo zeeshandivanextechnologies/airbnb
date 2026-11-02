@@ -70,8 +70,17 @@ function HostMessage() {
     socket.on('new_message', (msg) => {
       if (selectedTicketRef.current && selectedTicketRef.current.id === msg.ticketId) {
         setMessages((prev) => {
-          const exists = prev.some((m) => m.id === msg.id && m.id !== undefined);
-          if (exists) return prev;
+          const exists = prev.some((m) => 
+            (m.id && msg.id && m.id === msg.id) ||
+            (m.clientTempId && msg.clientTempId && m.clientTempId === msg.clientTempId)
+          );
+          if (exists) {
+            return prev.map(m => 
+              (m.clientTempId && msg.clientTempId && m.clientTempId === msg.clientTempId) 
+                ? { ...m, id: msg.id } 
+                : m
+            );
+          }
           return [...prev, {
             id: msg.id,
             sender: msg.sender,
@@ -85,6 +94,20 @@ function HostMessage() {
       setTickets((prev) =>
         prev.map((t) => {
           if (t.id === msg.ticketId) {
+            const exists = (t.messages || []).some((m) => 
+              (m.id && msg.id && m.id === msg.id) ||
+              (m.clientTempId && msg.clientTempId && m.clientTempId === msg.clientTempId)
+            );
+            if (exists) {
+              return {
+                ...t,
+                messages: (t.messages || []).map(m => 
+                  (m.clientTempId && msg.clientTempId && m.clientTempId === msg.clientTempId) 
+                    ? { ...m, id: msg.id } 
+                    : m
+                )
+              };
+            }
             return {
               ...t,
               messages: [...(t.messages || []), msg]
@@ -128,8 +151,10 @@ function HostMessage() {
     if (!newMessage.trim() || !selectedTicket) return;
 
     const textToSend = newMessage.trim();
+    const tempId = `temp_host_${Date.now()}_${Math.random()}`;
+
     const optimisticMsg = {
-      id: Date.now(),
+      clientTempId: tempId,
       sender: 'Host',
       text: textToSend,
       createdAt: new Date().toISOString()
@@ -147,22 +172,23 @@ function HostMessage() {
     }
 
     // Emit in real-time
-    if (socketRef.current) {
+    if (socketRef.current && socketRef.current.connected) {
       socketRef.current.emit('send_message', {
         ticketId: selectedTicket.id,
         sender: 'Host',
-        text: textToSend
+        text: textToSend,
+        clientTempId: tempId
       });
-    }
-
-    // Persist to backend
-    try {
-      await apiRequest(`/support/tickets/${selectedTicket.id}/messages`, {
-        method: 'POST',
-        body: JSON.stringify({ sender: 'Host', text: textToSend })
-      });
-    } catch (err) {
-      console.warn('Fallback error sending message:', err.message);
+    } else {
+      // Fallback: persist to backend only if socket disconnected
+      try {
+        await apiRequest(`/support/tickets/${selectedTicket.id}/messages`, {
+          method: 'POST',
+          body: JSON.stringify({ sender: 'Host', text: textToSend })
+        });
+      } catch (err) {
+        console.warn('Fallback error sending message:', err.message);
+      }
     }
   };
 

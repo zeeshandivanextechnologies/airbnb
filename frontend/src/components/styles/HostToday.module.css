@@ -175,7 +175,7 @@
 
 .resImage {
   width: 140px;
-  height: 140px;
+  height: auto;
   object-fit: cover;
   flex-shrink: 0;
 }

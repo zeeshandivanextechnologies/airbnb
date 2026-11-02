@@ -427,7 +427,7 @@ router.get('/profile', async (req, res) => {
                 password_updated_at, passkey_enabled, passkey_type, passkey_created_at, last_active_device, last_active_location, last_login_at,
                 privacy_settings, notification_settings, tax_info, vat_info, preferred_language, timezone, known_languages,
                 referral_code, custom_referral_links, about_me, profile_answers, interests, stamps_enabled,
-                automatic_translation, preferred_currency
+                automatic_translation, preferred_currency, pro_hosting_tools, custom_profile_url, work_email, booking_delegates
          FROM users WHERE id = $1`
       : `SELECT id, first_name, last_name, email, phone, avatar, role, status, created_at,
                 preferred_first_name, use_first_name_only, host_display_name,
@@ -437,7 +437,7 @@ router.get('/profile', async (req, res) => {
                 password_updated_at, passkey_enabled, passkey_type, passkey_created_at, last_active_device, last_active_location, last_login_at,
                 privacy_settings, notification_settings, tax_info, vat_info, preferred_language, timezone, known_languages,
                 referral_code, custom_referral_links, about_me, profile_answers, interests, stamps_enabled,
-                automatic_translation, preferred_currency
+                automatic_translation, preferred_currency, pro_hosting_tools, custom_profile_url, work_email, booking_delegates
           FROM users WHERE LOWER(email) = LOWER($1)`;
 
     const val = userId ? [userId] : [userEmail.trim()];
@@ -510,7 +510,11 @@ router.get('/profile', async (req, res) => {
         interests: user.interests || [],
         stampsEnabled: !!user.stamps_enabled,
         automaticTranslation: user.automatic_translation !== false,
-        preferredCurrency: user.preferred_currency || 'INR'
+        preferredCurrency: user.preferred_currency || 'INR',
+        proHostingTools: !!user.pro_hosting_tools,
+        customProfileUrl: user.custom_profile_url || '',
+        workEmail: user.work_email || '',
+        bookingDelegates: Array.isArray(user.booking_delegates) ? user.booking_delegates : []
       }
     });
 
@@ -558,7 +562,11 @@ router.put('/profile', async (req, res) => {
     interests,
     stampsEnabled,
     automaticTranslation,
-    preferredCurrency
+    preferredCurrency,
+    proHostingTools,
+    customProfileUrl,
+    workEmail,
+    bookingDelegates
   } = req.body;
 
   let targetId = id;
@@ -623,6 +631,10 @@ router.put('/profile', async (req, res) => {
     if (stampsEnabled !== undefined) { fields.push(`stamps_enabled = $${idx++}`); values.push(stampsEnabled); }
     if (automaticTranslation !== undefined) { fields.push(`automatic_translation = $${idx++}`); values.push(automaticTranslation); }
     if (preferredCurrency !== undefined) { fields.push(`preferred_currency = $${idx++}`); values.push(preferredCurrency); }
+    if (proHostingTools !== undefined) { fields.push(`pro_hosting_tools = $${idx++}`); values.push(proHostingTools); }
+    if (customProfileUrl !== undefined) { fields.push(`custom_profile_url = $${idx++}`); values.push(customProfileUrl.trim()); }
+    if (workEmail !== undefined) { fields.push(`work_email = $${idx++}`); values.push(workEmail ? workEmail.trim() : null); }
+    if (bookingDelegates !== undefined) { fields.push(`booking_delegates = $${idx++}`); values.push(JSON.stringify(bookingDelegates)); }
 
     if (fields.length === 0) {
       return res.status(400).json({ success: false, message: 'No fields provided to update.' });
@@ -648,7 +660,7 @@ router.put('/profile', async (req, res) => {
                 emergency_contact_email, emergency_contact_phone, notification_settings, privacy_settings,
                 tax_info, vat_info, preferred_language, timezone, known_languages,
                 referral_code, custom_referral_links, about_me, profile_answers, interests, stamps_enabled,
-                automatic_translation, preferred_currency
+                automatic_translation, preferred_currency, pro_hosting_tools, custom_profile_url, work_email, booking_delegates
     `;
 
     const result = await pool.query(updateQuery, values);
@@ -696,7 +708,11 @@ router.put('/profile', async (req, res) => {
         interests: updatedUser.interests || [],
         stampsEnabled: !!updatedUser.stamps_enabled,
         automaticTranslation: updatedUser.automatic_translation !== false,
-        preferredCurrency: updatedUser.preferred_currency || 'INR'
+        preferredCurrency: updatedUser.preferred_currency || 'INR',
+        proHostingTools: !!updatedUser.pro_hosting_tools,
+        customProfileUrl: updatedUser.custom_profile_url || '',
+        workEmail: updatedUser.work_email || '',
+        bookingDelegates: Array.isArray(updatedUser.booking_delegates) ? updatedUser.booking_delegates : []
       }
     });
 

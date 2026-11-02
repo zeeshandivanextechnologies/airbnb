@@ -275,7 +275,7 @@
 
 .dayCellSelected .dayNumber,
 .dayCellSelected .dayPrice {
-  color: white;
+  /* color: white; */
 }
 
 .selectedSidebar {

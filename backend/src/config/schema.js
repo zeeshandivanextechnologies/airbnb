@@ -1193,7 +1193,53 @@ export async function initFullDatabase() {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(host_id, listing_id, calendar_date)
       );
+
+      -- 18. Admin Platform Settings (General, Cancellation, Gateways, Tax)
+      CREATE TABLE IF NOT EXISTS admin_platform_settings (
+        id SERIAL PRIMARY KEY,
+        general_config JSONB DEFAULT '{}'::jsonb,
+        cancellation_policies JSONB DEFAULT '{}'::jsonb,
+        gateways_config JSONB DEFAULT '{}'::jsonb,
+        tax_config JSONB DEFAULT '{}'::jsonb,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      -- 19. Host Experience Page Dynamic Content (Hero, City Highlights, Categories, Stats, Toolboxes)
+      CREATE TABLE IF NOT EXISTS host_experience_content (
+        id SERIAL PRIMARY KEY,
+        section_key VARCHAR(50) UNIQUE NOT NULL,
+        content JSONB NOT NULL,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
     `);
+
+    // Seed default host experience content if empty
+    const checkExpContent = await pool.query('SELECT COUNT(*) FROM host_experience_content');
+    if (parseInt(checkExpContent.rows[0].count, 10) === 0) {
+      await pool.query(`
+        INSERT INTO host_experience_content (section_key, content)
+        VALUES 
+        ('hero', '{"title":"Get paid to do what you love","subtitle":"Create a unique Airbnb Experience for millions of guests.","video":"/experience_video_01.mp4"}'::jsonb),
+        ('best_city', '{"title":"Bring the best of your city to life on Airbnb","subtitle":"Apply to join our marketplace of high-quality experiences led by locals like you.","cards":[{"img":"/experience_01.avif","text":"Arnold leads horseback tours of Incan temples in Cusco"},{"img":"/experience_02.avif","text":"Ryan celebrates the art of car customisation in Los Angeles"},{"img":"/experience_03.avif","text":"Alicia shares skate moves on the boardwalk in Venice Beach"}]}'::jsonb),
+        ('kinds', '{"title":"Host one-of-a-kind experiences of all kinds","items":[{"icon":"/kind_01.webp","title":"Show off your city","desc":"Lead unique tours of landmarks, museums or cultural hotspots."},{"icon":"/kind_02.webp","title":"Share something tasty","desc":"Host cooking classes, food tours or dining experiences."},{"icon":"/kind_03.avif","title":"Lead an outdoor adventure","desc":"Guide nature hikes, water sports or wildlife expeditions."},{"icon":"/kind_04.webp","title":"Celebrate the arts","desc":"Explore galleries, shopping and fashion or run art workshops."},{"icon":"/kind_05.webp","title":"Teach fitness and self-care","desc":"Host workouts, wellness classes or beauty experiences."}]}'::jsonb),
+        ('stats', '{"title":"Millions of guests. The most loved brand in travel.","subtitle":"Airbnb is the best way to reach people looking to explore your city.","guestsCount":"390 million guests","guestsYear":"arrived in 2024","spendingCount":"$81 billion","spendingYear":"spent on Airbnb in 2024","disclaimer":"390m includes new and returning guests. $81bn USD in gross bookings for stays and experiences."}'::jsonb),
+        ('tools', '{"title":"The best experiences deserve the best tools","subtitle":"Your reservations, calendar, messages and payments – all in the Airbnb app.","cards":[{"img":"/adds_01.avif","title":"Manage reservations","desc":"See who''s coming and get relevant info to tailor your experience to each guest."},{"img":"/adds_02.avif","title":"Simplify scheduling","desc":"Easily sync with Google Calendar, set availability and fill gaps in your day."},{"img":"/adds_03.avif","title":"Effortless communication","desc":"Direct guest messaging with instant automated translation."},{"img":"/adds_04.avif","title":"Fast payouts","desc":"Guaranteed safe direct bank payouts with automated bookkeeping."}]}'::jsonb);
+      `);
+    }
+
+    // Seed default admin platform settings if empty
+    const checkSettingsCount = await pool.query('SELECT COUNT(*) FROM admin_platform_settings');
+    if (parseInt(checkSettingsCount.rows[0].count, 10) === 0) {
+      await pool.query(`
+        INSERT INTO admin_platform_settings (general_config, cancellation_policies, gateways_config, tax_config)
+        VALUES (
+          '{"siteName":"Airbnb India","tagline":"Vacation Homes & Experiences","supportEmail":"support@airbnb.co.in","contactPhone":"+91 80 4567 8900","defaultCurrency":"INR (₹)","currencySymbol":"₹","defaultLanguage":"English (India)","timeZone":"Asia/Kolkata (IST +5:30)","siteLogoText":"Airbnb","maintenanceMode":false}'::jsonb,
+          '{"defaultHostPolicy":"Flexible","flexibleCutoffHours":24,"flexibleRefundPercent":100,"moderateCutoffDays":5,"moderateRefundPercent":100,"strictCutoffDays":14,"strictRefundPercent":50,"extenuatingCircumstancesEnabled":true,"cleaningFeeRefundable":true}'::jsonb,
+          '{"razorpayEnabled":true,"razorpayKeyId":"rzp_test_ToafKH36vIRD5L","razorpaySecret":"••••••••••••••••••••••••","stripeEnabled":true,"stripePublishableKey":"pk_live_51M0abcde9876xyz","stripeWebhookSecret":"••••••••••••••••••••••••","upiDirectEnabled":true,"cashOnArrivalAllowed":false,"emailProvider":"SendGrid Web API","smtpHost":"smtp.sendgrid.net","smtpPort":"587","senderEmail":"noreply@airbnb.internal","senderName":"Airbnb Automated Notifications","emailApiKey":"SG.live_key_9876543210","smsProvider":"Twilio India SMS Gateway","smsAccountSid":"AC_twilio_live_9823401294","smsAuthToken":"••••••••••••••••••••••••","otpExpiryMinutes":10,"whatsappAlertsEnabled":true}'::jsonb,
+          '{"gstRate":18,"gstThresholdSlab":7500,"lowTierGstRate":12,"tdsRateHost":1,"panRequiredForHosts":true,"hsnSacCode":"996311","gstinNumber":"29AAACA1234A1Z5","taxInvoiceAutoGenerate":true,"tcsRate":1}'::jsonb
+        );
+      `);
+    }
 
     console.log('✅ PostgreSQL Shared Database Schema is ready!');
   } catch (err) {

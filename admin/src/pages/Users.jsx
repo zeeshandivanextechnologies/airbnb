@@ -26,6 +26,7 @@ import { adminApiRequest } from '../services/api';
 
 export default function Users() {
   const [users, setUsers] = useState([]);
+  const [usersGrowth, setUsersGrowth] = useState('+0%');
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all'); // 'all' | 'active' | 'blocked'
@@ -37,6 +38,7 @@ export default function Users() {
       const res = await adminApiRequest('/admin/auth/users');
       if (res.success && Array.isArray(res.users)) {
         setUsers(res.users);
+        if (res.usersGrowth) setUsersGrowth(res.usersGrowth);
       }
     } catch (err) {
       console.warn('Could not fetch live users from backend:', err.message);
@@ -144,6 +146,14 @@ export default function Users() {
     }
   };
 
+  // Dynamic Calculations for Summary Stats
+  const totalGuestsCount = users.length;
+  const activeCount = users.filter(u => u.status === 'Active').length;
+  const blockedCount = users.filter(u => u.status === 'Blocked').length;
+  const verifiedCount = users.filter(u => u.emailVerified && u.phoneVerified).length;
+  const activePercentage = totalGuestsCount > 0 ? Math.round((activeCount / totalGuestsCount) * 100) : 100;
+  const isGrowthUp = !String(usersGrowth).startsWith('-');
+
   return (
     <>
       {/* 1. Summary Stat Cards */}
@@ -157,11 +167,11 @@ export default function Users() {
                   <FaUsers />
                 </div>
               </div>
-              <div className={styles.statValue}>{users.length}</div>
+              <div className={styles.statValue}>{totalGuestsCount}</div>
             </div>
             <div className={styles.statFooter}>
-              <span className={`${styles.badgeTrend} ${styles.badgeSuccess}`}>
-                <FaArrowUp size={9} /> +12%
+              <span className={`${styles.badgeTrend} ${isGrowthUp ? styles.badgeSuccess : styles.badgeAlert}`}>
+                {isGrowthUp ? <FaArrowUp size={9} /> : <FaArrowDown size={9} />} {usersGrowth}
               </span>
               <span className={styles.statSubtext}>Registered customers</span>
             </div>
@@ -177,11 +187,11 @@ export default function Users() {
                   <FaUserCheck />
                 </div>
               </div>
-              <div className={styles.statValue}>{users.filter(u => u.status === 'Active').length}</div>
+              <div className={styles.statValue}>{activeCount}</div>
             </div>
             <div className={styles.statFooter}>
               <span className={`${styles.badgeTrend} ${styles.badgeSuccess}`}>
-                <FaArrowUp size={9} /> 94%
+                <FaArrowUp size={9} /> {activePercentage}%
               </span>
               <span className={styles.statSubtext}>Good standing</span>
             </div>
@@ -197,45 +207,45 @@ export default function Users() {
                   <FaUserSlash />
                 </div>
               </div>
-              <div className={styles.statValue}>{users.filter(u => u.status === 'Blocked').length}</div>
+              <div className={styles.statValue}>{blockedCount}</div>
             </div>
             <div className={styles.statFooter}>
-              <span className={`${styles.badgeTrend} ${styles.badgeAlert}`}>
-                Alert
+              <span className={`${styles.badgeTrend} ${blockedCount > 0 ? styles.badgeAlert : styles.badgeSuccess}`}>
+                {blockedCount > 0 ? 'Alert' : 'Clear'}
               </span>
-              <span className={styles.statSubtext}>Policy violations</span>
+              <span className={styles.statSubtext}>{blockedCount > 0 ? 'Policy violations' : 'No restricted users'}</span>
             </div>
           </div>
         </div>
 
         <div className="col-lg-3 col-md-6 col-sm-12 mb-3 mb-lg-0">
-  <div className={styles.statCard}>
-    <div>
-      <div className={styles.statHeader}>
-        <span className={styles.statTitle}>Fully Verified</span>
-        <div
-          className={styles.statIconBox}
-          style={{ background: '#fff1f2', color: '#ff385c' }}
-        >
-          <FaShieldAlt />
+          <div className={styles.statCard}>
+            <div>
+              <div className={styles.statHeader}>
+                <span className={styles.statTitle}>Fully Verified</span>
+                <div
+                  className={styles.statIconBox}
+                  style={{ background: '#fff1f2', color: '#ff385c' }}
+                >
+                  <FaShieldAlt />
+                </div>
+              </div>
+
+              <div className={styles.statValue}>
+                {verifiedCount}
+              </div>
+            </div>
+
+            <div className={styles.statFooter}>
+              <span className={`${styles.badgeTrend} ${styles.badgeSuccess}`}>
+                KYC Done
+              </span>
+              <span className={styles.statSubtext}>
+                Email & Phone valid
+              </span>
+            </div>
+          </div>
         </div>
-      </div>
-
-      <div className={styles.statValue}>
-        {users.filter(u => u.emailVerified && u.phoneVerified).length}
-      </div>
-    </div>
-
-    <div className={styles.statFooter}>
-      <span className={`${styles.badgeTrend} ${styles.badgeSuccess}`}>
-        KYC Done
-      </span>
-      <span className={styles.statSubtext}>
-        Email & Phone valid
-      </span>
-    </div>
-  </div>
-</div>
       </div>
 
       {/* 2. Main Table & Search / Filter Card */}

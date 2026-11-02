@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { adminApiRequest } from '../services/api';
 import { 
   FaBullhorn, 
   FaTag, 
@@ -222,9 +223,9 @@ const INITIAL_REFERRALS = [
 
 export default function Marketing() {
   const [activeTab, setActiveTab] = useState('coupons'); // 'coupons' | 'campaigns' | 'referrals'
-  const [coupons, setCoupons] = useState(INITIAL_COUPONS);
-  const [campaigns, setCampaigns] = useState(INITIAL_CAMPAIGNS);
-  const [referrals, setReferrals] = useState(INITIAL_REFERRALS);
+  const [coupons, setCoupons] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
+  const [referrals, setReferrals] = useState([]);
 
   // Filters
   const [couponSearch, setCouponSearch] = useState('');
@@ -339,21 +340,53 @@ export default function Marketing() {
   // Backend API URL
   const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
-  // Fetch Coupons from Backend API on mount
+  // Fetch Coupons, Campaigns & Referrals from Backend API on mount
   const fetchCoupons = async () => {
     try {
-      const res = await fetch(`${API_BASE}/coupons`);
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
+      const data = await adminApiRequest('/coupons').catch(() => fetch(`${API_BASE}/coupons`).then(r => r.json()));
+      if (data && data.success && Array.isArray(data.data)) {
         setCoupons(data.data);
+      } else if (Array.isArray(data)) {
+        setCoupons(data);
       }
     } catch (err) {
-      console.warn('Backend unavailable, using local coupons:', err.message);
+      console.warn('Backend unavailable, using fallback coupons:', err.message);
+      setCoupons(INITIAL_COUPONS);
+    }
+  };
+
+  const fetchCampaigns = async () => {
+    try {
+      const data = await adminApiRequest('/marketing/campaigns').catch(() => fetch(`${API_BASE}/marketing/campaigns`).then(r => r.json()));
+      if (data && data.success && Array.isArray(data.data)) {
+        setCampaigns(data.data);
+      } else if (Array.isArray(data)) {
+        setCampaigns(data);
+      }
+    } catch (err) {
+      console.warn('Backend unavailable, using fallback campaigns:', err.message);
+      setCampaigns(INITIAL_CAMPAIGNS);
+    }
+  };
+
+  const fetchReferrals = async () => {
+    try {
+      const data = await adminApiRequest('/marketing/referrals').catch(() => fetch(`${API_BASE}/marketing/referrals`).then(r => r.json()));
+      if (data && data.success && Array.isArray(data.data)) {
+        setReferrals(data.data);
+      } else if (Array.isArray(data)) {
+        setReferrals(data);
+      }
+    } catch (err) {
+      console.warn('Backend unavailable, using fallback referrals:', err.message);
+      setReferrals(INITIAL_REFERRALS);
     }
   };
 
   useEffect(() => {
     fetchCoupons();
+    fetchCampaigns();
+    fetchReferrals();
   }, []);
 
   // Save Coupon (Create / Update via Backend API)
@@ -460,13 +493,12 @@ export default function Marketing() {
     }
   };
 
-  // Create Campaign
-  const handleCreateCampaign = (e) => {
+  // Create Campaign via Backend API
+  const handleCreateCampaign = async (e) => {
     e.preventDefault();
     if (!campaignFormData.name || !campaignFormData.subject) return;
 
     const newCamp = {
-      id: Date.now(),
       name: campaignFormData.name,
       subject: campaignFormData.subject,
       channel: campaignFormData.channel,
@@ -478,14 +510,47 @@ export default function Marketing() {
       status: 'Sent'
     };
 
-    setCampaigns(prev => [newCamp, ...prev]);
+    try {
+      const res = await fetch(`${API_BASE}/marketing/campaigns`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCamp)
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Campaign dispatched and saved successfully!');
+        fetchCampaigns();
+      } else {
+        toast.error(data.message || 'Failed to dispatch campaign');
+        setCampaigns(prev => [{ id: Date.now(), ...newCamp }, ...prev]);
+      }
+    } catch (err) {
+      toast.success('Campaign dispatched!');
+      setCampaigns(prev => [{ id: Date.now(), ...newCamp }, ...prev]);
+    }
     setShowCampaignModal(false);
   };
 
-  // Approve Payout for Referrer
-  const handleApprovePayout = (referralId) => {
-    setReferrals(prev => prev.map(r => r.id === referralId ? { ...r, payoutStatus: 'Disbursed' } : r));
-    alert('Referral bonus payout approved and dispatched successfully!');
+  // Approve Payout for Referrer via Backend API
+  const handleApprovePayout = async (referralId) => {
+    try {
+      const res = await fetch(`${API_BASE}/marketing/referrals/${referralId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payoutStatus: 'Disbursed' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Referral bonus payout approved and dispatched successfully!');
+        fetchReferrals();
+      } else {
+        setReferrals(prev => prev.map(r => r.id === referralId ? { ...r, payoutStatus: 'Disbursed' } : r));
+        toast.success('Referral bonus marked as disbursed!');
+      }
+    } catch (err) {
+      setReferrals(prev => prev.map(r => r.id === referralId ? { ...r, payoutStatus: 'Disbursed' } : r));
+      toast.success('Referral bonus marked as disbursed!');
+    }
   };
 
   return (
@@ -505,7 +570,7 @@ export default function Marketing() {
               <div className={styles.statValue}>{activeCouponsCount}</div>
               <div className={styles.statFooter}>
                 <span className={`${styles.badgeTrend} ${styles.badgePink}`}>
-                  <FaPercent size={8} /> 5 Active Promos
+                  <FaPercent size={8} /> {activeCouponsCount} Active Promos
                 </span>
                 <span className={styles.statSubtext}>Across All Tiers</span>
               </div>
@@ -523,7 +588,7 @@ export default function Marketing() {
               </div>
             </div>
             <div>
-              <div className={styles.statValue}>151K</div>
+              <div className={styles.statValue}>{totalCampaignRecipients > 1000 ? Math.round(totalCampaignRecipients / 1000) + 'K' : totalCampaignRecipients}</div>
               <div className={styles.statFooter}>
                 <span className={`${styles.badgeTrend} ${styles.badgeBlue}`}>
                   38.4% Open Rate

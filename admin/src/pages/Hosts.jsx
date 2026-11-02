@@ -27,6 +27,7 @@ import styles from './styles/Hosts.module.css';
 
 export default function Hosts() {
   const [hosts, setHosts] = useState([]);
+  const [hostsGrowth, setHostsGrowth] = useState('+0%');
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all'); // 'all' | 'pending' | 'approved' | 'suspended'
@@ -47,6 +48,9 @@ export default function Hosts() {
           ? res.data 
           : [];
       setHosts(hostList);
+      if (res && res.hostsGrowth) {
+        setHostsGrowth(res.hostsGrowth);
+      }
     } catch (err) {
       console.error('Failed to fetch hosts from DB:', err);
       toast.error('Failed to load hosts from database');
@@ -142,6 +146,13 @@ export default function Hosts() {
     }
   };
 
+  // Dynamic Calculations for Summary Stats
+  const totalHostsCount = hosts.length;
+  const pendingCount = hosts.filter(h => h.registrationStatus === 'Pending').length;
+  const verifiedKycCount = hosts.filter(h => h.kycStatus === 'Verified').length;
+  const suspendedCount = hosts.filter(h => h.registrationStatus === 'Suspended').length;
+  const isGrowthUp = !String(hostsGrowth).startsWith('-');
+
   return (
     <>
       {/* 1. Stat Summary Cards */}
@@ -155,11 +166,11 @@ export default function Hosts() {
                   <FaUserTie />
                 </div>
               </div>
-              <div className={styles.statValue}>{hosts.length}</div>
+              <div className={styles.statValue}>{totalHostsCount}</div>
             </div>
             <div className={styles.statFooter}>
-              <span className={`${styles.badgeTrend} ${styles.badgeSuccess}`}>
-                <FaArrowUp size={9} /> +8.1%
+              <span className={`${styles.badgeTrend} ${isGrowthUp ? styles.badgeSuccess : styles.badgeAlert}`}>
+                {isGrowthUp ? <FaArrowUp size={9} /> : <FaArrowDown size={9} />} {hostsGrowth}
               </span>
               <span className={styles.statSubtext}>Active partners</span>
             </div>
@@ -175,13 +186,13 @@ export default function Hosts() {
                   <FaClock />
                 </div>
               </div>
-              <div className={styles.statValue}>{hosts.filter(h => h.registrationStatus === 'Pending').length}</div>
+              <div className={styles.statValue}>{pendingCount}</div>
             </div>
             <div className={styles.statFooter}>
-              <span className={`${styles.badgeTrend} ${styles.badgeWarning}`}>
-                Action Needed
+              <span className={`${styles.badgeTrend} ${pendingCount > 0 ? styles.badgeWarning : styles.badgeSuccess}`}>
+                {pendingCount > 0 ? 'Action Needed' : 'All Clear'}
               </span>
-              <span className={styles.statSubtext}>New registrations</span>
+              <span className={styles.statSubtext}>{pendingCount > 0 ? 'New registrations' : 'Zero backlog'}</span>
             </div>
           </div>
         </div>
@@ -195,7 +206,7 @@ export default function Hosts() {
                   <FaShieldAlt />
                 </div>
               </div>
-              <div className={styles.statValue}>{hosts.filter(h => h.kycStatus === 'Verified').length}</div>
+              <div className={styles.statValue}>{verifiedKycCount}</div>
             </div>
             <div className={styles.statFooter}>
               <span className={`${styles.badgeTrend} ${styles.badgeSuccess}`}>
@@ -207,31 +218,31 @@ export default function Hosts() {
         </div>
 
         <div className="col-lg-3 col-md-6 col-sm-12 mb-3 mb-lg-0">
-  <div className={styles.statCard}>
-    <div>
-      <div className={styles.statHeader}>
-        <span className={styles.statTitle}>Suspended</span>
-        <div
-          className={styles.statIconBox}
-          style={{ background: '#fef2f2', color: '#dc2626' }}
-        >
-          <FaBan />
+          <div className={styles.statCard}>
+            <div>
+              <div className={styles.statHeader}>
+                <span className={styles.statTitle}>Suspended</span>
+                <div
+                  className={styles.statIconBox}
+                  style={{ background: '#fef2f2', color: '#dc2626' }}
+                >
+                  <FaBan />
+                </div>
+              </div>
+
+              <div className={styles.statValue}>
+                {suspendedCount}
+              </div>
+            </div>
+
+            <div className={styles.statFooter}>
+              <span className={`${styles.badgeTrend} ${suspendedCount > 0 ? styles.badgeAlert : styles.badgeSuccess}`}>
+                {suspendedCount > 0 ? 'Restricted' : 'None'}
+              </span>
+              <span className={styles.statSubtext}>{suspendedCount > 0 ? 'Requires review' : 'No restrictions'}</span>
+            </div>
+          </div>
         </div>
-      </div>
-
-      <div className={styles.statValue}>
-        {hosts.filter(h => h.registrationStatus === 'Suspended').length}
-      </div>
-    </div>
-
-    <div className={styles.statFooter}>
-      <span className={`${styles.badgeTrend} ${styles.badgeAlert}`}>
-        Restricted
-      </span>
-      <span className={styles.statSubtext}>Requires review</span>
-    </div>
-  </div>
-</div>
       </div>
 
       {/* 2. Main Hosts Directory Card */}

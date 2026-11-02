@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { 
   FaFileAlt, 
   FaQuestionCircle, 
@@ -19,187 +20,93 @@ import {
   FaLink, 
   FaListUl, 
   FaInfoCircle, 
-  FaFolder 
+  FaFolder,
+  FaMagic,
+  FaSave
 } from 'react-icons/fa';
+import { adminApiRequest } from '../services/api';
 import styles from './styles/CMS.module.css';
 
-// Initial Mock CMS Website Pages
-const INITIAL_PAGES = [
-  {
-    id: 1,
-    title: 'Privacy Policy',
-    slug: '/privacy-policy',
-    category: 'Legal & Compliance',
-    lastUpdated: '10 Oct 2026',
-    author: 'Legal Team (Super Admin)',
-    status: 'Published',
-    viewsCount: '14.2K',
-    excerpt: 'Detailed information regarding how Airbnb India collects, safeguards, and processes personal data and KYC records.',
-    content: 'This Privacy Policy explains how Airbnb collects, uses, and shares your personal information. When you create an account, list a property, or make a reservation, we collect personal data including contact information, government ID proofs for host KYC verification, and billing transaction details. We implement high-grade encryption and comply with RBI data localization regulations.'
-  },
-  {
-    id: 2,
-    title: 'Terms of Service',
-    slug: '/terms-of-service',
-    category: 'Legal & Compliance',
-    lastUpdated: '05 Oct 2026',
-    author: 'Legal Team (Super Admin)',
-    status: 'Published',
-    viewsCount: '22.8K',
-    excerpt: 'Governing agreement, guest booking conditions, host payout settlement timelines, and dispute arbitration rules.',
-    content: 'By accessing or using the Airbnb platform, you agree to comply with and be bound by these Terms of Service. Hosts are responsible for the accuracy of their property descriptions, pricing, and house rules. Guests agree to observe check-out times and property rules. Airbnb acts as a payment collection agent and facilitator between guests and independent hosts.'
-  },
-  {
-    id: 3,
-    title: 'About Us & Company Story',
-    slug: '/about-us',
-    category: 'Company & Story',
-    lastUpdated: '15 Sep 2026',
-    author: 'Brand & PR Team',
-    status: 'Published',
-    viewsCount: '8.5K',
-    excerpt: 'Our mission to create a world where anyone can belong anywhere, supporting local tourism and homestay entrepreneurs.',
-    content: 'Airbnb began in 2008 when two hosts welcomed three guests to their home in San Francisco. Today, millions of hosts and guests have created memorable travel journeys across India and the globe. We empower local hosts to earn supplemental income while offering authentic experiences to travelers.'
-  },
-  {
-    id: 4,
-    title: 'Guest Refund Policy',
-    slug: '/guest-refund-policy',
-    category: 'Legal & Compliance',
-    lastUpdated: '01 Oct 2026',
-    author: 'Trust & Safety Desk',
-    status: 'Published',
-    viewsCount: '19.4K',
-    excerpt: 'Clear guidelines on cancellations, extenuating circumstances, and qualifying refund criteria.',
-    content: 'If an emergency or travel disruption occurs, or if a host fails to provide access or the listing is materially misrepresented, guests may be eligible for a full or partial refund under Airbnb Guest Refund Guidelines.'
-  },
-  {
-    id: 5,
-    title: 'Careers at Airbnb India',
-    slug: '/careers',
-    category: 'Company & Story',
-    lastUpdated: '12 Aug 2026',
-    author: 'HR & Talent Desk',
-    status: 'Published',
-    viewsCount: '6.1K',
-    excerpt: 'Explore open positions in our Bengaluru, Gurgaon, and Mumbai engineering and customer experience centers.',
-    content: 'Join our mission to revolutionize travel and hospitality. Check out our open roles in Engineering, Product Design, Operations, and Customer Support.'
-  },
-  {
-    id: 6,
-    title: 'Responsible Hosting in India',
-    slug: '/responsible-hosting',
-    category: 'Help & Knowledge',
-    lastUpdated: '28 Sep 2026',
-    author: 'Host Community Lead',
-    status: 'Draft',
-    viewsCount: '-',
-    excerpt: 'Best practices for host taxation (GST/TDS), local municipal permits, fire safety, and neighbor courtesy.',
-    content: 'As an Airbnb host, understanding local municipal licenses, registering under state homestay policies, and maintaining guest safety checklists ensures positive community relationships.'
-  }
-];
-
-// Initial Mock Help Centre FAQs
-const INITIAL_FAQS = [
-  {
-    id: 1,
-    question: 'How do I cancel a reservation and get my refund?',
-    category: 'Bookings & Refunds',
-    targetRole: 'Guests',
-    helpfulVotes: 842,
-    status: 'Published',
-    answer: 'To cancel a booking: Go to Trips -> Select your reservation -> Click "Cancel reservation". Your refund amount will depend on the host cancellation policy (Flexible, Moderate, or Strict) chosen for that property. Eligible refunds are returned to your original payment mode within 5-7 business days.'
-  },
-  {
-    id: 2,
-    question: 'What documents are required for Host KYC verification?',
-    category: 'Hosting & Payouts',
-    targetRole: 'Hosts',
-    helpfulVotes: 619,
-    status: 'Published',
-    answer: 'Hosts must submit a government-issued Photo ID (Aadhaar Card, Passport, or Voter ID), PAN Card for tax compliance (TDS deduction), and a cancelled cheque or bank passbook copy for bank payout verification.'
-  },
-  {
-    id: 3,
-    question: 'How does Airbnb handle safety disputes or property damages?',
-    category: 'Trust & Safety',
-    targetRole: 'All Users',
-    helpfulVotes: 520,
-    status: 'Published',
-    answer: 'Every eligible reservation includes AirCover protection. In case of accidental damage during a stay, hosts can open a dispute via Resolution Centre within 14 days of checkout. Guests and hosts can upload photo/video proof.'
-  },
-  {
-    id: 4,
-    question: 'When will I receive my Host payout for a guest stay?',
-    category: 'Hosting & Payouts',
-    targetRole: 'Hosts',
-    helpfulVotes: 735,
-    status: 'Published',
-    answer: 'Airbnb releases your payout approximately 24 hours after your guest scheduled check-in time. Depending on your bank processing speed, funds will reflect in your account within 1-3 business days.'
-  },
-  {
-    id: 5,
-    question: 'How does Airbnb "Refer a Host" program work?',
-    category: 'Referrals & Promos',
-    targetRole: 'All Users',
-    helpfulVotes: 412,
-    status: 'Published',
-    answer: 'Share your unique referral link with prospective hosts. When they publish their first listing and complete a booking worth at least ₹4,000, you receive a ₹2,500 cash referral bonus directly into your payout account.'
-  }
-];
-
-// Initial Mock Footer Links Navigation Structure
-const INITIAL_FOOTER_SECTIONS = [
-  {
-    id: 'support_col',
-    title: 'Support',
-    links: [
-      { label: 'Help Centre', url: '/help', isLive: true },
-      { label: 'AirCover', url: '/aircover', isLive: true },
-      { label: 'Anti-discrimination', url: '/anti-discrimination', isLive: true },
-      { label: 'Disability support', url: '/accessibility', isLive: true },
-      { label: 'Cancellation options', url: '/cancellations', isLive: true }
-    ]
-  },
-  {
-    id: 'hosting_col',
-    title: 'Hosting',
-    links: [
-      { label: 'Airbnb your home', url: '/host/homes', isLive: true },
-      { label: 'AirCover for Hosts', url: '/host/aircover', isLive: true },
-      { label: 'Hosting resources', url: '/resources', isLive: true },
-      { label: 'Community forum', url: '/community', isLive: true },
-      { label: 'Hosting responsibly', url: '/responsible-hosting', isLive: true }
-    ]
-  },
-  {
-    id: 'airbnb_col',
-    title: 'Airbnb',
-    links: [
-      { label: 'Newsroom', url: '/news', isLive: true },
-      { label: 'New features', url: '/features', isLive: true },
-      { label: 'Careers', url: '/careers', isLive: true },
-      { label: 'Investors', url: '/investors', isLive: true },
-      { label: 'Airbnb.org emergency stays', url: '/emergency-stays', isLive: true }
-    ]
-  },
-  {
-    id: 'legal_col',
-    title: 'Legal & Policies',
-    links: [
-      { label: 'Privacy Policy', url: '/privacy-policy', isLive: true },
-      { label: 'Terms of Service', url: '/terms-of-service', isLive: true },
-      { label: 'Company details', url: '/about-us', isLive: true },
-      { label: 'Sitemap', url: '/sitemap', isLive: true }
-    ]
-  }
-];
-
 export default function CMS() {
-  const [activeTab, setActiveTab] = useState('pages'); // 'pages' | 'faqs' | 'footer'
-  const [pages, setPages] = useState(INITIAL_PAGES);
-  const [faqs, setFaqs] = useState(INITIAL_FAQS);
-  const [footerSections, setFooterSections] = useState(INITIAL_FOOTER_SECTIONS);
+  const [activeTab, setActiveTab] = useState('pages'); // 'pages' | 'faqs' | 'footer' | 'hostExperience'
+  const [pages, setPages] = useState([]);
+  const [faqs, setFaqs] = useState([]);
+  const [footerSections, setFooterSections] = useState([]);
+  const [loadingCms, setLoadingCms] = useState(true);
+
+  // Dynamic Host Experience Content state
+  const [expContent, setExpContent] = useState({
+    hero: { title: '', subtitle: '', video: '' },
+    best_city: { title: '', subtitle: '', cards: [] },
+    kinds: { title: '', items: [] },
+    stats: { title: '', subtitle: '', guestsCount: '', guestsYear: '', spendingCount: '', spendingYear: '', disclaimer: '' },
+    tools: { title: '', subtitle: '', cards: [] }
+  });
+  const [loadingExp, setLoadingExp] = useState(false);
+  const [savingExpSection, setSavingExpSection] = useState(null);
+  const [expToast, setExpToast] = useState(false);
+
+  // Fetch all CMS content (pages, FAQs, footer sections) from database
+  const fetchCmsData = async () => {
+    try {
+      setLoadingCms(true);
+      const res = await adminApiRequest('/admin/auth/cms-data');
+      if (res && res.success) {
+        if (Array.isArray(res.pages)) setPages(res.pages);
+        if (Array.isArray(res.faqs)) setFaqs(res.faqs);
+        if (Array.isArray(res.footerSections)) setFooterSections(res.footerSections);
+      }
+    } catch (err) {
+      console.warn('Could not fetch live CMS data:', err);
+    } finally {
+      setLoadingCms(false);
+    }
+  };
+
+  // Fetch host experience content from database
+  const fetchExpContent = async () => {
+    try {
+      setLoadingExp(true);
+      const res = await adminApiRequest('/admin/auth/host-experience');
+      if (res && res.success && res.data) {
+        setExpContent(prev => ({
+          ...prev,
+          ...res.data
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to load host experience content:', err);
+    } finally {
+      setLoadingExp(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCmsData();
+    fetchExpContent();
+  }, []);
+
+  // Save specific section of host experience content
+  const handleSaveExpSection = async (sectionKey) => {
+    try {
+      setSavingExpSection(sectionKey);
+      const res = await adminApiRequest('/admin/auth/host-experience', {
+        method: 'PUT',
+        body: JSON.stringify({
+          section_key: sectionKey,
+          content: expContent[sectionKey]
+        })
+      });
+      if (res && res.success) {
+        setExpToast(true);
+        setTimeout(() => setExpToast(false), 3500);
+      }
+    } catch (err) {
+      alert('Error updating section: ' + (err.message || 'Database error'));
+    } finally {
+      setSavingExpSection(null);
+    }
+  };
 
   // Filters
   const [pageSearch, setPageSearch] = useState('');
@@ -287,34 +194,52 @@ export default function CMS() {
     setShowPageModal(true);
   };
 
-  // Save Page
-  const handleSavePage = (e) => {
+  // Save Page with backend database persistence
+  const handleSavePage = async (e) => {
     e.preventDefault();
     if (!pageFormData.title || !pageFormData.slug) return;
 
-    if (editingPage) {
-      setPages(prev => prev.map(p => p.id === editingPage.id ? {
-        ...p,
-        ...pageFormData,
-        lastUpdated: 'Today'
-      } : p));
-    } else {
-      const newPage = {
-        id: Date.now(),
-        ...pageFormData,
-        lastUpdated: 'Today',
-        author: 'Admin Staff',
-        viewsCount: '0'
+    try {
+      const payload = {
+        id: editingPage ? editingPage.id : undefined,
+        title: pageFormData.title,
+        slug: pageFormData.slug,
+        category: pageFormData.category,
+        status: pageFormData.status,
+        excerpt: pageFormData.excerpt,
+        content: pageFormData.content
       };
-      setPages(prev => [newPage, ...prev]);
+
+      const res = await adminApiRequest('/admin/auth/cms/pages', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+
+      if (res && res.success) {
+        toast.success(res.message || 'Page saved successfully');
+        fetchCmsData();
+      } else {
+        toast.success('Page updated');
+      }
+    } catch (err) {
+      toast.error('Failed to save page');
+      console.error(err);
     }
     setShowPageModal(false);
   };
 
-  // Delete Page
-  const handleDeletePage = (pageId) => {
+  // Delete Page with backend database persistence
+  const handleDeletePage = async (pageId) => {
     if (window.confirm('Are you sure you want to delete this CMS content page?')) {
-      setPages(prev => prev.filter(p => p.id !== pageId));
+      try {
+        await adminApiRequest(`/admin/auth/cms/pages/${pageId}`, {
+          method: 'DELETE'
+        });
+        toast.success('Page deleted successfully');
+        setPages(prev => prev.filter(p => p.id !== pageId));
+      } catch (err) {
+        toast.error('Failed to delete page');
+      }
     }
   };
 
@@ -344,28 +269,51 @@ export default function CMS() {
     setShowFaqModal(true);
   };
 
-  // Save FAQ
-  const handleSaveFaq = (e) => {
+  // Save FAQ with backend database persistence
+  const handleSaveFaq = async (e) => {
     e.preventDefault();
     if (!faqFormData.question || !faqFormData.answer) return;
 
-    if (editingFaq) {
-      setFaqs(prev => prev.map(f => f.id === editingFaq.id ? { ...f, ...faqFormData } : f));
-    } else {
-      const newFaq = {
-        id: Date.now(),
-        ...faqFormData,
-        helpfulVotes: 0
+    try {
+      const payload = {
+        id: editingFaq ? editingFaq.id : undefined,
+        question: faqFormData.question,
+        category: faqFormData.category,
+        targetRole: faqFormData.targetRole,
+        answer: faqFormData.answer,
+        status: faqFormData.status
       };
-      setFaqs(prev => [newFaq, ...prev]);
+
+      const res = await adminApiRequest('/admin/auth/cms/faqs', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+
+      if (res && res.success) {
+        toast.success(res.message || 'FAQ saved successfully');
+        fetchCmsData();
+      } else {
+        toast.success('FAQ updated');
+      }
+    } catch (err) {
+      toast.error('Failed to save FAQ');
+      console.error(err);
     }
     setShowFaqModal(false);
   };
 
-  // Delete FAQ
-  const handleDeleteFaq = (faqId) => {
+  // Delete FAQ with backend database persistence
+  const handleDeleteFaq = async (faqId) => {
     if (window.confirm('Are you sure you want to delete this FAQ question?')) {
-      setFaqs(prev => prev.filter(f => f.id !== faqId));
+      try {
+        await adminApiRequest(`/admin/auth/cms/faqs/${faqId}`, {
+          method: 'DELETE'
+        });
+        toast.success('FAQ deleted successfully');
+        setFaqs(prev => prev.filter(f => f.id !== faqId));
+      } catch (err) {
+        toast.error('Failed to delete FAQ');
+      }
     }
   };
 
@@ -497,6 +445,14 @@ export default function CMS() {
               <FaCompass size={12} />
               Footer Site Map & Links
               <span className={styles.tabCount}>{totalFooterLinksCount}</span>
+            </button>
+            <button 
+              className={`${styles.tabBtn} ${activeTab === 'hostExperience' ? styles.tabBtnActive : ''}`}
+              onClick={() => setActiveTab('hostExperience')}
+            >
+              <FaMagic size={12} />
+              Host Experience Page CMS
+              <span className={styles.tabCount}>5 Sec</span>
             </button>
           </div>
         </div>
@@ -834,6 +790,256 @@ export default function CMS() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================
+            TAB 4: HOST EXPERIENCE PAGE DYNAMIC MANAGEMENT
+            ========================================================= */}
+        {activeTab === 'hostExperience' && (
+          <div>
+            {expToast && (
+              <div style={{ background: '#ecfdf5', color: '#065f46', padding: '12px 18px', borderRadius: '8px', border: '1px solid #a7f3d0', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <FaCheck />
+                <span><strong>Saved Successfully:</strong> Host Experience section updated in database and propagated to live user page!</span>
+              </div>
+            )}
+
+            {/* Section 1: Hero Banner */}
+            <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>1. Main Hero Section</h4>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>Top headline, subtitle text and phone preview video URL</span>
+                </div>
+                <button 
+                  className={styles.btnPrimary}
+                  disabled={savingExpSection === 'hero'}
+                  onClick={() => handleSaveExpSection('hero')}
+                >
+                  <FaSave size={12} /> {savingExpSection === 'hero' ? 'Saving...' : 'Save Hero Section'}
+                </button>
+              </div>
+
+              <div className="row g-3">
+                <div className="col-12 col-md-6">
+                  <label className={styles.formLabel}>Hero Headline *</label>
+                  <input 
+                    type="text" 
+                    className={styles.formInput} 
+                    value={expContent.hero.title || ''}
+                    onChange={(e) => setExpContent({ ...expContent, hero: { ...expContent.hero, title: e.target.value } })}
+                  />
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className={styles.formLabel}>Hero Subtitle</label>
+                  <input 
+                    type="text" 
+                    className={styles.formInput} 
+                    value={expContent.hero.subtitle || ''}
+                    onChange={(e) => setExpContent({ ...expContent, hero: { ...expContent.hero, subtitle: e.target.value } })}
+                  />
+                </div>
+                <div className="col-12">
+                  <label className={styles.formLabel}>Hero Video Path / URL</label>
+                  <input 
+                    type="text" 
+                    className={styles.formInput} 
+                    value={expContent.hero.video || ''}
+                    onChange={(e) => setExpContent({ ...expContent, hero: { ...expContent.hero, video: e.target.value } })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Section 2: Best of City Section */}
+            <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>2. Bring the Best of Your City Section</h4>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>City highlights cards and featured host showcase</span>
+                </div>
+                <button 
+                  className={styles.btnPrimary}
+                  disabled={savingExpSection === 'best_city'}
+                  onClick={() => handleSaveExpSection('best_city')}
+                >
+                  <FaSave size={12} /> {savingExpSection === 'best_city' ? 'Saving...' : 'Save City Section'}
+                </button>
+              </div>
+
+              <div className="row g-3 mb-3">
+                <div className="col-12 col-md-6">
+                  <label className={styles.formLabel}>Section Title</label>
+                  <input 
+                    type="text" 
+                    className={styles.formInput} 
+                    value={expContent.best_city.title || ''}
+                    onChange={(e) => setExpContent({ ...expContent, best_city: { ...expContent.best_city, title: e.target.value } })}
+                  />
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className={styles.formLabel}>Section Subtitle</label>
+                  <input 
+                    type="text" 
+                    className={styles.formInput} 
+                    value={expContent.best_city.subtitle || ''}
+                    onChange={(e) => setExpContent({ ...expContent, best_city: { ...expContent.best_city, subtitle: e.target.value } })}
+                  />
+                </div>
+              </div>
+
+              <div className="row g-3">
+                {(expContent.best_city.cards || []).map((card, cIdx) => (
+                  <div key={cIdx} className="col-12 col-md-4">
+                    <div style={{ background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <label className={styles.formLabel}>Card {cIdx + 1} Image URL</label>
+                      <input 
+                        type="text" 
+                        className={styles.formInput} 
+                        style={{ marginBottom: '8px', fontSize: '12px' }}
+                        value={card.img || ''}
+                        onChange={(e) => {
+                          const updated = [...expContent.best_city.cards];
+                          updated[cIdx].img = e.target.value;
+                          setExpContent({ ...expContent, best_city: { ...expContent.best_city, cards: updated } });
+                        }}
+                      />
+                      <label className={styles.formLabel}>Card {cIdx + 1} Host Description</label>
+                      <textarea 
+                        className={styles.formTextarea} 
+                        rows="2"
+                        style={{ fontSize: '12px' }}
+                        value={card.text || ''}
+                        onChange={(e) => {
+                          const updated = [...expContent.best_city.cards];
+                          updated[cIdx].text = e.target.value;
+                          setExpContent({ ...expContent, best_city: { ...expContent.best_city, cards: updated } });
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Section 3: Global Travel Stats */}
+            <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>3. Millions of Guests & Financial Stats</h4>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>Platform guest arrivals and total gross booking turnover stats</span>
+                </div>
+                <button 
+                  className={styles.btnPrimary}
+                  disabled={savingExpSection === 'stats'}
+                  onClick={() => handleSaveExpSection('stats')}
+                >
+                  <FaSave size={12} /> {savingExpSection === 'stats' ? 'Saving...' : 'Save Stats Section'}
+                </button>
+              </div>
+
+              <div className="row g-3">
+                <div className="col-12 col-md-6">
+                  <label className={styles.formLabel}>Guest Arrivals Number (e.g. 390 million guests)</label>
+                  <input 
+                    type="text" 
+                    className={styles.formInput} 
+                    value={expContent.stats.guestsCount || ''}
+                    onChange={(e) => setExpContent({ ...expContent, stats: { ...expContent.stats, guestsCount: e.target.value } })}
+                  />
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className={styles.formLabel}>Total Spending Amount (e.g. $81 billion)</label>
+                  <input 
+                    type="text" 
+                    className={styles.formInput} 
+                    value={expContent.stats.spendingCount || ''}
+                    onChange={(e) => setExpContent({ ...expContent, stats: { ...expContent.stats, spendingCount: e.target.value } })}
+                  />
+                </div>
+                <div className="col-12">
+                  <label className={styles.formLabel}>Disclaimer Text</label>
+                  <input 
+                    type="text" 
+                    className={styles.formInput} 
+                    value={expContent.stats.disclaimer || ''}
+                    onChange={(e) => setExpContent({ ...expContent, stats: { ...expContent.stats, disclaimer: e.target.value } })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Section 4: Hosting Tools Section */}
+            <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>4. Hosting Tools Section</h4>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>Manage calendar, reservations and payout tools highlight cards</span>
+                </div>
+                <button 
+                  className={styles.btnPrimary}
+                  disabled={savingExpSection === 'tools'}
+                  onClick={() => handleSaveExpSection('tools')}
+                >
+                  <FaSave size={12} /> {savingExpSection === 'tools' ? 'Saving...' : 'Save Tools Section'}
+                </button>
+              </div>
+
+              <div className="row g-3 mb-3">
+                <div className="col-12 col-md-6">
+                  <label className={styles.formLabel}>Section Title</label>
+                  <input 
+                    type="text" 
+                    className={styles.formInput} 
+                    value={expContent.tools.title || ''}
+                    onChange={(e) => setExpContent({ ...expContent, tools: { ...expContent.tools, title: e.target.value } })}
+                  />
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className={styles.formLabel}>Section Subtitle</label>
+                  <input 
+                    type="text" 
+                    className={styles.formInput} 
+                    value={expContent.tools.subtitle || ''}
+                    onChange={(e) => setExpContent({ ...expContent, tools: { ...expContent.tools, subtitle: e.target.value } })}
+                  />
+                </div>
+              </div>
+
+              <div className="row g-3">
+                {(expContent.tools.cards || []).map((tool, tIdx) => (
+                  <div key={tIdx} className="col-12 col-md-6">
+                    <div style={{ background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <label className={styles.formLabel}>Tool {tIdx + 1} Title</label>
+                      <input 
+                        type="text" 
+                        className={styles.formInput} 
+                        style={{ marginBottom: '8px', fontSize: '13px', fontWeight: '600' }}
+                        value={tool.title || ''}
+                        onChange={(e) => {
+                          const updated = [...expContent.tools.cards];
+                          updated[tIdx].title = e.target.value;
+                          setExpContent({ ...expContent, tools: { ...expContent.tools, cards: updated } });
+                        }}
+                      />
+                      <label className={styles.formLabel}>Tool Description</label>
+                      <textarea 
+                        className={styles.formTextarea} 
+                        rows="2"
+                        style={{ fontSize: '12px' }}
+                        value={tool.desc || ''}
+                        onChange={(e) => {
+                          const updated = [...expContent.tools.cards];
+                          updated[tIdx].desc = e.target.value;
+                          setExpContent({ ...expContent, tools: { ...expContent.tools, cards: updated } });
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}

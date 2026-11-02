@@ -365,6 +365,7 @@ router.get('/admin/bookings', async (req, res) => {
         b.booking_code,
         b.guest_name,
         b.guest_email,
+        b.guest_phone,
         b.listing_title,
         b.check_in,
         b.check_out,
@@ -377,6 +378,9 @@ router.get('/admin/bookings', async (req, res) => {
         b.booking_time,
         b.razorpay_payment_id,
         b.razorpay_order_id,
+        b.refund_status,
+        b.dispute_reason,
+        b.dispute_resolution,
         b.created_at,
         l.cover_img
       FROM bookings b
@@ -396,22 +400,29 @@ router.get('/admin/bookings', async (req, res) => {
 });
 
 /**
- * UPDATE Booking Status (Admin Portal)
+ * UPDATE Booking Status, Refund or Dispute (Admin Portal)
  * PATCH /api/payments/admin/bookings/:id/status
  */
 router.patch('/admin/bookings/:id/status', async (req, res) => {
   const { id } = req.params;
-  const { status } = req.body;
+  const { status, refund_status, dispute_reason, dispute_resolution } = req.body;
 
   try {
-    const validStatuses = ['CONFIRMED', 'PENDING', 'CANCELLED', 'REFUNDED'];
-    const newStatus = validStatuses.includes(String(status).toUpperCase()) 
+    const validStatuses = ['CONFIRMED', 'PENDING', 'CANCELLED', 'REFUNDED', 'COMPLETED', 'DISPUTE'];
+    const newStatus = status ? (validStatuses.includes(String(status).toUpperCase()) 
       ? String(status).toUpperCase() 
-      : 'CONFIRMED';
+      : 'CONFIRMED') : null;
 
     const result = await pool.query(
-      'UPDATE bookings SET status = $1 WHERE id = $2 RETURNING *',
-      [newStatus, id]
+      `UPDATE bookings 
+       SET 
+         status = COALESCE($1, status),
+         refund_status = COALESCE($2, refund_status),
+         dispute_reason = COALESCE($3, dispute_reason),
+         dispute_resolution = COALESCE($4, dispute_resolution)
+       WHERE id = $5 
+       RETURNING *`,
+      [newStatus, refund_status, dispute_reason, dispute_resolution, id]
     );
 
     if (result.rows.length === 0) {
@@ -420,7 +431,7 @@ router.patch('/admin/bookings/:id/status', async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: `Booking status updated to ${newStatus}`,
+      message: `Booking updated successfully`,
       booking: result.rows[0]
     });
   } catch (error) {

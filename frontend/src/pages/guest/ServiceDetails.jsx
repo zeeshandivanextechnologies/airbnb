@@ -16,47 +16,10 @@ const ServiceDetails = () => {
   const navigate = useNavigate();
   const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
-  const defaultPackages = [
-    {
-      id: 1,
-      title: "Love couples",
-      img: "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=720&q=80",
-      desc: "A city tour with great experience pictures will be provided such us visiting different places in the city , exploring new things , get good...",
-      meta: "₹2,000 / guest · Minimum ₹20,000 to book · 6 hrs"
-    },
-    {
-      id: 2,
-      title: "Solo portraits",
-      img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=720&q=80",
-      desc: "Get amazing professional portraits around the best hidden spots in the city. Perfect for influencers, models, or just to have great photos.",
-      meta: "₹1,500 / guest · Minimum ₹10,000 to book · 4 hrs"
-    },
-    {
-      id: 3,
-      title: "Family moments",
-      img: "https://images.unsplash.com/photo-1609220136736-443140cffec6?w=720&q=80",
-      desc: "Capture beautiful candid moments with your family. We will walk around the parks and iconic landmarks while taking natural, fun photos.",
-      meta: "₹2,500 / guest · Minimum ₹25,000 to book · 5 hrs"
-    },
-    {
-      id: 4,
-      title: "Creative night shoot",
-      img: "https://images.unsplash.com/photo-1514315384763-ba401779410f?w=720&q=80",
-      desc: "Experience the city lights! A special night photography session using neon lights, long exposure, and creative techniques.",
-      meta: "₹3,000 / guest · Minimum ₹15,000 to book · 3 hrs"
-    }
-  ];
-
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [packages, setPackages] = useState(defaultPackages);
-
-  const defaultPortfolioImages = [
-    "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=1080&q=80",
-    "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?w=1080&q=80",
-    "https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=1080&q=80"
-  ];
-  const [portfolioImages, setPortfolioImages] = useState(defaultPortfolioImages);
+  const [packages, setPackages] = useState([]);
+  const [portfolioImages, setPortfolioImages] = useState([]);
 
   const [showPackageModal, setShowPackageModal] = useState(false);
   const [clickedIndex, setClickedIndex] = useState(0);
@@ -183,6 +146,10 @@ const ServiceDetails = () => {
           }
           let parsedOfferings = Array.isArray(rawOfferings) ? rawOfferings : (rawOfferings ? Object.values(rawOfferings) : []);
 
+          const fallbackPhotos = Array.isArray(fetchedItem.photos) && fetchedItem.photos.length > 0
+            ? fetchedItem.photos
+            : (fetchedItem.cover_img ? [fetchedItem.cover_img] : ["https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=720&q=80"]);
+
           if (parsedOfferings && parsedOfferings.length > 0) {
             const mappedPackages = parsedOfferings.map((off, idx) => {
               const offPrice = Number(off.price) || Number(fetchedItem.price) || 500;
@@ -191,7 +158,7 @@ const ServiceDetails = () => {
               return {
                 id: idx + 1,
                 title: off.title || off.name || off.serviceType || `Offering ${idx + 1}`,
-                img: off.image || (fetchedItem.photos && fetchedItem.photos[idx]) || fetchedItem.cover_img || defaultPackages[idx % defaultPackages.length].img,
+                img: off.image || (fetchedItem.photos && fetchedItem.photos[idx]) || fetchedItem.cover_img || fallbackPhotos[idx % fallbackPhotos.length],
                 desc: off.description || fetchedItem.description || `Tailored offering provided by ${fetchedItem.host_name || 'Host'}.`,
                 meta: `₹${offPrice.toLocaleString('en-IN')} / guest · Minimum ₹${minTotal.toLocaleString('en-IN')} to book · ${offDuration}`,
                 rawPrice: offPrice,
@@ -200,12 +167,38 @@ const ServiceDetails = () => {
               };
             });
             setPackages(mappedPackages);
+          } else {
+            // Dynamic generation based on actual listing info when no explicit tiers are present
+            const basePrice = Number(fetchedItem.price) || 2000;
+            const dynamicTiers = [
+              {
+                id: 1,
+                title: `Standard Session: ${fetchedItem.title || 'Service'}`,
+                img: fallbackPhotos[0],
+                desc: fetchedItem.description || `Comprehensive service delivered by ${fetchedItem.host_name || 'certified host'}.`,
+                meta: `₹${basePrice.toLocaleString('en-IN')} / guest · Minimum ₹${(basePrice * 2).toLocaleString('en-IN')} to book · 2 hrs`,
+                rawPrice: basePrice,
+                duration: '2 hrs',
+                maxGuests: fetchedItem.max_guests || 4
+              },
+              {
+                id: 2,
+                title: `Extended Experience: ${fetchedItem.title || 'Service'}`,
+                img: fallbackPhotos[1] || fallbackPhotos[0],
+                desc: `Extended full-session package including personalized consultations and custom deliverables by ${fetchedItem.host_name || 'Host'}.`,
+                meta: `₹${Math.round(basePrice * 1.5).toLocaleString('en-IN')} / guest · Minimum ₹${Math.round(basePrice * 3).toLocaleString('en-IN')} to book · 4 hrs`,
+                rawPrice: Math.round(basePrice * 1.5),
+                duration: '4 hrs',
+                maxGuests: fetchedItem.max_guests || 6
+              }
+            ];
+            setPackages(dynamicTiers);
           }
 
           // Parse photos / portfolio
           const photos = Array.isArray(fetchedItem.photos) && fetchedItem.photos.length > 0
             ? fetchedItem.photos
-            : (fetchedItem.cover_img ? [fetchedItem.cover_img] : defaultPortfolioImages);
+            : (fetchedItem.cover_img ? [fetchedItem.cover_img] : fallbackPhotos);
           
           if (photos.length > 0) {
             setPortfolioImages(photos);

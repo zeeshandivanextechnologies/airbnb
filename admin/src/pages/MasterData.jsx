@@ -298,7 +298,33 @@ export default function MasterData() {
     fetchDiscounts();
     fetchSafetyItems();
     fetchHomeDestinations();
+    fetchLocations();
+    fetchCategories();
   }, []);
+
+  const fetchLocations = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/listings/master-locations');
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+        setLocations(data.data);
+      }
+    } catch (err) {
+      console.warn('Backend locations note:', err.message);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/listings/master-categories');
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+        setCategories(data.data);
+      }
+    } catch (err) {
+      console.warn('Backend categories note:', err.message);
+    }
+  };
 
   // 3. Locations (Countries, States & Cities)
   const [locations, setLocations] = useState([
@@ -473,8 +499,34 @@ export default function MasterData() {
           toast.error('Network error deleting destination');
         }
       }
-      if (type === 'locations') setLocations(locations.filter(l => l.id !== id));
-      if (type === 'categories') setCategories(categories.filter(c => c.id !== id));
+      if (type === 'locations') {
+        try {
+          const res = await fetch(`http://localhost:5000/api/listings/master-locations/${id}`, { method: 'DELETE' });
+          const data = await res.json();
+          if (data.success) {
+            toast.success('City / Location deleted successfully!');
+            fetchLocations();
+          } else {
+            setLocations(locations.filter(l => l.id !== id));
+          }
+        } catch (e) {
+          setLocations(locations.filter(l => l.id !== id));
+        }
+      }
+      if (type === 'categories') {
+        try {
+          const res = await fetch(`http://localhost:5000/api/listings/master-categories/${id}`, { method: 'DELETE' });
+          const data = await res.json();
+          if (data.success) {
+            toast.success('Category section deleted successfully!');
+            fetchCategories();
+          } else {
+            setCategories(categories.filter(c => c.id !== id));
+          }
+        } catch (e) {
+          setCategories(categories.filter(c => c.id !== id));
+        }
+      }
       if (type === 'hostServices') {
         try {
           const res = await fetch(`http://localhost:5000/api/listings/host-categories/${id}`, {
@@ -898,16 +950,88 @@ export default function MasterData() {
         toast.error('Network error saving destination');
       }
     } else if (modalType === 'location') {
-      if (editingItem.id) {
-        setLocations(locations.map(l => l.id === editingItem.id ? editingItem : l));
-      } else {
-        setLocations([...locations, { ...editingItem, id: Date.now(), activeListings: 0 }]);
+      try {
+        const payload = {
+          country: editingItem.country || 'India',
+          state: editingItem.state || '',
+          city: editingItem.city || '',
+          tier: editingItem.tier || 'Top Destination',
+          activeListings: parseInt(editingItem.activeListings || 0, 10),
+          status: editingItem.status || 'Active'
+        };
+
+        if (editingItem.id && typeof editingItem.id === 'number' && editingItem.id < 1000000000000) {
+          const res = await fetch(`http://localhost:5000/api/listings/master-locations/${editingItem.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (data.success) {
+            toast.success('City / Location updated successfully!');
+            fetchLocations();
+          } else {
+            toast.error(data.message || 'Failed to update location');
+          }
+        } else {
+          const res = await fetch('http://localhost:5000/api/listings/master-locations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (data.success) {
+            toast.success('New City / Location added & live on Airbnb!');
+            fetchLocations();
+          } else {
+            toast.error(data.message || 'Failed to add location');
+          }
+        }
+      } catch (err) {
+        toast.error('Network error saving location');
+        setLocations(editingItem.id ? locations.map(l => l.id === editingItem.id ? editingItem : l) : [...locations, { ...editingItem, id: Date.now() }]);
       }
     } else if (modalType === 'category') {
-      if (editingItem.id) {
-        setCategories(categories.map(c => c.id === editingItem.id ? editingItem : c));
-      } else {
-        setCategories([...categories, { ...editingItem, id: Date.now() }]);
+      try {
+        const payload = {
+          title: editingItem.title || '',
+          sectionKey: editingItem.sectionKey || '',
+          badge: editingItem.badge || 'Trending',
+          displayOrder: parseInt(editingItem.displayOrder || 1, 10),
+          bannerText: editingItem.bannerText || '',
+          status: editingItem.status || 'Active'
+        };
+
+        if (editingItem.id && typeof editingItem.id === 'number' && editingItem.id < 1000000000000) {
+          const res = await fetch(`http://localhost:5000/api/listings/master-categories/${editingItem.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (data.success) {
+            toast.success('Category section updated successfully!');
+            fetchCategories();
+          } else {
+            toast.error(data.message || 'Failed to update category');
+          }
+        } else {
+          const res = await fetch('http://localhost:5000/api/listings/master-categories', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (data.success) {
+            toast.success('New Homepage Category section created & live!');
+            fetchCategories();
+          } else {
+            toast.error(data.message || 'Failed to add category');
+          }
+        }
+      } catch (err) {
+        toast.error('Network error saving category');
+        setCategories(editingItem.id ? categories.map(c => c.id === editingItem.id ? editingItem : c) : [...categories, { ...editingItem, id: Date.now() }]);
       }
     } else if (modalType === 'hostService') {
       try {

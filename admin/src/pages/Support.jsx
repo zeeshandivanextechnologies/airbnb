@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
+import toast from 'react-hot-toast';
 import { adminApiRequest } from '../services/api.js';
 import { 
   FaLifeRing, 
@@ -26,217 +27,12 @@ import {
 } from 'react-icons/fa';
 import styles from './styles/Support.module.css';
 
-// Initial Mock Support Tickets
-const INITIAL_TICKETS = [
-  {
-    id: 'TCK-9401',
-    subject: 'Host did not provide key / passcode at midnight check-in',
-    category: 'Check-in & Access',
-    userType: 'Guest',
-    userName: 'Kunal Singhania',
-    userEmail: 'kunal.s@gmail.com',
-    userPhone: '+91 98201 12345',
-    priority: 'Critical',
-    status: 'Open',
-    assignedTo: 'Ananya Verma',
-    listingName: 'Luxury Sea-Facing Villa, Goa',
-    bookingId: 'BK-8902',
-    createdAt: '25 mins ago',
-    messages: [
-      { sender: 'Guest', text: 'I have arrived at the property but the host is not answering calls. The keypad lock shows error code 404. I am stranded outside with my family.', time: '25 mins ago' }
-    ]
-  },
-  {
-    id: 'TCK-9402',
-    subject: 'Request for full refund: AC broken in 42°C Jaipur weather',
-    category: 'Refund & Billing',
-    userType: 'Guest',
-    userName: 'Meera Deshmukh',
-    userEmail: 'meera.d@outlook.com',
-    userPhone: '+91 98112 54321',
-    priority: 'High',
-    status: 'In Progress',
-    assignedTo: 'Rohan Kapoor',
-    listingName: 'Royal Heritage Haveli, Jaipur',
-    bookingId: 'BK-8750',
-    createdAt: '1 hour ago',
-    messages: [
-      { sender: 'Guest', text: 'The master bedroom AC stopped working on day 1. Host promised repair but nobody came. Requesting cancellation and refund for remaining 2 nights.', time: '1 hour ago' },
-      { sender: 'Support Staff', text: 'Hello Meera, we have contacted the host to verify the maintenance report. We will update you in 30 minutes.', time: '40 mins ago' }
-    ]
-  },
-  {
-    id: 'TCK-9403',
-    subject: 'Guest brought 8 people for a 2-guest booking, refused extra charge',
-    category: 'Host Dispute',
-    userType: 'Host',
-    userName: 'Rajesh Khurana',
-    userEmail: 'rajesh.khurana@gmail.com',
-    userPhone: '+91 98765 89012',
-    priority: 'Medium',
-    status: 'Open',
-    assignedTo: 'Unassigned',
-    listingName: 'Modern Studio Apartment, Mumbai',
-    bookingId: 'BK-8612',
-    createdAt: '2 hours ago',
-    messages: [
-      { sender: 'Host', text: 'CCTV footage shows 8 adults entered with mattresses and party equipment despite house rule stating maximum 2 guests.', time: '2 hours ago' }
-    ]
-  },
-  {
-    id: 'TCK-9404',
-    subject: 'Payment deducted twice via UPI for booking confirmation',
-    category: 'Refund & Billing',
-    userType: 'Guest',
-    userName: 'Aditya Nair',
-    userEmail: 'aditya.n@gmail.com',
-    userPhone: '+91 98450 67890',
-    priority: 'High',
-    status: 'Resolved',
-    assignedTo: 'Ananya Verma',
-    listingName: 'Cozy Mountain Cottage, Manali',
-    bookingId: 'BK-8590',
-    createdAt: '4 hours ago',
-    messages: [
-      { sender: 'Guest', text: 'UPI debited Rs 14,500 twice for transaction ref 98234124. Please reverse the duplicate charge.', time: '4 hours ago' },
-      { sender: 'Support Staff', text: 'Duplicate payment confirmed and refund of Rs 14,500 initiated back to your UPI account. ARN: 7891230.', time: '2 hours ago' }
-    ]
-  },
-  {
-    id: 'TCK-9405',
-    subject: 'WiFi speed is 2 Mbps instead of promised 100 Mbps workation setup',
-    category: 'Listing Amenities',
-    userType: 'Guest',
-    userName: 'Simran Jolly',
-    userEmail: 'simran.jolly@techfirm.com',
-    userPhone: '+91 98990 43210',
-    priority: 'Low',
-    status: 'In Progress',
-    assignedTo: 'Rohan Kapoor',
-    listingName: 'Forest Hideaway Cabin, Coorg',
-    bookingId: 'BK-8420',
-    createdAt: '5 hours ago',
-    messages: [
-      { sender: 'Guest', text: 'Booked this for remote office workation but router speed test is 2.1 Mbps. Cannot attend Zoom meetings.', time: '5 hours ago' }
-    ]
-  }
-];
-
-// Initial Mock Safety Incident Reports
-const INITIAL_INCIDENTS = [
-  {
-    id: 'SAFE-401',
-    title: 'Physical altercation and threatening behavior by host',
-    listingName: 'Lakeview Penthouse, Udaipur',
-    reportedBy: 'Pooja Kashyap (Guest)',
-    reportedUser: 'Harish Lodha (Host)',
-    severity: 'Critical',
-    status: 'Investigating',
-    category: 'Harassment & Safety Threat',
-    evidencePhotos: 3,
-    reportedAt: '35 mins ago',
-    description: 'Host banged on guest bedroom door at 1:30 AM demanding cash payment and used abusive and threatening language.',
-    actionTaken: 'Emergency local response notified. Host listing temporarily suspended pending investigation.'
-  },
-  {
-    id: 'SAFE-402',
-    title: 'Severe property vandalism & broken French windows during unauthorized party',
-    listingName: 'Beachside Villa Nirvana, Alibaug',
-    reportedBy: 'Sunil Rao (Host)',
-    reportedUser: 'Raghav Bhasin (Guest)',
-    severity: 'High',
-    status: 'Action Taken',
-    category: 'Property Damage & Trespass',
-    evidencePhotos: 5,
-    reportedAt: '3 hours ago',
-    description: 'Guests hosted unauthorized 25-person DJ party with broken balcony glass railings, deep pool stains and damaged stereo equipment. Estimated damage Rs 85,000.',
-    actionTaken: 'Security deposit held. Guest account flagged for permanent deactivation.'
-  },
-  {
-    id: 'SAFE-403',
-    title: 'Hidden camera suspicion behind bathroom digital clock',
-    listingName: 'Private Room in South Delhi',
-    reportedBy: 'Kavita Roy (Guest)',
-    reportedUser: 'Deepak Ahuja (Host)',
-    severity: 'Critical',
-    status: 'Investigating',
-    category: 'Privacy Violation',
-    evidencePhotos: 2,
-    reportedAt: '5 hours ago',
-    description: 'Guest found an unauthorized surveillance recording device disguised as a digital LED clock inside bathroom wall.',
-    actionTaken: 'Host immediately delisted from platform. Guest relocated to 5-star partner hotel. Legal notice dispatched.'
-  },
-  {
-    id: 'SAFE-404',
-    title: 'Noise complaints and neighbor dispute regarding midnight loud music',
-    listingName: 'Hilltop Chalet, Kasauli',
-    reportedBy: 'Resident Welfare Association',
-    reportedUser: 'Guest Party (Aman & Friends)',
-    severity: 'Medium',
-    status: 'Resolved',
-    category: 'Community Disturbance',
-    evidencePhotos: 1,
-    reportedAt: '1 day ago',
-    description: 'Multiple neighboring bungalows complained about loudspeaker music past 11 PM.',
-    actionTaken: 'Warning issued to host. Quiet hours policy enforcement added.'
-  }
-];
-
-// Initial Mock Chat Monitoring Logs
-const INITIAL_FLAGGED_CHATS = [
-  {
-    id: 'CHAT-810',
-    participants: 'Amit Verma (Guest) ⟷ Sagar Mittal (Host)',
-    listing: 'Pine Forest Cottage, Shimla',
-    flagReason: 'Attempted Off-Platform Cash Payment & Phone Number Sharing',
-    severity: 'High',
-    flaggedKeyword: 'Pay me directly cash / +91 98111XXXXX to avoid 18% fee',
-    timestamp: '18 mins ago',
-    status: 'Flagged',
-    transcript: [
-      { sender: 'Guest', text: 'Is there any discount if we stay for 5 days?', time: '2:15 PM' },
-      { sender: 'Host', text: 'Yes, Airbnb charges 18% platform fee. Pay me directly cash / +91 98111XXXXX to avoid 18% fee and I will give 15% discount.', time: '2:18 PM', isFlagged: true },
-      { sender: 'Guest', text: 'Is it safe to do off-platform booking?', time: '2:20 PM' },
-      { sender: 'Host', text: 'Yes brother, send advance to my GPay 9811123456.', time: '2:22 PM', isFlagged: true }
-    ]
-  },
-  {
-    id: 'CHAT-811',
-    participants: 'Varun Joshi (Guest) ⟷ Neha Kapoor (Host)',
-    listing: 'Sea View Suite, Candolim Goa',
-    flagReason: 'Abusive / Intimidating Language Trigger',
-    severity: 'Medium',
-    flaggedKeyword: 'I will teach you a lesson if you leave bad review',
-    timestamp: '1 hour ago',
-    status: 'Flagged',
-    transcript: [
-      { sender: 'Guest', text: 'The bathroom is not clean and geyser is not turning on.', time: '11:10 AM' },
-      { sender: 'Host', text: 'You are exaggerating small things. We cleaned it.', time: '11:15 AM' },
-      { sender: 'Guest', text: 'I will have to mention this in the review.', time: '11:16 AM' },
-      { sender: 'Host', text: 'Do not threaten me with 1 star. I will teach you a lesson if you leave bad review, I have your ID proof.', time: '11:20 AM', isFlagged: true }
-    ]
-  },
-  {
-    id: 'CHAT-812',
-    participants: 'Karthik Rao (Guest) ⟷ Maya Devi (Host)',
-    listing: 'Heritage Retreat, Mysore',
-    flagReason: 'External Link / Phishing Warning',
-    severity: 'High',
-    flaggedKeyword: 'Click this link bit.ly/advance-stay to pay deposit',
-    timestamp: '3 hours ago',
-    status: 'Reviewed - Warned',
-    transcript: [
-      { sender: 'Host', text: 'Welcome! Before check-in please pay key deposit.', time: '9:00 AM' },
-      { sender: 'Host', text: 'Click this link bit.ly/advance-stay to pay deposit immediately.', time: '9:02 AM', isFlagged: true }
-    ]
-  }
-];
-
 export default function Support() {
   const [activeTab, setActiveTab] = useState('tickets'); // 'tickets' | 'safety' | 'chats'
-  const [tickets, setTickets] = useState(INITIAL_TICKETS);
-  const [incidents, setIncidents] = useState(INITIAL_INCIDENTS);
-  const [flaggedChats, setFlaggedChats] = useState(INITIAL_FLAGGED_CHATS);
+  const [tickets, setTickets] = useState([]);
+  const [incidents, setIncidents] = useState([]);
+  const [flaggedChats, setFlaggedChats] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Filters
   const [ticketSearch, setTicketSearch] = useState('');
@@ -313,20 +109,25 @@ export default function Support() {
     selectedTicketRef.current = selectedTicket;
   }, [selectedTicket]);
 
-  // Fetch real tickets from backend on load
-  const fetchTickets = async () => {
+  // Fetch real support data (tickets, safety incidents, flagged chats) from backend
+  const fetchSupportData = async () => {
     try {
-      const res = await adminApiRequest('/support/tickets');
-      if (res && res.success && res.tickets && res.tickets.length > 0) {
-        setTickets(res.tickets);
+      setLoading(true);
+      const res = await adminApiRequest('/admin/auth/support-data');
+      if (res && res.success) {
+        if (Array.isArray(res.tickets)) setTickets(res.tickets);
+        if (Array.isArray(res.incidents)) setIncidents(res.incidents);
+        if (Array.isArray(res.flaggedChats)) setFlaggedChats(res.flaggedChats);
       }
     } catch (err) {
-      console.warn('Backend tickets fetch error, using local state:', err.message);
+      console.warn('Backend support data fetch error:', err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchTickets();
+    fetchSupportData();
 
     // Connect to Socket.io
     const socketUrl = import.meta.env.VITE_API_BASE_URL 
@@ -345,6 +146,7 @@ export default function Support() {
     // Listen for new messages
     socket.on('new_message', (msg) => {
       const formattedMsg = {
+        id: msg.id,
         sender: msg.sender,
         text: msg.text,
         time: 'Just now'
@@ -352,11 +154,14 @@ export default function Support() {
 
       setTickets(prev => prev.map(t => {
         if (t.id === msg.ticketId) {
-          const exists = t.messages.some(m => m.id === msg.id && m.id !== undefined);
+          const exists = (t.messages || []).some(m => 
+            (m.id && msg.id && m.id === msg.id) ||
+            (m.clientTempId && msg.clientTempId && m.clientTempId === msg.clientTempId)
+          );
           if (exists) return t;
           return {
             ...t,
-            messages: [...t.messages, formattedMsg]
+            messages: [...(t.messages || []), formattedMsg]
           };
         }
         return t;
@@ -366,11 +171,24 @@ export default function Support() {
       if (selectedTicketRef.current && selectedTicketRef.current.id === msg.ticketId) {
         setSelectedTicket(curr => {
           if (!curr || curr.id !== msg.ticketId) return curr;
-          const exists = curr.messages.some(m => m.id === msg.id && m.id !== undefined);
-          if (exists) return curr;
+          const exists = (curr.messages || []).some(m => 
+            (m.id && msg.id && m.id === msg.id) ||
+            (m.clientTempId && msg.clientTempId && m.clientTempId === msg.clientTempId)
+          );
+          if (exists) {
+            // Update real id if optimistic message matched
+            return {
+              ...curr,
+              messages: (curr.messages || []).map(m => 
+                (m.clientTempId && msg.clientTempId && m.clientTempId === msg.clientTempId)
+                  ? { ...m, id: msg.id }
+                  : m
+              )
+            };
+          }
           return {
             ...curr,
-            messages: [...curr.messages, formattedMsg]
+            messages: [...(curr.messages || []), formattedMsg]
           };
         });
       }
@@ -423,13 +241,16 @@ export default function Support() {
     }
   };
 
-  // Send reply in ticket modal (both via API and real-time Socket)
+  // Send reply in ticket modal (via real-time Socket and REST fallback)
   const handleSendTicketReply = async (e) => {
     e.preventDefault();
     if (!replyText.trim() || !selectedTicket) return;
 
     const textToSend = replyText.trim();
+    const tempId = `temp_${Date.now()}_${Math.random()}`;
+
     const newMsg = {
+      clientTempId: tempId,
       sender: 'Support Staff',
       text: textToSend,
       time: 'Just now'
@@ -438,7 +259,7 @@ export default function Support() {
     const updated = {
       ...selectedTicket,
       status: selectedTicket.status === 'Open' ? 'In Progress' : selectedTicket.status,
-      messages: [...selectedTicket.messages, newMsg]
+      messages: [...(selectedTicket.messages || []), newMsg]
     };
 
     setTickets(prev => prev.map(t => t.id === selectedTicket.id ? updated : t));
@@ -453,23 +274,24 @@ export default function Support() {
       });
     }
 
-    // Emit via Socket for real-time delivery
-    if (socketRef.current) {
+    // Emit via Socket for real-time delivery and DB persistence
+    if (socketRef.current && socketRef.current.connected) {
       socketRef.current.emit('send_message', {
         ticketId: selectedTicket.id,
         sender: 'Support Staff',
-        text: textToSend
+        text: textToSend,
+        clientTempId: tempId
       });
-    }
-
-    // Persist via REST API
-    try {
-      await adminApiRequest(`/support/tickets/${selectedTicket.id}/messages`, {
-        method: 'POST',
-        body: JSON.stringify({ sender: 'Support Staff', text: textToSend })
-      });
-    } catch (err) {
-      console.warn('REST message persist fallback:', err.message);
+    } else {
+      // Fallback: If socket disconnected, persist via REST API
+      try {
+        await adminApiRequest(`/support/tickets/${selectedTicket.id}/messages`, {
+          method: 'POST',
+          body: JSON.stringify({ sender: 'Support Staff', text: textToSend })
+        });
+      } catch (err) {
+        console.warn('REST message persist fallback:', err.message);
+      }
     }
   };
 
@@ -523,19 +345,45 @@ export default function Support() {
     }
   };
 
-  // Incident status update
-  const handleUpdateIncidentStatus = (incidentId, newStatus) => {
-    setIncidents(prev => prev.map(inc => inc.id === incidentId ? { ...inc, status: newStatus } : inc));
+  // Incident status update with backend persistence
+  const handleUpdateIncidentStatus = async (incidentId, newStatus, actionTaken) => {
+    const target = incidents.find(i => i.id === incidentId);
+    setIncidents(prev => prev.map(inc => inc.id === incidentId ? { ...inc, status: newStatus, actionTaken: actionTaken || inc.actionTaken } : inc));
     if (selectedIncident && selectedIncident.id === incidentId) {
-      setSelectedIncident({ ...selectedIncident, status: newStatus });
+      setSelectedIncident({ ...selectedIncident, status: newStatus, actionTaken: actionTaken || selectedIncident.actionTaken });
+    }
+
+    try {
+      if (target && target.dbId) {
+        await adminApiRequest(`/admin/auth/support/incidents/${target.dbId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: newStatus, action_taken: actionTaken || target.actionTaken })
+        });
+      }
+      toast.success(`Incident status updated to ${newStatus}`);
+    } catch (e) {
+      toast.error('Failed to sync incident status with backend');
     }
   };
 
-  // Chat status update
-  const handleUpdateChatStatus = (chatId, newStatus) => {
+  // Chat status update with backend persistence
+  const handleUpdateChatStatus = async (chatId, newStatus) => {
+    const target = flaggedChats.find(c => c.id === chatId);
     setFlaggedChats(prev => prev.map(c => c.id === chatId ? { ...c, status: newStatus } : c));
     if (selectedChat && selectedChat.id === chatId) {
       setSelectedChat({ ...selectedChat, status: newStatus });
+    }
+
+    try {
+      if (target && target.dbId) {
+        await adminApiRequest(`/admin/auth/support/chats/${target.dbId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: newStatus })
+        });
+      }
+      toast.success(`Chat monitoring status marked as ${newStatus}`);
+    } catch (e) {
+      toast.error('Failed to sync chat status with backend');
     }
   };
 

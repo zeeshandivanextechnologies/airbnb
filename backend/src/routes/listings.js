@@ -1210,6 +1210,97 @@ router.get('/intro-faqs', async (req, res) => {
 });
 
 /**
+ * GET Public CMS Page by Slug
+ * GET /api/listings/cms/page/:slug
+ */
+router.get('/cms/page/:slug', async (req, res) => {
+  try {
+    let { slug } = req.params;
+    if (!slug) {
+      return res.status(400).json({ success: false, message: 'Page slug is required' });
+    }
+    // Clean leading slash if any
+    const normalizedSlug = slug.startsWith('/') ? slug : `/${slug}`;
+    const cleanSlug = slug.replace(/^\//, '');
+
+    const result = await pool.query(
+      `SELECT * FROM cms_pages 
+       WHERE (LOWER(slug) = LOWER($1) OR LOWER(slug) = LOWER($2) OR LOWER(REPLACE(slug, '-', '')) = LOWER($3))
+         AND status = 'Published'
+       LIMIT 1`,
+      [normalizedSlug, cleanSlug, cleanSlug.replace(/-/g, '')]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Page not found or unpublished' });
+    }
+
+    const p = result.rows[0];
+    // Increment view count asynchronously
+    pool.query("UPDATE cms_pages SET views_count = CAST(COALESCE(NULLIF(views_count, '-'), '0') AS INTEGER) + 1 WHERE id = $1", [p.id]).catch(() => {});
+
+    return res.status(200).json({
+      success: true,
+      page: {
+        id: p.id,
+        title: p.title,
+        slug: p.slug,
+        category: p.category,
+        lastUpdated: p.last_updated,
+        author: p.author,
+        viewsCount: p.views_count,
+        excerpt: p.excerpt,
+        content: p.content
+      }
+    });
+  } catch (error) {
+    console.error('Fetch public CMS page error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to retrieve page' });
+  }
+});
+
+/**
+ * GET Public Footer Sections & Links
+ * GET /api/listings/cms/footer
+ */
+router.get('/cms/footer', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM cms_footer_sections ORDER BY sort_order ASC');
+    const sections = result.rows.map(sec => ({
+      id: sec.id,
+      title: sec.title,
+      links: Array.isArray(sec.links) ? sec.links : (typeof sec.links === 'string' ? JSON.parse(sec.links) : [])
+    }));
+    return res.status(200).json({ success: true, sections });
+  } catch (error) {
+    console.error('Fetch public footer error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to retrieve footer sections' });
+  }
+});
+
+/**
+ * GET Public CMS FAQs
+ * GET /api/listings/cms/faqs
+ */
+router.get('/cms/faqs', async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM cms_faqs WHERE status = 'Published' ORDER BY id ASC");
+    const faqs = result.rows.map(f => ({
+      id: f.id,
+      question: f.question,
+      category: f.category,
+      targetRole: f.target_role,
+      helpfulVotes: f.helpful_votes,
+      answer: f.answer
+    }));
+    return res.status(200).json({ success: true, faqs });
+  } catch (error) {
+    console.error('Fetch public FAQs error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to retrieve FAQs' });
+  }
+});
+
+/**
  * GET Host Calendar Dates
  * GET /api/listings/calendar-dates?host_id=...&listing_id=...&month=...&year=...
  */
@@ -1830,6 +1921,144 @@ router.delete('/home-destinations/:id', async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to delete destination' });
   }
 });
+
+/**
+ * GET Top Rated Co-Hosts for FindCostHost Page
+ * GET /api/listings/cohosts?city=...
+ */
+router.get('/cohosts', async (req, res) => {
+  try {
+    const { city } = req.query;
+    let query = `
+      SELECT 
+        l.host_id,
+        l.host_name,
+        l.host_avatar,
+        COALESCE(NULLIF(l.city, ''), l.residential_address->>'city', 'Jaipur, Rajasthan') as city,
+        COALESCE(l.rating, 4.90) as rating,
+        COALESCE(l.reviews_count, 12) as reviews_count,
+        COALESCE(l.years_experience, 3) as years_experience,
+        COUNT(l.id) as properties_managed
+      FROM listings l
+      WHERE l.host_name IS NOT NULL AND TRIM(l.host_name) != ''
+    `;
+    const params = [];
+
+    if (city && city.trim()) {
+      const cleanCity = city.trim();
+      params.push(`%${cleanCity}%`);
+      query += ` AND (
+        l.city ILIKE $${params.length} 
+        OR COALESCE(l.state, '') ILIKE $${params.length} 
+        OR COALESCE(l.country, '') ILIKE $${params.length}
+        OR l.residential_address->>'city' ILIKE $${params.length}
+        OR l.residential_address->>'state' ILIKE $${params.length}
+        OR l.residential_address->>'district' ILIKE $${params.length}
+        OR l.residential_address->>'full_address' ILIKE $${params.length}
+      )`;
+    }
+
+    query += `
+      GROUP BY l.host_id, l.host_name, l.host_avatar, l.city, l.residential_address, l.rating, l.reviews_count, l.years_experience
+      ORDER BY l.rating DESC, l.reviews_count DESC
+      LIMIT 12
+    `;
+
+    const result = await pool.query(query, params);
+
+    // Fallback list of curated Superhosts across India
+    const fallbackHosts = [
+      {
+        host_name: 'Rajesh Sharma',
+        host_avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&q=80',
+        city: 'Jaipur, Rajasthan',
+        rating: 4.98,
+        reviews_count: 142,
+        years_experience: 5,
+        properties_managed: 4
+      },
+      {
+        host_name: 'Priyanka Patel',
+        host_avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=500&q=80',
+        city: 'North Goa, Goa',
+        rating: 4.95,
+        reviews_count: 98,
+        years_experience: 4,
+        properties_managed: 3
+      },
+      {
+        host_name: 'Vikram Rajput',
+        host_avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&q=80',
+        city: 'Udaipur, Rajasthan',
+        rating: 4.96,
+        reviews_count: 76,
+        years_experience: 3,
+        properties_managed: 2
+      },
+      {
+        host_name: 'Siddharth Roy',
+        host_avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&q=80',
+        city: 'Mumbai, Maharashtra',
+        rating: 4.92,
+        reviews_count: 55,
+        years_experience: 4,
+        properties_managed: 3
+      },
+      {
+        host_name: 'Kavita Thakur',
+        host_avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&q=80',
+        city: 'Manali, Himachal Pradesh',
+        rating: 4.98,
+        reviews_count: 82,
+        years_experience: 5,
+        properties_managed: 2
+      },
+      {
+        host_name: 'Rohan Mehra',
+        host_avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&q=80',
+        city: 'Gurugram, Haryana',
+        rating: 4.89,
+        reviews_count: 38,
+        years_experience: 3,
+        properties_managed: 2
+      }
+    ];
+
+    if (result.rows.length === 0) {
+      if (city && city.trim()) {
+        const cLower = city.trim().toLowerCase();
+        const matched = fallbackHosts.filter(h => h.city.toLowerCase().includes(cLower) || h.host_name.toLowerCase().includes(cLower));
+        return res.status(200).json({ success: true, data: matched });
+      }
+      return res.status(200).json({ success: true, data: fallbackHosts });
+    }
+
+    // Enhance any rows without avatars with nice professional photos
+    const avatars = [
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&q=80',
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&q=80',
+      'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=500&q=80',
+      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&q=80',
+      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&q=80'
+    ];
+
+    const finalRows = result.rows.map((r, i) => ({
+      ...r,
+      host_avatar: r.host_avatar || avatars[i % avatars.length]
+    }));
+
+    return res.status(200).json({ success: true, data: finalRows });
+  } catch (error) {
+    console.error('Co-hosts fetch error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch co-hosts' });
+  }
+});
+
+/**
+ * GET Available Cities for Co-Hosts
+ * GET /api/listings/cohosts/cities
+ */
+
 
 /**
  * GET Single Listing Details
@@ -2501,142 +2730,6 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-/**
- * GET Top Rated Co-Hosts for FindCostHost Page
- * GET /api/listings/cohosts?city=...
- */
-router.get('/cohosts', async (req, res) => {
-  try {
-    const { city } = req.query;
-    let query = `
-      SELECT 
-        l.host_id,
-        l.host_name,
-        l.host_avatar,
-        COALESCE(NULLIF(l.city, ''), l.residential_address->>'city', 'Jaipur, Rajasthan') as city,
-        COALESCE(l.rating, 4.90) as rating,
-        COALESCE(l.reviews_count, 12) as reviews_count,
-        COALESCE(l.years_experience, 3) as years_experience,
-        COUNT(l.id) as properties_managed
-      FROM listings l
-      WHERE l.host_name IS NOT NULL AND TRIM(l.host_name) != ''
-    `;
-    const params = [];
-
-    if (city && city.trim()) {
-      const cleanCity = city.trim();
-      params.push(`%${cleanCity}%`);
-      query += ` AND (
-        l.city ILIKE $${params.length} 
-        OR COALESCE(l.state, '') ILIKE $${params.length} 
-        OR COALESCE(l.country, '') ILIKE $${params.length}
-        OR l.residential_address->>'city' ILIKE $${params.length}
-        OR l.residential_address->>'state' ILIKE $${params.length}
-        OR l.residential_address->>'district' ILIKE $${params.length}
-        OR l.residential_address->>'full_address' ILIKE $${params.length}
-      )`;
-    }
-
-    query += `
-      GROUP BY l.host_id, l.host_name, l.host_avatar, l.city, l.residential_address, l.rating, l.reviews_count, l.years_experience
-      ORDER BY l.rating DESC, l.reviews_count DESC
-      LIMIT 12
-    `;
-
-    const result = await pool.query(query, params);
-
-    // Fallback list of curated Superhosts across India
-    const fallbackHosts = [
-      {
-        host_name: 'Rajesh Sharma',
-        host_avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&q=80',
-        city: 'Jaipur, Rajasthan',
-        rating: 4.98,
-        reviews_count: 142,
-        years_experience: 5,
-        properties_managed: 4
-      },
-      {
-        host_name: 'Priyanka Patel',
-        host_avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=500&q=80',
-        city: 'North Goa, Goa',
-        rating: 4.95,
-        reviews_count: 98,
-        years_experience: 4,
-        properties_managed: 3
-      },
-      {
-        host_name: 'Vikram Rajput',
-        host_avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&q=80',
-        city: 'Udaipur, Rajasthan',
-        rating: 4.96,
-        reviews_count: 76,
-        years_experience: 3,
-        properties_managed: 2
-      },
-      {
-        host_name: 'Siddharth Roy',
-        host_avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&q=80',
-        city: 'Mumbai, Maharashtra',
-        rating: 4.92,
-        reviews_count: 55,
-        years_experience: 4,
-        properties_managed: 3
-      },
-      {
-        host_name: 'Kavita Thakur',
-        host_avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&q=80',
-        city: 'Manali, Himachal Pradesh',
-        rating: 4.98,
-        reviews_count: 82,
-        years_experience: 5,
-        properties_managed: 2
-      },
-      {
-        host_name: 'Rohan Mehra',
-        host_avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&q=80',
-        city: 'Gurugram, Haryana',
-        rating: 4.89,
-        reviews_count: 38,
-        years_experience: 3,
-        properties_managed: 2
-      }
-    ];
-
-    if (result.rows.length === 0) {
-      if (city && city.trim()) {
-        const cLower = city.trim().toLowerCase();
-        const matched = fallbackHosts.filter(h => h.city.toLowerCase().includes(cLower) || h.host_name.toLowerCase().includes(cLower));
-        return res.status(200).json({ success: true, data: matched });
-      }
-      return res.status(200).json({ success: true, data: fallbackHosts });
-    }
-
-    // Enhance any rows without avatars with nice professional photos
-    const avatars = [
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&q=80',
-      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&q=80',
-      'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=500&q=80',
-      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&q=80',
-      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&q=80'
-    ];
-
-    const finalRows = result.rows.map((r, i) => ({
-      ...r,
-      host_avatar: r.host_avatar || avatars[i % avatars.length]
-    }));
-
-    return res.status(200).json({ success: true, data: finalRows });
-  } catch (error) {
-    console.error('Co-hosts fetch error:', error);
-    return res.status(500).json({ success: false, message: 'Failed to fetch co-hosts' });
-  }
-});
-
-/**
- * GET Available Cities for Co-Hosts
- * GET /api/listings/cohosts/cities
- */
 router.get('/cohosts/cities', async (req, res) => {
   try {
     const result = await pool.query(`
@@ -2698,4 +2791,257 @@ router.get('/earnings-estimate', async (req, res) => {
   }
 });
 
+
+// ==========================================
+// MASTER LOCATIONS & MASTER CATEGORIES CRUD
+// ==========================================
+
+const ensureMasterDataTables = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS master_locations (
+        id SERIAL PRIMARY KEY,
+        country VARCHAR(100) DEFAULT 'India',
+        state VARCHAR(100) NOT NULL,
+        city VARCHAR(100) NOT NULL,
+        tier VARCHAR(100) DEFAULT 'Top Destination',
+        active_listings INT DEFAULT 0,
+        status VARCHAR(50) DEFAULT 'Active',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS master_categories (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        section_key VARCHAR(100) UNIQUE NOT NULL,
+        badge VARCHAR(100) DEFAULT 'Trending',
+        display_order INT DEFAULT 1,
+        banner_text VARCHAR(500) DEFAULT '',
+        status VARCHAR(50) DEFAULT 'Active',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Seed master_locations if empty
+    const locCount = await pool.query('SELECT COUNT(*) FROM master_locations');
+    if (parseInt(locCount.rows[0].count) === 0) {
+      await pool.query(`
+        INSERT INTO master_locations (country, state, city, tier, active_listings, status)
+        VALUES 
+        ('India', 'Rajasthan', 'Jaipur', 'Top Destination', 640, 'Active'),
+        ('India', 'Rajasthan', 'Udaipur', 'Top Destination', 420, 'Active'),
+        ('India', 'Goa', 'North Goa', 'Top Destination', 1180, 'Active'),
+        ('India', 'Himachal Pradesh', 'Manali', 'Hill Station', 350, 'Active'),
+        ('India', 'Kerala', 'Alleppey (Alappuzha)', 'Backwaters', 290, 'Active'),
+        ('India', 'Maharashtra', 'Mumbai', 'Metro', 920, 'Active')
+      `);
+    }
+
+    // Seed master_categories if empty
+    const catCount = await pool.query('SELECT COUNT(*) FROM master_categories');
+    if (parseInt(catCount.rows[0].count) === 0) {
+      await pool.query(`
+        INSERT INTO master_categories (title, section_key, badge, display_order, banner_text, status)
+        VALUES 
+        ('Icons & Celebrity Stays', 'hero_icons', 'New 2026', 1, 'Extraordinary experiences hosted by legends', 'Active'),
+        ('Amazing Views & Lakefront', 'lakefront', 'Trending', 2, 'Wake up to breathtaking water & hilltop vistas', 'Active'),
+        ('Beachfront Cottages', 'beachfront', 'Popular', 3, 'Step directly onto warm golden sands', 'Active'),
+        ('Heritage & Castles', 'historical_homes', 'Cultural', 4, 'Live like royalty in restored forts & havelis', 'Active'),
+        ('Cabins in the Woods', 'cabins', 'Peaceful', 5, 'Disconnect in secluded nature retreats', 'Active')
+      `);
+    }
+  } catch (err) {
+    console.error('Error ensuring master_locations/categories tables:', err);
+  }
+};
+ensureMasterDataTables();
+
+// --- MASTER LOCATIONS CRUD ---
+router.get('/master-locations', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM master_locations ORDER BY id ASC');
+    const mapped = result.rows.map(r => ({
+      id: r.id,
+      country: r.country,
+      state: r.state,
+      city: r.city,
+      tier: r.tier,
+      activeListings: r.active_listings,
+      status: r.status
+    }));
+    return res.status(200).json({ success: true, count: mapped.length, data: mapped });
+  } catch (err) {
+    console.error('Fetch master-locations error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to fetch locations' });
+  }
+});
+
+router.post('/master-locations', async (req, res) => {
+  const { country, state, city, tier, activeListings, status } = req.body;
+  try {
+    const result = await pool.query(`
+      INSERT INTO master_locations (country, state, city, tier, active_listings, status)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *
+    `, [country || 'India', state || '', city || '', tier || 'Top Destination', parseInt(activeListings) || 0, status || 'Active']);
+    const r = result.rows[0];
+    return res.status(201).json({
+      success: true,
+      data: {
+        id: r.id,
+        country: r.country,
+        state: r.state,
+        city: r.city,
+        tier: r.tier,
+        activeListings: r.active_listings,
+        status: r.status
+      }
+    });
+  } catch (err) {
+    console.error('Create master-location error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to create location' });
+  }
+});
+
+router.put('/master-locations/:id', async (req, res) => {
+  const { id } = req.params;
+  const { country, state, city, tier, activeListings, status } = req.body;
+  try {
+    const result = await pool.query(`
+      UPDATE master_locations 
+      SET country = COALESCE($1, country),
+          state = COALESCE($2, state),
+          city = COALESCE($3, city),
+          tier = COALESCE($4, tier),
+          active_listings = COALESCE($5, active_listings),
+          status = COALESCE($6, status)
+      WHERE id = $7
+      RETURNING *
+    `, [country, state, city, tier, activeListings !== undefined ? parseInt(activeListings) : null, status, id]);
+    if (result.rows.length === 0) return res.status(404).json({ success: false, message: 'Location not found' });
+    const r = result.rows[0];
+    return res.status(200).json({
+      success: true,
+      data: {
+        id: r.id,
+        country: r.country,
+        state: r.state,
+        city: r.city,
+        tier: r.tier,
+        activeListings: r.active_listings,
+        status: r.status
+      }
+    });
+  } catch (err) {
+    console.error('Update master-location error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to update location' });
+  }
+});
+
+router.delete('/master-locations/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM master_locations WHERE id = $1', [id]);
+    return res.status(200).json({ success: true, message: 'Location deleted successfully' });
+  } catch (err) {
+    console.error('Delete master-location error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to delete location' });
+  }
+});
+
+// --- MASTER CATEGORIES CRUD ---
+router.get('/master-categories', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM master_categories ORDER BY display_order ASC, id ASC');
+    const mapped = result.rows.map(r => ({
+      id: r.id,
+      title: r.title,
+      sectionKey: r.section_key,
+      badge: r.badge,
+      displayOrder: r.display_order,
+      bannerText: r.banner_text,
+      status: r.status
+    }));
+    return res.status(200).json({ success: true, count: mapped.length, data: mapped });
+  } catch (err) {
+    console.error('Fetch master-categories error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to fetch categories' });
+  }
+});
+
+router.post('/master-categories', async (req, res) => {
+  const { title, sectionKey, badge, displayOrder, bannerText, status } = req.body;
+  try {
+    const cleanKey = sectionKey || title.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    const result = await pool.query(`
+      INSERT INTO master_categories (title, section_key, badge, display_order, banner_text, status)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *
+    `, [title, cleanKey, badge || 'Trending', parseInt(displayOrder) || 1, bannerText || '', status || 'Active']);
+    const r = result.rows[0];
+    return res.status(201).json({
+      success: true,
+      data: {
+        id: r.id,
+        title: r.title,
+        sectionKey: r.section_key,
+        badge: r.badge,
+        displayOrder: r.display_order,
+        bannerText: r.banner_text,
+        status: r.status
+      }
+    });
+  } catch (err) {
+    console.error('Create master-category error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to create category' });
+  }
+});
+
+router.put('/master-categories/:id', async (req, res) => {
+  const { id } = req.params;
+  const { title, sectionKey, badge, displayOrder, bannerText, status } = req.body;
+  try {
+    const result = await pool.query(`
+      UPDATE master_categories 
+      SET title = COALESCE($1, title),
+          section_key = COALESCE($2, section_key),
+          badge = COALESCE($3, badge),
+          display_order = COALESCE($4, display_order),
+          banner_text = COALESCE($5, banner_text),
+          status = COALESCE($6, status)
+      WHERE id = $7
+      RETURNING *
+    `, [title, sectionKey, badge, displayOrder !== undefined ? parseInt(displayOrder) : null, bannerText, status, id]);
+    if (result.rows.length === 0) return res.status(404).json({ success: false, message: 'Category not found' });
+    const r = result.rows[0];
+    return res.status(200).json({
+      success: true,
+      data: {
+        id: r.id,
+        title: r.title,
+        sectionKey: r.section_key,
+        badge: r.badge,
+        displayOrder: r.display_order,
+        bannerText: r.banner_text,
+        status: r.status
+      }
+    });
+  } catch (err) {
+    console.error('Update master-category error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to update category' });
+  }
+});
+
+router.delete('/master-categories/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM master_categories WHERE id = $1', [id]);
+    return res.status(200).json({ success: true, message: 'Category deleted successfully' });
+  } catch (err) {
+    console.error('Delete master-category error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to delete category' });
+  }
+});
+
 export default router;
+

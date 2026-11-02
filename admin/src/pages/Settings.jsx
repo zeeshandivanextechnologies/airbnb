@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FaCog, 
   FaGlobe, 
@@ -17,11 +17,14 @@ import {
   FaKey, 
   FaLock 
 } from 'react-icons/fa';
+import { adminApiRequest } from '../services/api';
 import styles from './styles/Settings.module.css';
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('general'); // 'general' | 'cancellation' | 'gateways' | 'tax'
   const [saveToast, setSaveToast] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // 1. General Branding & Localization State
   const [generalConfig, setGeneralConfig] = useState({
@@ -54,7 +57,7 @@ export default function Settings() {
   const [gatewaysConfig, setGatewaysConfig] = useState({
     // Payment Gateways
     razorpayEnabled: true,
-    razorpayKeyId: 'rzp_live_9a8B7c6D5e4F3g',
+    razorpayKeyId: 'rzp_test_ToafKH36vIRD5L',
     razorpaySecret: '••••••••••••••••••••••••',
     stripeEnabled: true,
     stripePublishableKey: 'pk_live_51M0abcde9876xyz',
@@ -89,12 +92,106 @@ export default function Settings() {
     tcsRate: 1             // 1% TCS under GST
   });
 
-  const handleSaveSettings = (e) => {
+  // Backup state for discard
+  const [originalConfig, setOriginalConfig] = useState(null);
+
+  // Dynamic Metadata state for Currencies, Languages & Timezones loaded via API
+  const [currenciesList, setCurrenciesList] = useState([]);
+  const [languagesList, setLanguagesList] = useState([]);
+  const [timezonesList, setTimezonesList] = useState([]);
+
+  // Fetch settings dynamically from database and metadata API
+  const fetchSettings = async () => {
+    try {
+      setLoading(true);
+
+      // Load metadata (Currencies with rates & symbols, Languages, Timezones)
+      try {
+        const metaRes = await adminApiRequest('/admin/auth/settings/meta');
+        if (metaRes && metaRes.success && metaRes.data) {
+          if (metaRes.data.currencies?.length) setCurrenciesList(metaRes.data.currencies);
+          if (metaRes.data.languages?.length) setLanguagesList(metaRes.data.languages);
+          if (metaRes.data.timezones?.length) setTimezonesList(metaRes.data.timezones);
+        }
+      } catch (me) {
+        console.warn('Meta fetch warning:', me);
+      }
+
+      // Load saved settings
+      const res = await adminApiRequest('/admin/auth/settings');
+      if (res && res.success && res.data) {
+        if (res.data.generalConfig && Object.keys(res.data.generalConfig).length) {
+          setGeneralConfig(prev => ({ ...prev, ...res.data.generalConfig }));
+        }
+        if (res.data.cancellationPolicies && Object.keys(res.data.cancellationPolicies).length) {
+          setCancellationPolicies(prev => ({ ...prev, ...res.data.cancellationPolicies }));
+        }
+        if (res.data.gatewaysConfig && Object.keys(res.data.gatewaysConfig).length) {
+          setGatewaysConfig(prev => ({ ...prev, ...res.data.gatewaysConfig }));
+        }
+        if (res.data.taxConfig && Object.keys(res.data.taxConfig).length) {
+          setTaxConfig(prev => ({ ...prev, ...res.data.taxConfig }));
+        }
+
+        setOriginalConfig({
+          generalConfig: res.data.generalConfig || {},
+          cancellationPolicies: res.data.cancellationPolicies || {},
+          gatewaysConfig: res.data.gatewaysConfig || {},
+          taxConfig: res.data.taxConfig || {}
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load platform settings from database:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  // Save settings dynamically to PostgreSQL Database
+  const handleSaveSettings = async (e) => {
     if (e) e.preventDefault();
-    setSaveToast(true);
-    setTimeout(() => {
-      setSaveToast(false);
-    }, 4000);
+    try {
+      setSaving(true);
+      const payload = {
+        generalConfig,
+        cancellationPolicies,
+        gatewaysConfig,
+        taxConfig
+      };
+
+      const res = await adminApiRequest('/admin/auth/settings', {
+        method: 'PUT',
+        body: JSON.stringify(payload)
+      });
+
+      if (res && res.success) {
+        setOriginalConfig(payload);
+        setSaveToast(true);
+        setTimeout(() => {
+          setSaveToast(false);
+        }, 4000);
+      }
+    } catch (err) {
+      console.error('Error saving settings to database:', err);
+      alert('Error saving settings: ' + (err.message || 'Database connection error'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Discard changes
+  const handleDiscardChanges = () => {
+    if (originalConfig) {
+      if (originalConfig.generalConfig) setGeneralConfig(prev => ({ ...prev, ...originalConfig.generalConfig }));
+      if (originalConfig.cancellationPolicies) setCancellationPolicies(prev => ({ ...prev, ...originalConfig.cancellationPolicies }));
+      if (originalConfig.gatewaysConfig) setGatewaysConfig(prev => ({ ...prev, ...originalConfig.gatewaysConfig }));
+      if (originalConfig.taxConfig) setTaxConfig(prev => ({ ...prev, ...originalConfig.taxConfig }));
+    }
+    alert('Settings changes reset to last saved database state.');
   };
 
   return (
@@ -111,12 +208,12 @@ export default function Settings() {
               </div>
             </div>
             <div>
-              <div className={styles.statValue}>INR (₹)</div>
+              <div className={styles.statValue}>{generalConfig.defaultCurrency || 'INR (₹)'}</div>
               <div className={styles.statFooter}>
                 <span className={`${styles.badgeTrend} ${styles.badgeSuccess}`}>
                   <FaCheck size={8} /> Active Primary
                 </span>
-                <span className={styles.statSubtext}>{generalConfig.defaultLanguage}</span>
+                <span className={styles.statSubtext}>{generalConfig.defaultLanguage || 'English (India)'}</span>
               </div>
             </div>
           </div>
@@ -132,10 +229,10 @@ export default function Settings() {
               </div>
             </div>
             <div>
-              <div className={styles.statValue}>3 Tiers</div>
+              <div className={styles.statValue}>{cancellationPolicies.defaultHostPolicy || 'Flexible'} Default</div>
               <div className={styles.statFooter}>
                 <span className={`${styles.badgeTrend} ${styles.badgePink}`}>
-                  Flexible • Moderate • Strict
+                  {cancellationPolicies.flexibleCutoffHours || 24}h • {cancellationPolicies.flexibleRefundPercent || 100}% Refund
                 </span>
                 <span className={styles.statSubtext}>AirCover Protected</span>
               </div>
@@ -153,12 +250,14 @@ export default function Settings() {
               </div>
             </div>
             <div>
-              <div className={styles.statValue}>Razorpay + UPI</div>
+              <div className={styles.statValue}>
+                {gatewaysConfig.razorpayEnabled && gatewaysConfig.stripeEnabled ? 'Razorpay + Stripe' : (gatewaysConfig.razorpayEnabled ? 'Razorpay Active' : (gatewaysConfig.stripeEnabled ? 'Stripe Active' : 'Offline Modes'))}
+              </div>
               <div className={styles.statFooter}>
                 <span className={`${styles.badgeTrend} ${styles.badgeSuccess}`}>
-                  Live Mode
+                  {gatewaysConfig.razorpayEnabled || gatewaysConfig.stripeEnabled ? 'Live Active' : 'Disabled'}
                 </span>
-                <span className={styles.statSubtext}>Stripe + Twilio Active</span>
+                <span className={styles.statSubtext}>{gatewaysConfig.emailProvider || 'SendGrid Web API'}</span>
               </div>
             </div>
           </div>
@@ -174,12 +273,12 @@ export default function Settings() {
               </div>
             </div>
             <div>
-              <div className={styles.statValue}>18% GST</div>
+              <div className={styles.statValue}>{taxConfig.gstRate || 18}% GST</div>
               <div className={styles.statFooter}>
                 <span className={`${styles.badgeTrend} ${styles.badgePurple}`}>
-                  1% TDS Sec 194-O
+                  {taxConfig.tdsRateHost || 1}% TDS Sec 194-O
                 </span>
-                <span className={styles.statSubtext}>Auto GST Invoicing</span>
+                <span className={styles.statSubtext}>{taxConfig.gstinNumber || 'Auto GST'}</span>
               </div>
             </div>
           </div>
@@ -341,12 +440,30 @@ export default function Settings() {
                     <select 
                       className={styles.formSelect}
                       value={generalConfig.defaultCurrency}
-                      onChange={(e) => setGeneralConfig({ ...generalConfig, defaultCurrency: e.target.value })}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const found = currenciesList.find(c => c.label === val || c.code === val);
+                        setGeneralConfig({ 
+                          ...generalConfig, 
+                          defaultCurrency: val,
+                          currencySymbol: found ? found.symbol : generalConfig.currencySymbol
+                        });
+                      }}
                     >
-                      <option value="INR (₹)">INR - Indian Rupee (₹)</option>
-                      <option value="USD ($)">USD - US Dollar ($)</option>
-                      <option value="EUR (€)">EUR - Euro (€)</option>
-                      <option value="GBP (£)">GBP - British Pound (£)</option>
+                      {currenciesList.length > 0 ? (
+                        currenciesList.map(c => (
+                          <option key={c.code} value={c.label}>
+                            {c.label} {c.code !== 'INR' && c.rateVsInr ? `(1 ${c.code} ≈ ₹${c.rateVsInr})` : ''}
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="INR (₹)">INR - Indian Rupee (₹)</option>
+                          <option value="USD ($)">USD - US Dollar ($)</option>
+                          <option value="EUR (€)">EUR - Euro (€)</option>
+                          <option value="GBP (£)">GBP - British Pound (£)</option>
+                        </>
+                      )}
                     </select>
                   </div>
 
@@ -357,10 +474,20 @@ export default function Settings() {
                       value={generalConfig.defaultLanguage}
                       onChange={(e) => setGeneralConfig({ ...generalConfig, defaultLanguage: e.target.value })}
                     >
-                      <option value="English (India)">English (India)</option>
-                      <option value="Hindi (हिंदी)">Hindi (हिंदी)</option>
-                      <option value="Bengali (বাংলা)">Bengali (বাংলা)</option>
-                      <option value="Marathi (मराठी)">Marathi (मराठी)</option>
+                      {languagesList.length > 0 ? (
+                        languagesList.map(l => (
+                          <option key={l.code} value={l.label}>
+                            {l.label}
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="English (India)">English (India)</option>
+                          <option value="Hindi (हिंदी)">Hindi (हिंदी)</option>
+                          <option value="Bengali (বাংলা)">Bengali (বাংলা)</option>
+                          <option value="Marathi (मराठी)">Marathi (मराठी)</option>
+                        </>
+                      )}
                     </select>
                   </div>
 
@@ -371,8 +498,18 @@ export default function Settings() {
                       value={generalConfig.timeZone}
                       onChange={(e) => setGeneralConfig({ ...generalConfig, timeZone: e.target.value })}
                     >
-                      <option value="Asia/Kolkata (IST +5:30)">Asia/Kolkata (IST +5:30)</option>
-                      <option value="UTC (Coordinated Universal Time)">UTC (+0:00)</option>
+                      {timezonesList.length > 0 ? (
+                        timezonesList.map(t => (
+                          <option key={t.tz} value={t.label}>
+                            {t.label}
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="Asia/Kolkata (IST +5:30)">Asia/Kolkata (IST +5:30)</option>
+                          <option value="UTC (Coordinated Universal Time)">UTC (+0:00)</option>
+                        </>
+                      )}
                     </select>
                   </div>
                 </div>
@@ -797,12 +934,13 @@ export default function Settings() {
             <button 
               type="button" 
               className={styles.btnSecondary}
-              onClick={() => alert('Settings changes reset to last saved state.')}
+              onClick={handleDiscardChanges}
+              disabled={saving}
             >
               Discard Changes
             </button>
-            <button type="submit" className={styles.btnPrimary}>
-              <FaSave size={14} /> Save & Apply All Settings
+            <button type="submit" className={styles.btnPrimary} disabled={saving}>
+              <FaSave size={14} /> {saving ? 'Saving to Database...' : 'Save & Apply All Settings'}
             </button>
           </div>
         </form>

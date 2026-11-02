@@ -4,6 +4,14 @@ import { FiHome, FiCreditCard, FiShield, FiChevronLeft, FiChevronRight, FiChevro
 import { useNavigate } from 'react-router-dom';
 import styles from '../../components/styles/HostHome.module.css';
 
+const defaultFaqSlider = [
+  { id: 1, title: 'Is my place right for Airbnb?', img: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=400&auto=format&fit=crop' },
+  { id: 2, title: 'How does hosting work?', img: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?q=80&w=400&auto=format&fit=crop' },
+  { id: 3, title: 'How do I get started?', img: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=400&auto=format&fit=crop' },
+  { id: 4, title: 'How do I earn money?', img: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=400&auto=format&fit=crop' },
+  { id: 5, title: 'What about safety?', img: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?q=80&w=400&auto=format&fit=crop' }
+];
+
 const HostHome = () => {
   const navigate = useNavigate();
   const [nights, setNights] = useState(7);
@@ -14,15 +22,43 @@ const HostHome = () => {
   const [basePrice, setBasePrice] = useState(3484);
   const sliderRef = useRef(null);
 
-  // Fetch available cities and dynamic base price for selected city
+  // Dynamic Content State loaded from Backend
+  const [faqSlider, setFaqSlider] = useState(defaultFaqSlider);
+  const [guestFee, setGuestFee] = useState(3);
+  const [hostingFaqs, setHostingFaqs] = useState([
+    {
+      question: "What are Airbnb's fees?",
+      answer: "It's free to create a listing, and Airbnb typically collects a service fee of 3% of the reservation subtotal once you get paid. In many areas, Airbnb automatically collects and pays sales and tourism taxes on your behalf."
+    },
+    {
+      question: "Any tips on being a great host?",
+      answer: "From sharing a list of your favourite local places to responding quickly to guest messages, there are lots of ways to be an excellent host."
+    },
+    {
+      question: "What if I have other questions?",
+      answer: "Local hosts are a great source for information and insights. We can connect you with an experienced Airbnb host in your area who may be able to answer additional questions."
+    }
+  ]);
+  const [airCover, setAirCover] = useState({
+    title: "When you host, you're protected",
+    subtitle: "Top-to-bottom protection, included every time you host.",
+    damageProtection: "Up to $3m USD damage protection",
+    liabilityInsurance: "Up to $1m USD liability insurance",
+    safetyLine: "24-hour safety line",
+    disclaimer: "Host Damage Protection reimburses for certain guest damages during Airbnb stays. It's not insurance and may apply if guests don't pay. Liability insurance is provided by 3rd parties. Check details and exclusions."
+  });
+
+  // Fetch available cities, dynamic base price and dynamic content
   useEffect(() => {
     let isMounted = true;
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
     const fetchCityEstimate = async () => {
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
       try {
-        const [citiesRes, estimateRes] = await Promise.all([
+        const [citiesRes, estimateRes, contentRes] = await Promise.all([
           fetch(`${baseUrl}/listings/cohosts/cities`).catch(() => null),
-          fetch(`${baseUrl}/listings/earnings-estimate?city=${encodeURIComponent(selectedCity)}`).catch(() => null)
+          fetch(`${baseUrl}/listings/earnings-estimate?city=${encodeURIComponent(selectedCity)}`).catch(() => null),
+          fetch(`${baseUrl}/admin/auth/host-home-content`).catch(() => null)
         ]);
 
         if (citiesRes && citiesRes.ok) {
@@ -38,8 +74,18 @@ const HostHome = () => {
             setBasePrice(Number(eData.basePrice));
           }
         }
+
+        if (contentRes && contentRes.ok) {
+          const ctData = await contentRes.json();
+          if (ctData.success && ctData.data && isMounted) {
+            if (ctData.data.guestFee) setGuestFee(ctData.data.guestFee);
+            if (ctData.data.hostingFaqs?.length) setHostingFaqs(ctData.data.hostingFaqs);
+            if (ctData.data.faqSlider?.length) setFaqSlider(ctData.data.faqSlider);
+            if (ctData.data.airCover) setAirCover(ctData.data.airCover);
+          }
+        }
       } catch (err) {
-        console.error('Error fetching earnings estimate:', err);
+        console.error('Error fetching earnings estimate or host home content:', err);
       }
     };
 
@@ -195,9 +241,9 @@ const HostHome = () => {
 
           {/* Join Millions Section */}
           <div className={styles.joinSection}>
-            <h2 className={styles.joinSectionTitle}>Join millions of <span className="d-lg-block d-sm-inline">hosts on Airbnb</span> </h2>
+            <h2 className={styles.joinSectionTitle}>Join millions of <span className="d-lg-block d-sm-inline">hosts on Airbnb</span></h2>
 
-            <div className="row text-center ">
+            <div className="row text-center">
               <div className="col-md-4 mb-3 d-flex flex-column align-items-center">
                 <div className={styles.featureIconWrap}>
                   <FiHome className={styles.featureIcon} />
@@ -235,29 +281,29 @@ const HostHome = () => {
               width="150"
             />
           </div>
-          <h2 className={styles.aircoverTitle}>When you host, <span className="d-lg-block d-sm-inline">you're protected</span> </h2>
-          <p className={styles.aircoverSubtitle}>Top-to-bottom protection, <span className="d-lg-block d-sm-inline"> included every time you host.</span> </p>
+          <h2 className={styles.aircoverTitle}>{airCover.title}</h2>
+          <p className={styles.aircoverSubtitle}>{airCover.subtitle}</p>
 
           <div className="row justify-content-center">
             <div className="col-lg-8">
 
               <div className={styles.aircoverListItem}>
-                <span className={styles.aircoverListText}>Up to $3m USD damage protection</span>
+                <span className={styles.aircoverListText}>{airCover.damageProtection}</span>
                 <FaCheck className={styles.aircoverCheckIcon} />
               </div>
 
               <div className={styles.aircoverListItem}>
-                <span className={styles.aircoverListText}>Up to $1m USD liability insurance</span>
+                <span className={styles.aircoverListText}>{airCover.liabilityInsurance}</span>
                 <FaCheck className={styles.aircoverCheckIcon} />
               </div>
 
               <div className={styles.aircoverListItem}>
-                <span className={styles.aircoverListText}>24-hour safety line</span>
+                <span className={styles.aircoverListText}>{airCover.safetyLine}</span>
                 <FaCheck className={styles.aircoverCheckIcon} />
               </div>
 
               <p className={styles.aircoverDisclaimer}>
-                Host Damage Protection reimburses for certain guest damages during Airbnb stays. It's not insurance and may apply if guests don't pay. Liability insurance is provided by 3rd parties. Check details and exclusions.
+                {airCover.disclaimer}
               </p>
 
               <button 
@@ -271,7 +317,7 @@ const HostHome = () => {
           </div>
 
           {/* Additional safeguards */}
-          <div className="row justify-content-center ">
+          <div className="row justify-content-center">
             <div className="col-lg-8">
               <h4 className={styles.safeguardsTitle}>Plus additional safeguards and features:</h4>
               <div className="row">
@@ -292,7 +338,7 @@ const HostHome = () => {
 
         {/* Great on Airbnb Section */}
         <div className="container text-center py-3">
-          <h2 className={styles.greatOnAirbnbTitle}>Your place looks <span className="d-lg-block d-sm-inline">great on Airbnb</span> </h2>
+          <h2 className={styles.greatOnAirbnbTitle}>Your place looks <span className="d-lg-block d-sm-inline">great on Airbnb</span></h2>
 
           <div className="row justify-content-center py-lg-3 py-0">
             <div className="col-md-5 d-flex flex-column align-items-center">
@@ -316,7 +362,7 @@ const HostHome = () => {
 
       {/* FAQ & Slider Section */}
       <div className="container">
-        <h2 className={styles.faqMainTitle}>Your questions, <span className="d-lg-block d-sm-inline">answered</span> </h2>
+        <h2 className={styles.faqMainTitle}>Your questions, <span className="d-lg-block d-sm-inline">answered</span></h2>
 
         <div className="row justify-content-center mt-lg-5 mt-0">
           <div className="col-lg-8">
@@ -330,31 +376,17 @@ const HostHome = () => {
               </div>
             </div>
 
-            {/* Slider Container */}
+            {/* Dynamic Slider Container */}
             <div className={styles.sliderContainer} ref={sliderRef}>
-              <div className={styles.sliderCard}>
-                <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=400&auto=format&fit=crop" alt="Is my place right for Airbnb?" className={styles.sliderImg} />
-                <p className={styles.sliderCardTitle}>Is my place right for Airbnb?</p>
-              </div>
-              <div className={styles.sliderCard}>
-                <img src="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?q=80&w=400&auto=format&fit=crop" alt="What about safety?" className={styles.sliderImg} />
-                <p className={styles.sliderCardTitle}>How does hosting work?</p>
-              </div>
-              <div className={styles.sliderCard}>
-                <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=400&auto=format&fit=crop" alt="How do I get started?" className={styles.sliderImg} />
-                <p className={styles.sliderCardTitle}>How do I get started?</p>
-              </div>
-              <div className={styles.sliderCard}>
-                <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=400&auto=format&fit=crop" alt="How do I earn money?" className={styles.sliderImg} />
-                <p className={styles.sliderCardTitle}>How do I earn money?</p>
-              </div>
-              <div className={styles.sliderCard}>
-                <img src="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?q=80&w=400&auto=format&fit=crop" alt="What about safety?" className={styles.sliderImg} />
-                <p className={styles.sliderCardTitle}>What about safety?</p>
-              </div>
+              {faqSlider.map((card) => (
+                <div key={card.id} className={styles.sliderCard}>
+                  <img src={card.img} alt={card.title} className={styles.sliderImg} />
+                  <p className={styles.sliderCardTitle}>{card.title}</p>
+                </div>
+              ))}
             </div>
 
-            {/* FAQ Accordion */}
+            {/* Dynamic FAQ Accordion */}
             <div className={styles.faqAccordionWrap}>
               <div className={styles.faqAccordionHeader} onClick={() => setFaqExpanded(!faqExpanded)} style={{ cursor: 'pointer' }}>
                 <h4 className={styles.faqSectionTitle}>Hosting basics</h4>
@@ -363,26 +395,15 @@ const HostHome = () => {
 
               {faqExpanded && (
                 <div className={styles.faqContent}>
-                  <div className={styles.faqItem}>
-                    <h5 className={styles.faqItemTitle}>What are Airbnb's fees?</h5>
-                    <p className={styles.faqItemDesc}>
-                      It's free to create a listing, and Airbnb typically collects a service fee of 3% of the reservation subtotal once you get paid. In many areas, Airbnb automatically collects and pays sales and tourism taxes on your behalf. <a href="#" className={styles.faqLink}>Learn more about fees.</a>
-                    </p>
-                  </div>
-
-                  <div className={styles.faqItem}>
-                    <h5 className={styles.faqItemTitle}>Any tips on being a great host?</h5>
-                    <p className={styles.faqItemDesc}>
-                      From sharing a list of your favourite local places to responding quickly to guest messages, there are lots of ways to be an excellent host. <a href="#" className={styles.faqLink}>Get more hosting tips.</a>
-                    </p>
-                  </div>
-
-                  <div className={styles.faqItem}>
-                    <h5 className={styles.faqItemTitle}>What if I have other questions?</h5>
-                    <p className={styles.faqItemDesc}>
-                      Local hosts are a great source for information and insights. We can connect you with an experienced Airbnb host in your area who may be able to answer additional questions. <a href="#" className={styles.faqLink}>Ask a host.</a>
-                    </p>
-                  </div>
+                  {hostingFaqs.map((faq, idx) => (
+                    <div key={idx} className={styles.faqItem}>
+                      <h5 className={styles.faqItemTitle}>{faq.question}</h5>
+                      <p className={styles.faqItemDesc}>
+                        {faq.answer}{' '}
+                        {idx === 0 && <span style={{ color: '#ff385c', fontWeight: 600 }}>(Live Service Fee: {guestFee}%)</span>}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -391,7 +412,7 @@ const HostHome = () => {
       </div>
 
       {/* Footer CTA */}
-      <div className="container py-lg-5 py-3 text-center ">
+      <div className="container py-lg-5 py-3 text-center">
         <h3 className={styles.footerCtaTitle}>Still have questions?</h3>
         <p className={styles.footerCtaDesc}>Get answers from an experienced local host.</p>
         <button 
@@ -407,4 +428,3 @@ const HostHome = () => {
 };
 
 export default HostHome;
-// Triggering Vite HMR reload

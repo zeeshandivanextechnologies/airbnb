@@ -25,96 +25,8 @@ import { adminApiRequest } from '../services/api.js';
 import styles from './styles/Bookings.module.css';
 
 export default function Bookings() {
-  const initialBookings = [
-    {
-      id: 'BK-10842',
-      stayTitle: 'Sunset Hilltop Heritage Homestay',
-      host: 'Vikram Rajput',
-      guestName: 'Rahul Verma',
-      guestEmail: 'rahul.verma@example.com',
-      guestPhone: '+91 98711 22334',
-      dates: '16 Oct 2026 – 19 Oct 2026 (3 Nights)',
-      amount: 7200,
-      airbnbFee: 1440,
-      hostPayout: 5760,
-      status: 'Upcoming', // 'Upcoming' | 'Completed' | 'Cancelled' | 'Dispute'
-      paymentStatus: 'Paid',
-      refundStatus: 'None',
-      disputeReason: '',
-      disputeResolution: ''
-    },
-    {
-      id: 'BK-10839',
-      stayTitle: 'Goan Beachfront Eco Cottage',
-      host: 'Ananya Roy',
-      guestName: 'Sneha Patel',
-      guestEmail: 'sneha.patel@example.com',
-      guestPhone: '+91 98220 44556',
-      dates: '01 Oct 2026 – 04 Oct 2026 (3 Nights)',
-      amount: 9600,
-      airbnbFee: 1920,
-      hostPayout: 7680,
-      status: 'Completed',
-      paymentStatus: 'Paid',
-      refundStatus: 'None',
-      disputeReason: '',
-      disputeResolution: ''
-    },
-    {
-      id: 'BK-10835',
-      stayTitle: 'Snow View Wooden Chalet',
-      host: 'Devendra Joshi',
-      guestName: 'Arjun Singhania',
-      guestEmail: 'arjun.s@example.com',
-      guestPhone: '+91 99345 66778',
-      dates: '12 Oct 2026 – 15 Oct 2026 (3 Nights)',
-      amount: 13500,
-      airbnbFee: 2700,
-      hostPayout: 10800,
-      status: 'Cancelled',
-      paymentStatus: 'Refunded',
-      refundStatus: 'Full Refund Processed (₹13,500)',
-      disputeReason: 'Guest flight cancelled due to bad weather',
-      disputeResolution: 'Approved 100% refund under Extenuating Policy'
-    },
-    {
-      id: 'BK-10828',
-      stayTitle: 'Travel Sketching in Old Jaipur Courtyard',
-      host: 'Priya Sharma',
-      guestName: 'Karan Malhotra',
-      guestEmail: 'karan.m@example.com',
-      guestPhone: '+91 97110 88990',
-      dates: '08 Oct 2026 (1 Day Experience)',
-      amount: 800,
-      airbnbFee: 160,
-      hostPayout: 640,
-      status: 'Completed',
-      paymentStatus: 'Paid',
-      refundStatus: 'None',
-      disputeReason: '',
-      disputeResolution: ''
-    },
-    {
-      id: 'BK-10822',
-      stayTitle: 'Creative Hair & Styling Studio Stay',
-      host: 'Mohammad Alvi',
-      guestName: 'Vikas Taneja',
-      guestEmail: 'vikas.t@example.com',
-      guestPhone: '+91 94140 33221',
-      dates: '18 Oct 2026 – 20 Oct 2026 (2 Nights)',
-      amount: 1000,
-      airbnbFee: 200,
-      hostPayout: 800,
-      status: 'Dispute',
-      paymentStatus: 'Held in Escrow',
-      refundStatus: 'Pending Review',
-      disputeReason: 'Host rescheduled session without 24hr notice; guest requested full refund.',
-      disputeResolution: ''
-    }
-  ];
-
-  const [bookings, setBookings] = useState(initialBookings);
-  const [loading, setLoading] = useState(false);
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all'); // 'all' | 'Upcoming' | 'Completed' | 'Cancelled' | 'Dispute'
   
@@ -132,7 +44,7 @@ export default function Bookings() {
     try {
       setLoading(true);
       const res = await adminApiRequest('/payments/admin/bookings');
-      if (res && res.success && Array.isArray(res.bookings) && res.bookings.length > 0) {
+      if (res && res.success && Array.isArray(res.bookings)) {
         const mapped = res.bookings.map(b => {
           const amt = Number(b.total_amount) || 0;
           const airbnbCommission = Math.round(amt * 0.2);
@@ -153,25 +65,22 @@ export default function Bookings() {
             host: b.host_name || 'Host Partner',
             guestName: b.guest_name || 'Guest User',
             guestEmail: b.guest_email || 'guest@example.com',
-            guestPhone: b.guest_phone || 'Registered Guest',
-            dates: b.booking_time ? `${new Date(b.check_in || Date.now()).toLocaleDateString('default', { day: 'numeric', month: 'short', year: 'numeric' })} at ${b.booking_time}` : new Date(b.check_in || Date.now()).toLocaleDateString(),
+            guestPhone: b.guest_phone || '+91 98765 00000',
+            dates: b.booking_time ? `${new Date(b.check_in || b.created_at || Date.now()).toLocaleDateString('default', { day: 'numeric', month: 'short', year: 'numeric' })} at ${b.booking_time}` : new Date(b.check_in || b.created_at || Date.now()).toLocaleDateString(),
             amount: amt,
             airbnbFee: airbnbCommission,
             hostPayout: hostNet,
             status: displayStatus,
-            paymentStatus: b.razorpay_payment_id ? 'Paid (Razorpay)' : 'Pending',
-            refundStatus: upperSt === 'REFUNDED' ? `Full Refund Processed (₹${amt})` : 'None',
+            paymentStatus: b.razorpay_payment_id ? 'Paid (Razorpay)' : (upperSt === 'REFUNDED' ? 'Refunded' : 'Paid'),
+            refundStatus: b.refund_status || (upperSt === 'REFUNDED' ? `Full Refund Processed (₹${amt})` : 'None'),
             razorpayPaymentId: b.razorpay_payment_id || null,
             razorpayOrderId: b.razorpay_order_id || null,
-            disputeReason: '',
-            disputeResolution: ''
+            disputeReason: b.dispute_reason || '',
+            disputeResolution: b.dispute_resolution || ''
           };
         });
 
-        // Combine live dynamic bookings with standard historical records without duplicates
-        const liveIds = new Set(mapped.map(m => m.id));
-        const filteredInit = initialBookings.filter(init => !liveIds.has(init.id));
-        setBookings([...mapped, ...filteredInit]);
+        setBookings(mapped);
       }
     } catch (err) {
       console.warn('Could not fetch backend bookings:', err);
@@ -228,7 +137,11 @@ export default function Bookings() {
       if (bookingItem.dbId) {
         await adminApiRequest(`/payments/admin/bookings/${bookingItem.dbId}/status`, {
           method: 'PATCH',
-          body: JSON.stringify({ status: 'REFUNDED' })
+          body: JSON.stringify({ 
+            status: 'REFUNDED',
+            refund_status: `Refund Processed (₹${refundAmount})`,
+            dispute_reason: reason || 'Cancelled with refund'
+          })
         });
         toast.success(`Refund of ₹${refundAmount} recorded for ${bookingItem.id}`);
       } else {
@@ -253,15 +166,36 @@ export default function Bookings() {
     }
   };
 
-  const handleResolveDispute = (id, decision) => {
+  const handleResolveDispute = async (id, decision) => {
+    const bookingItem = bookings.find(b => b.id === id);
+    const newStatus = decision === 'refund' ? 'Cancelled' : 'Completed';
+    const resolutionText = disputeSolution || (decision === 'refund' ? 'Resolved in favor of guest with refund' : 'Resolved in favor of host');
+    const refundStatusText = decision === 'refund' ? `Full Refund (₹${bookingItem ? bookingItem.amount : 0})` : 'No Refund - Released to Host';
+
+    try {
+      if (bookingItem && bookingItem.dbId) {
+        await adminApiRequest(`/payments/admin/bookings/${bookingItem.dbId}/status`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            status: decision === 'refund' ? 'REFUNDED' : 'COMPLETED',
+            refund_status: refundStatusText,
+            dispute_resolution: resolutionText
+          })
+        });
+      }
+      toast.success(`Dispute resolved for ${id}`);
+    } catch (e) {
+      toast.warn('Updated locally; could not sync resolution to backend');
+    }
+
     setBookings(bookings.map(b => {
       if (b.id === id) {
         return {
           ...b,
-          status: decision === 'refund' ? 'Cancelled' : 'Completed',
+          status: newStatus,
           paymentStatus: decision === 'refund' ? 'Refunded' : 'Released to Host',
-          refundStatus: decision === 'refund' ? `Full Refund (₹${b.amount})` : 'No Refund - Released to Host',
-          disputeResolution: disputeSolution || (decision === 'refund' ? 'Resolved in favor of guest with refund' : 'Resolved in favor of host')
+          refundStatus: refundStatusText,
+          disputeResolution: resolutionText
         };
       }
       return b;

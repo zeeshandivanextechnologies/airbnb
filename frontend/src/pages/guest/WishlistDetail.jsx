@@ -22,7 +22,7 @@ import { FiPlus, FiMinus, FiCopy, FiLink2 } from "react-icons/fi";
 import { IoMdClose } from "react-icons/io";
 import { TbLinkOff } from "react-icons/tb";
 import styles from "../../components/styles/Wishlists.module.css";
-import { getStoredWishlists, saveWishlists, addWishlist } from "../../utils/wishlistStorage";
+import { getStoredWishlists, saveWishlists, addWishlist, fetchLiveWishlists } from "../../utils/wishlistStorage";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -102,6 +102,7 @@ function WishlistDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [wishlists, setWishlists] = useState(getStoredWishlists());
+  const [isLoading, setIsLoading] = useState(false);
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const [showShareOverviewModal, setShowShareOverviewModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -339,12 +340,31 @@ function WishlistDetail() {
   };
 
   useEffect(() => {
+    let isMounted = true;
+    const loadBackendWishlists = async () => {
+      try {
+        setIsLoading(true);
+        const live = await fetchLiveWishlists(user?.id);
+        if (isMounted && Array.isArray(live)) {
+          setWishlists(live);
+        }
+      } catch (e) {
+        console.warn("Could not sync wishlist from backend:", e.message);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+    loadBackendWishlists();
+
     const handleUpdate = () => {
       setWishlists(getStoredWishlists());
     };
     window.addEventListener('airbnb_wishlists_updated', handleUpdate);
-    return () => window.removeEventListener('airbnb_wishlists_updated', handleUpdate);
-  }, []);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('airbnb_wishlists_updated', handleUpdate);
+    };
+  }, [user?.id]);
 
   // Find target wishlist or fallback to first
   const currentWishlist = wishlists.find(w => String(w.id) === String(id)) || wishlists[0] || {
@@ -980,12 +1000,14 @@ function WishlistDetail() {
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12.5px', color: '#222', marginBottom: '2px' }}>
                       <FaStar color="#222" size={10} />
-                      <span style={{ fontWeight: 600 }}>5.0</span>
-                      <span style={{ color: '#717171' }}>· {item.reviews_count || 1} review</span>
+                      <span style={{ fontWeight: 600 }}>{item.rating || '4.95'}</span>
+                      <span style={{ color: '#717171' }}>
+                        · {item.reviews_count || item.reviewCount || 1} {(item.reviews_count || item.reviewCount || 1) === 1 ? 'review' : 'reviews'}
+                      </span>
                     </div>
 
                     <p style={{ fontSize: '13.5px', color: '#222', margin: 0 }}>
-                      From <strong style={{ fontWeight: 700 }}>{item.price || '₹2,500'}</strong> / guest
+                      From <strong style={{ fontWeight: 700 }}>{item.price ? (String(item.price).startsWith('₹') ? item.price : `₹${Number(item.price).toLocaleString('en-IN')}`) : '₹2,500'}</strong> / guest
                     </p>
 
                     <button 
@@ -1035,11 +1057,14 @@ function WishlistDetail() {
             {/* Pins on Map for all wishlist items */}
             {(currentWishlist.items || []).map((item, idx) => {
               const pos = getCoords(item, idx);
+              const formattedPrice = item.price 
+                ? (String(item.price).startsWith('₹') ? item.price : `₹${Number(item.price).toLocaleString('en-IN')}`)
+                : '₹2,500';
               return (
                 <Marker 
                   key={item.id || idx} 
                   position={pos}
-                  icon={createPinIcon(item.price || '₹2,500')}
+                  icon={createPinIcon(formattedPrice)}
                 >
                   <Popup>
                     <div style={{ padding: '4px', minWidth: '140px' }}>
@@ -1047,7 +1072,7 @@ function WishlistDetail() {
                         {item.title}
                       </div>
                       <div style={{ fontSize: '12px', color: '#717171' }}>
-                        {item.price || '₹2,500'}
+                        {formattedPrice}
                       </div>
                     </div>
                   </Popup>

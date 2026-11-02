@@ -208,11 +208,13 @@ export default function Finance() {
     fetchFinanceData();
   }, []);
 
-  // Totals calculations
+  // Dynamic Totals calculations
   const totalRevenue = transactions.reduce((acc, t) => acc + (t.status === 'Success' ? Number(t.amount) : 0), 0);
   const totalCommission = transactions.reduce((acc, t) => acc + (t.status === 'Success' ? Number(t.commission) : 0), 0);
   const totalPayoutsDisbursed = payouts.reduce((acc, p) => acc + (p.status === 'Processed' ? Number(p.amount) : 0), 0);
   const totalRefunded = refunds.reduce((acc, r) => acc + (r.status === 'Completed' || r.status === 'Processed' ? Number(r.amount) : 0), 0);
+  const totalGstCollected = transactions.reduce((acc, t) => acc + (t.status === 'Success' ? Number(t.gstTax || 0) : 0), 0);
+  const totalTdsDeducted = Math.round(payouts.reduce((acc, p) => acc + (p.status === 'Processed' ? Number(p.amount) * 0.01 : 0), 0));
 
   const handleSaveFeeSettings = async (e) => {
     e.preventDefault();
@@ -824,7 +826,7 @@ export default function Finance() {
               <div className="col-12 col-md-4">
                 <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                   <span style={{ fontSize: '12px', color: '#64748b' }}>Total GST Collected (FY 2026-27)</span>
-                  <h4 style={{ margin: '6px 0 0 0', fontWeight: '800', color: '#111111' }}>₹1,73,700</h4>
+                  <h4 style={{ margin: '6px 0 0 0', fontWeight: '800', color: '#111111' }}>₹{(totalGstCollected > 0 ? totalGstCollected : Math.round(totalCommission * 0.18)).toLocaleString('en-IN')}</h4>
                   <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: '600' }}>18% GST Compliance Rate</span>
                 </div>
               </div>
@@ -832,7 +834,7 @@ export default function Finance() {
               <div className="col-12 col-md-4">
                 <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                   <span style={{ fontSize: '12px', color: '#64748b' }}>TDS Deducted (Host Payouts)</span>
-                  <h4 style={{ margin: '6px 0 0 0', fontWeight: '800', color: '#111111' }}>₹38,600</h4>
+                  <h4 style={{ margin: '6px 0 0 0', fontWeight: '800', color: '#111111' }}>₹{(totalTdsDeducted > 0 ? totalTdsDeducted : Math.round(totalPayoutsDisbursed * 0.01)).toLocaleString('en-IN')}</h4>
                   <span style={{ fontSize: '11px', color: '#2563eb', fontWeight: '600' }}>Section 194-O (1% TDS)</span>
                 </div>
               </div>
@@ -850,7 +852,16 @@ export default function Finance() {
               <button 
                 type="button" 
                 className={styles.btnAction} 
-                onClick={() => alert('Downloading GST Monthly Ledger Report (CSV)...')}
+                onClick={() => {
+                  const headers = 'Transaction ID,Booking Ref,Guest,Host,Gross Amount,Commission,GST Tax,Net Payout,Date,Status\n';
+                  const rows = transactions.map(t => `"${t.id}","${t.bookingId}","${t.guest}","${t.host}",${t.amount},${t.commission},${t.gstTax},${t.netPayout},"${t.date}","${t.status}"`).join('\n');
+                  const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
+                  const link = document.createElement('a');
+                  link.href = URL.createObjectURL(blob);
+                  link.download = `GST_Monthly_Ledger_${new Date().toISOString().split('T')[0]}.csv`;
+                  link.click();
+                  toast.success('GST Monthly Ledger CSV downloaded!');
+                }}
                 style={{ padding: '10px 16px', fontSize: '13px' }}
               >
                 <FaDownload /> Download Monthly GST Ledger (CSV)

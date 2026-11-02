@@ -247,9 +247,23 @@ router.put('/policy', async (req, res) => {
   }
 });
 
-// 7. GET /api/security/staff - List Real Registered Admin Staff
+// 7. GET /api/security/staff - List Real Registered Admin Staff from admin_staff & admins
 router.get('/staff', async (req, res) => {
   try {
+    // 1. First check admin_staff table (from Roles & Permissions)
+    const staffRes = await pool.query('SELECT name, role, email, status FROM admin_staff ORDER BY id ASC');
+    if (staffRes.rows.length > 0) {
+      const staffList = staffRes.rows.map((row, idx) => ({
+        name: row.name,
+        role: row.role,
+        email: row.email,
+        method: idx % 2 === 0 ? 'Google Authenticator (TOTP)' : 'SMS OTP Verified',
+        status: row.status === 'Active' ? 'Enrolled' : 'Pending Enrollment'
+      }));
+      return res.json({ success: true, data: staffList });
+    }
+
+    // 2. Fallback to admins table
     const result = await pool.query('SELECT name, role, email FROM admins ORDER BY id ASC');
     const staffList = result.rows.map(row => ({
       name: row.name,

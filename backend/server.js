@@ -37,9 +37,9 @@ io.on('connection', (socket) => {
 
   // Broadcast new message in real-time
   socket.on('send_message', async (data) => {
-    // data: { ticketId, sender, text }
+    // data: { ticketId, sender, text, clientTempId }
     try {
-      const { ticketId, sender, text } = data;
+      const { ticketId, sender, text, clientTempId } = data;
       if (!ticketId || !text) return;
 
       const result = await pool.query(
@@ -55,7 +55,8 @@ io.on('connection', (socket) => {
         ticketId: savedMsg.ticket_id,
         sender: savedMsg.sender,
         text: savedMsg.text,
-        createdAt: savedMsg.created_at
+        createdAt: savedMsg.created_at,
+        clientTempId: clientTempId || null
       });
 
       // Also broadcast notification to all admins

@@ -8,6 +8,8 @@ import couponsRouter from './routes/coupons.js';
 import financeRouter from './routes/finance.js';
 import securityRouter from './routes/security.js';
 import supportRouter from './routes/support.js';
+import wishlistsRouter from './routes/wishlists.js';
+import marketingRouter from './routes/marketing.js';
 
 const app = express();
 
@@ -43,6 +45,8 @@ app.use('/api/coupons', couponsRouter);
 app.use('/api/finance', financeRouter);
 app.use('/api/security', securityRouter);
 app.use('/api/support', supportRouter);
+app.use('/api/wishlists', wishlistsRouter);
+app.use('/api/marketing', marketingRouter);
 
 // 404 Handler
 app.use((req, res) => {

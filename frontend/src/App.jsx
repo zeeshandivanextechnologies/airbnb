@@ -35,6 +35,7 @@ import HostListingEditor from './pages/host/HostListingEditor';
 import HostAllPhotos from './pages/host/HostAllPhotos';
 import HostMessage from './pages/host/HostMessage';
 import IntroToHost from './pages/host/IntroToHost';
+import CmsPageView from './pages/guest/CmsPageView';
 import { useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { applyGoogleTranslate } from './i18n.js';
@@ -80,6 +81,19 @@ function App() {
             <Route path='/wishlists' element={<Wishlists />} />    
             <Route path='/wishlists/:id' element={<WishlistDetail />} />    
             <Route path='/account-settings' element={<AccountSettings />} />    
+            {/* Dynamic CMS Pages & Policies */}
+            <Route path='/p/:slug' element={<CmsPageView />} />
+            <Route path='/privacy-policy' element={<CmsPageView />} />
+            <Route path='/terms-of-service' element={<CmsPageView />} />
+            <Route path='/about-us' element={<CmsPageView />} />
+            <Route path='/guest-refund-policy' element={<CmsPageView />} />
+            <Route path='/careers' element={<CmsPageView />} />
+            <Route path='/responsible-hosting' element={<CmsPageView />} />
+            <Route path='/help' element={<CmsPageView />} />
+            <Route path='/aircover' element={<CmsPageView />} />
+            <Route path='/anti-discrimination' element={<CmsPageView />} />
+            <Route path='/accessibility' element={<CmsPageView />} />
+            <Route path='/cancellations' element={<CmsPageView />} />
           </Route> 
 
           <Route path="/host" element={<HostSetup />} />

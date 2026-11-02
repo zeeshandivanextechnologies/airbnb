@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
+import { adminApiRequest } from '../services/api';
 import { 
   FaUserShield, 
   FaUserTie, 
@@ -120,113 +122,45 @@ const MODULE_DEFINITIONS = [
   { key: 'roles', name: 'Roles & Staff Admin', desc: 'Admin roles, permissions & security access' },
 ];
 
-// Mock Initial Staff Directory
-const INITIAL_STAFF = [
-  {
-    id: 1,
-    name: 'Aarav Sharma',
-    email: 'aarav.sharma@airbnb.internal',
-    phone: '+91 98100 23456',
-    role: 'super_admin',
-    department: 'Platform Operations & IT',
-    status: 'Active',
-    lastActive: 'Just now',
-    avatarBg: '#ff385c',
-    customModules: ['Full Access']
-  },
-  {
-    id: 2,
-    name: 'Pooja Mehta',
-    email: 'pooja.mehta@airbnb.internal',
-    phone: '+91 98200 45678',
-    role: 'sub_admin',
-    department: 'Regional Operations (North India)',
-    status: 'Active',
-    lastActive: '12 mins ago',
-    avatarBg: '#15803d',
-    customModules: ['Listings', 'Hosts', 'Bookings', 'Reviews', 'Master Data']
-  },
-  {
-    id: 3,
-    name: 'Vikram Rajput',
-    email: 'vikram.rajput@airbnb.internal',
-    phone: '+91 98300 78912',
-    role: 'sub_admin',
-    department: 'Listing Approvals & Verification',
-    status: 'Active',
-    lastActive: '45 mins ago',
-    avatarBg: '#0891b2',
-    customModules: ['Listings', 'Hosts', 'Reviews', 'Master Data']
-  },
-  {
-    id: 4,
-    name: 'Ananya Verma',
-    email: 'ananya.verma@airbnb.internal',
-    phone: '+91 98400 34567',
-    role: 'support_staff',
-    department: 'Customer Delight & Dispute Resolution',
-    status: 'Active',
-    lastActive: '5 mins ago',
-    avatarBg: '#2563eb',
-    customModules: ['Bookings', 'Users', 'Disputes', 'Refunds']
-  },
-  {
-    id: 5,
-    name: 'Rohan Kapoor',
-    email: 'rohan.kapoor@airbnb.internal',
-    phone: '+91 98500 89012',
-    role: 'support_staff',
-    department: 'Host Payout & Helpdesk Support',
-    status: 'Active',
-    lastActive: '1 hour ago',
-    avatarBg: '#4f46e5',
-    customModules: ['Bookings', 'Users', 'Host Inquiries']
-  },
-  {
-    id: 6,
-    name: 'Sneha Patel',
-    email: 'sneha.patel@airbnb.internal',
-    phone: '+91 98600 12345',
-    role: 'moderator',
-    department: 'Trust & Safety / Quality Assurance',
-    status: 'Active',
-    lastActive: '22 mins ago',
-    avatarBg: '#ca8a04',
-    customModules: ['Reviews', 'Listing Quality', 'Spam Moderation']
-  },
-  {
-    id: 7,
-    name: 'Karan Malhotra',
-    email: 'karan.malhotra@airbnb.internal',
-    phone: '+91 98700 67890',
-    role: 'moderator',
-    department: 'Trust & Safety (Guest Reviews)',
-    status: 'Active',
-    lastActive: '3 hours ago',
-    avatarBg: '#d97706',
-    customModules: ['Reviews', 'Fake Ratings', 'Property Reports']
-  },
-  {
-    id: 8,
-    name: 'Divya Sen',
-    email: 'divya.sen@airbnb.internal',
-    phone: '+91 98800 54321',
-    role: 'support_staff',
-    department: 'Weekend Escalation Desk',
-    status: 'Suspended',
-    lastActive: '3 days ago',
-    avatarBg: '#9ca3af',
-    customModules: ['Bookings', 'Users']
-  }
-];
-
 export default function Roles() {
   const [activeTab, setActiveTab] = useState('staff'); // 'staff' | 'matrix' | 'roles'
-  const [staffList, setStaffList] = useState(INITIAL_STAFF);
+  const [staffList, setStaffList] = useState([]);
   const [roleConfigs, setRoleConfigs] = useState(INITIAL_ROLES);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
+
+  // Fetch real-time roles and staff directory from Backend
+  const fetchRolesData = async () => {
+    try {
+      setLoading(true);
+      const res = await adminApiRequest('/admin/auth/roles-data');
+      if (res && res.success) {
+        if (Array.isArray(res.staff)) setStaffList(res.staff);
+        if (Array.isArray(res.roles) && res.roles.length > 0) {
+          const mappedRoles = res.roles.map(r => {
+            const initMatch = INITIAL_ROLES.find(ir => ir.id === r.id);
+            return {
+              ...r,
+              badgeClass: initMatch ? initMatch.badgeClass : styles.roleSupport,
+              icon: initMatch ? initMatch.icon : <FaShieldAlt style={{ color: r.color || '#1d4ed8' }} />,
+              membersCount: (res.staff || []).filter(s => s.role === r.id).length
+            };
+          });
+          setRoleConfigs(mappedRoles);
+        }
+      }
+    } catch (err) {
+      console.warn('Could not fetch backend roles data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRolesData();
+  }, []);
 
   // Modals state
   const [showStaffModal, setShowStaffModal] = useState(false);
@@ -301,55 +235,72 @@ export default function Roles() {
     setShowStaffModal(true);
   };
 
-  // Save Staff (Add or Edit)
-  const handleSaveStaff = (e) => {
+  // Save Staff (Add or Edit) with backend database persistence
+  const handleSaveStaff = async (e) => {
     e.preventDefault();
     if (!staffFormData.name || !staffFormData.email) return;
 
-    if (editingStaff) {
-      setStaffList(prev => prev.map(item => {
-        if (item.id === editingStaff.id) {
-          return {
-            ...item,
-            ...staffFormData,
-            customModules: staffFormData.role === 'super_admin' ? ['Full Access'] : staffFormData.modules
-          };
-        }
-        return item;
-      }));
-    } else {
-      const colors = ['#ff385c', '#15803d', '#2563eb', '#ca8a04', '#4f46e5', '#0891b2'];
-      const randomColor = colors[Math.floor(Math.random() * colors.length)];
-      const newMember = {
-        id: Date.now(),
-        ...staffFormData,
-        lastActive: 'Just now',
-        avatarBg: randomColor,
-        customModules: staffFormData.role === 'super_admin' ? ['Full Access'] : staffFormData.modules
+    try {
+      const payload = {
+        id: editingStaff ? editingStaff.id : undefined,
+        name: staffFormData.name,
+        email: staffFormData.email,
+        phone: staffFormData.phone,
+        role: staffFormData.role,
+        department: staffFormData.department,
+        status: staffFormData.status,
+        modules: staffFormData.role === 'super_admin' ? ['Full Access'] : staffFormData.modules
       };
-      setStaffList(prev => [newMember, ...prev]);
+
+      const res = await adminApiRequest('/admin/auth/staff', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+
+      if (res && res.success) {
+        toast.success(res.message || 'Staff administrator saved successfully');
+        fetchRolesData();
+      } else {
+        toast.success('Staff details updated');
+      }
+    } catch (err) {
+      toast.error('Failed to save staff administrator');
+      console.error(err);
     }
 
     setShowStaffModal(false);
   };
 
-  // Toggle Suspend / Activate
-  const handleToggleStatus = (staffId) => {
-    setStaffList(prev => prev.map(s => {
-      if (s.id === staffId) {
-        return {
-          ...s,
-          status: s.status === 'Active' ? 'Suspended' : 'Active'
-        };
-      }
-      return s;
-    }));
+  // Toggle Suspend / Activate with backend database persistence
+  const handleToggleStatus = async (staffId) => {
+    const target = staffList.find(s => s.id === staffId);
+    if (!target) return;
+    const nextStatus = target.status === 'Active' ? 'Suspended' : 'Active';
+
+    try {
+      await adminApiRequest(`/admin/auth/staff/${staffId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: nextStatus })
+      });
+      toast.success(`Staff status updated to ${nextStatus}`);
+      setStaffList(prev => prev.map(s => s.id === staffId ? { ...s, status: nextStatus } : s));
+    } catch (err) {
+      toast.error('Failed to update status');
+    }
   };
 
-  // Delete staff member
-  const handleDeleteStaff = (staffId) => {
+  // Delete staff member with backend database persistence
+  const handleDeleteStaff = async (staffId) => {
     if (window.confirm('Are you sure you want to revoke and delete this staff administrator?')) {
-      setStaffList(prev => prev.filter(s => s.id !== staffId));
+      try {
+        await adminApiRequest(`/admin/auth/staff/${staffId}`, {
+          method: 'DELETE'
+        });
+        toast.success('Staff administrator removed');
+        setStaffList(prev => prev.filter(s => s.id !== staffId));
+      } catch (err) {
+        toast.error('Failed to remove staff administrator');
+      }
     }
   };
 
@@ -360,23 +311,34 @@ export default function Roles() {
   };
 
   // Toggle permission in role config
-  const handleToggleRolePermission = (roleId, moduleKey, actionKey) => {
+  const handleToggleRolePermission = async (roleId, moduleKey, actionKey) => {
+    let updatedRoleObj = null;
     setRoleConfigs(prev => prev.map(role => {
       if (role.id === roleId) {
         const currentVal = role.permissions[moduleKey]?.[actionKey] ?? false;
-        return {
-          ...role,
-          permissions: {
-            ...role.permissions,
-            [moduleKey]: {
-              ...role.permissions[moduleKey],
-              [actionKey]: !currentVal
-            }
+        const newPerms = {
+          ...role.permissions,
+          [moduleKey]: {
+            ...role.permissions[moduleKey],
+            [actionKey]: !currentVal
           }
         };
+        updatedRoleObj = { ...role, permissions: newPerms };
+        return updatedRoleObj;
       }
       return role;
     }));
+
+    if (updatedRoleObj) {
+      try {
+        await adminApiRequest(`/admin/auth/roles/${roleId}/permissions`, {
+          method: 'PUT',
+          body: JSON.stringify({ permissions: updatedRoleObj.permissions })
+        });
+      } catch (err) {
+        console.warn('Could not persist permission change:', err);
+      }
+    }
   };
 
   // Toggle permission in matrix modal
@@ -395,10 +357,19 @@ export default function Roles() {
     });
   };
 
-  // Save matrix changes
-  const handleSaveRoleMatrix = () => {
+  // Save matrix changes with backend database persistence
+  const handleSaveRoleMatrix = async () => {
     if (!selectedRoleForMatrix) return;
-    setRoleConfigs(prev => prev.map(r => r.id === selectedRoleForMatrix.id ? selectedRoleForMatrix : r));
+    try {
+      await adminApiRequest(`/admin/auth/roles/${selectedRoleForMatrix.id}/permissions`, {
+        method: 'PUT',
+        body: JSON.stringify({ permissions: selectedRoleForMatrix.permissions })
+      });
+      toast.success('Role permissions matrix updated successfully');
+      setRoleConfigs(prev => prev.map(r => r.id === selectedRoleForMatrix.id ? selectedRoleForMatrix : r));
+    } catch (err) {
+      toast.error('Failed to save permissions matrix');
+    }
     setShowMatrixModal(false);
   };
 

@@ -2,52 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
 import styles from '../../components/styles/IntroToHost.module.css';
 
-const defaultWebinarList = [
-  { country: "Australia & New Zealand", language: "English", buttonText: "View webinars", zoom_link: "https://zoom.us" },
-  { country: "Brasil", language: "Português", buttonText: "Ver webinarios", zoom_link: "https://zoom.us" },
-  { country: "Canada", language: "English and French", buttonText: "View webinars", zoom_link: "https://zoom.us" },
-  { country: "España", language: "Español", buttonText: "Ver webinarios", zoom_link: "https://zoom.us" },
-  { country: "France", language: "Français", buttonText: "Voir les webinaires", zoom_link: "https://zoom.us" },
-  { country: "Germany, Austria & Switzerland", language: "Deutsch", buttonText: "Webinare ansehen", zoom_link: "https://zoom.us" },
-  { country: "Greece", language: "Ελληνικά", buttonText: "Προβολή webinars", zoom_link: "https://zoom.us" },
-  { country: "Italia", language: "Italiano", buttonText: "Visualizza i webinar", zoom_link: "https://zoom.us" },
-  { country: "Japan", language: "日本語", buttonText: "ウェビナーを見る", zoom_link: "https://zoom.us" },
-  { country: "Mexico", language: "Español", buttonText: "Ver webinarios", zoom_link: "https://zoom.us" },
-  { country: "Nordics", language: "English", buttonText: "View webinars", zoom_link: "https://zoom.us" },
-  { country: "United Kingdom & Ireland", language: "English", buttonText: "View webinars", zoom_link: "https://zoom.us" },
-  { country: "United States", language: "English", buttonText: "View webinars", zoom_link: "https://zoom.us" },
-  { country: "United States", language: "Español", buttonText: "Ver webinarios", zoom_link: "https://zoom.us" }
-];
-
-const defaultFaqs = [
-  {
-    question: "What is a Superhost Ambassador?",
-    answer: "Superhost Ambassadors are experienced hosts who help new hosts get started. They can offer one-on-one guidance, tips, and support during your first hosting journey."
-  },
-  {
-    question: "How do I join a webinar?",
-    answer: "Simply click the 'View webinars' button for your region above. You'll be directed to a Zoom site where you can register and attend the session."
-  },
-  {
-    question: "Is there any cost to attend?",
-    answer: "No, all introductory webinars presented by Superhost Ambassadors are completely free of charge."
-  },
-  {
-    question: "What if I can't find a webinar in my language?",
-    answer: "We are constantly expanding our resources. In the meantime, you can access the Airbnb Resource Centre for articles and videos in multiple languages."
-  }
-];
-
 function IntroToHost() {
   const [openFaq, setOpenFaq] = useState(null);
-  const [webinars, setWebinars] = useState(defaultWebinarList);
-  const [faqs, setFaqs] = useState(defaultFaqs);
+  const [webinars, setWebinars] = useState([]);
+  const [faqs, setFaqs] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
     const fetchIntroData = async () => {
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
       try {
         const [webinarsRes, faqsRes] = await Promise.all([
           fetch(`${baseUrl}/listings/intro-webinars`).catch(() => null),
@@ -56,7 +20,7 @@ function IntroToHost() {
 
         if (webinarsRes && webinarsRes.ok) {
           const wData = await webinarsRes.json();
-          if (wData.success && Array.isArray(wData.data) && wData.data.length > 0 && isMounted) {
+          if (wData.success && Array.isArray(wData.data) && isMounted) {
             setWebinars(wData.data.map(item => ({
               country: item.country,
               language: item.language,
@@ -68,7 +32,7 @@ function IntroToHost() {
 
         if (faqsRes && faqsRes.ok) {
           const fData = await faqsRes.json();
-          if (fData.success && Array.isArray(fData.data) && fData.data.length > 0 && isMounted) {
+          if (fData.success && Array.isArray(fData.data) && isMounted) {
             setFaqs(fData.data.map(item => ({
               question: item.question,
               answer: item.answer

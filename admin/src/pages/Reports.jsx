@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Chart from 'react-apexcharts';
 import { 
   FaChartLine, 
@@ -17,46 +17,343 @@ import {
   FaHome, 
   FaClock 
 } from 'react-icons/fa';
+import { adminApiRequest } from '../services/api';
 import styles from './styles/Reports.module.css';
-
-// Monthly Financial Revenue Report Data
-const REVENUE_DATA = [
-  { id: 1, month: 'October 2026 (MTD)', grossVolume: 4280000, hostPayouts: 3638000, platformCommission: 428000, gstCollected: 77040, netProfit: 350960, growth: '+18.4%' },
-  { id: 2, month: 'September 2026', grossVolume: 3950000, hostPayouts: 3357500, platformCommission: 395000, gstCollected: 71100, netProfit: 323900, growth: '+14.2%' },
-  { id: 3, month: 'August 2026', grossVolume: 3720000, hostPayouts: 3162000, platformCommission: 372000, gstCollected: 66960, netProfit: 305040, growth: '+12.1%' },
-  { id: 4, month: 'July 2026', grossVolume: 3410000, hostPayouts: 2898500, platformCommission: 341000, gstCollected: 61380, netProfit: 279620, growth: '+9.8%' },
-  { id: 5, month: 'June 2026', grossVolume: 3150000, hostPayouts: 2677500, platformCommission: 315000, gstCollected: 56700, netProfit: 258300, growth: '+11.5%' },
-  { id: 6, month: 'May 2026', grossVolume: 2890000, hostPayouts: 2456500, platformCommission: 289000, gstCollected: 52020, netProfit: 236980, growth: '+8.2%' }
-];
-
-// Booking Trends Report Data
-const BOOKINGS_DATA = [
-  { id: 1, period: 'Oct 2026 (MTD)', totalBookings: 842, completedStays: 620, upcomingStays: 198, cancellations: 24, avgNightsPerStay: 3.4, avgOrderValue: 5083, disputeRate: '0.4%' },
-  { id: 2, period: 'Sep 2026', totalBookings: 790, completedStays: 742, upcomingStays: 12, cancellations: 36, avgNightsPerStay: 3.2, avgOrderValue: 5000, disputeRate: '0.6%' },
-  { id: 3, period: 'Aug 2026', totalBookings: 745, completedStays: 702, upcomingStays: 8, cancellations: 35, avgNightsPerStay: 3.1, avgOrderValue: 4993, disputeRate: '0.5%' },
-  { id: 4, period: 'Jul 2026', totalBookings: 692, completedStays: 651, upcomingStays: 5, cancellations: 36, avgNightsPerStay: 3.0, avgOrderValue: 4927, disputeRate: '0.7%' },
-  { id: 5, period: 'Jun 2026', totalBookings: 640, completedStays: 605, upcomingStays: 3, cancellations: 32, avgNightsPerStay: 2.9, avgOrderValue: 4921, disputeRate: '0.6%' },
-  { id: 6, period: 'May 2026', totalBookings: 590, completedStays: 558, upcomingStays: 2, cancellations: 30, avgNightsPerStay: 2.8, avgOrderValue: 4898, disputeRate: '0.8%' }
-];
-
-// User & Host Growth Report Data
-const USER_GROWTH_DATA = [
-  { id: 1, period: 'Oct 2026 (MTD)', newGuests: 1420, newHosts: 86, totalActiveUsers: 28450, kycVerificationRate: '94.2%', repeatGuestShare: '36.8%', growthRate: '+19.2%' },
-  { id: 2, period: 'Sep 2026', newGuests: 1280, newHosts: 74, totalActiveUsers: 26944, kycVerificationRate: '93.5%', repeatGuestShare: '34.2%', growthRate: '+16.5%' },
-  { id: 3, period: 'Aug 2026', newGuests: 1190, newHosts: 68, totalActiveUsers: 25590, kycVerificationRate: '92.8%', repeatGuestShare: '33.1%', growthRate: '+15.1%' },
-  { id: 4, period: 'Jul 2026', newGuests: 1080, newHosts: 61, totalActiveUsers: 24332, kycVerificationRate: '92.0%', repeatGuestShare: '31.5%', growthRate: '+13.8%' },
-  { id: 5, period: 'Jun 2026', newGuests: 980, newHosts: 55, totalActiveUsers: 23191, kycVerificationRate: '91.4%', repeatGuestShare: '30.2%', growthRate: '+12.4%' },
-  { id: 6, period: 'May 2026', newGuests: 890, newHosts: 49, totalActiveUsers: 22156, kycVerificationRate: '90.8%', repeatGuestShare: '29.1%', growthRate: '+10.9%' }
-];
 
 export default function Reports() {
   const [activeTab, setActiveTab] = useState('revenue'); // 'revenue' | 'bookings' | 'users'
   const [selectedTimeframe, setSelectedTimeframe] = useState('6M');
   const [exportNotice, setExportNotice] = useState(null);
 
-  // Trigger Mock Export (Excel or PDF)
+  // Dynamic state loaded strictly from backend DB
+  const [revenueData, setRevenueData] = useState([]);
+  const [bookingsData, setBookingsData] = useState([]);
+  const [userGrowthData, setUserGrowthData] = useState([]);
+  const [summaryCards, setSummaryCards] = useState({
+    grossVolume: { formatted: '₹0', trend: '0.0% MoM', subtext: 'Current Real Volume' },
+    totalReservations: { formatted: '0', fulfillment: '0% Fulfillment', subtext: '0 Completed / 0 Total' },
+    newUsers: { formatted: '0', growth: '0.0%', subtext: '0 Guests / 0 Hosts' },
+    netCommission: { formatted: '₹0', takeRate: '10.0% Take Rate', subtext: 'Post Host Settlement' }
+  });
+  const [chartCategories, setChartCategories] = useState([]);
+  const [dynamicChartSeries, setDynamicChartSeries] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch dynamic reports from backend
+  const fetchReports = async (timeframe) => {
+    try {
+      setLoading(true);
+      const res = await adminApiRequest(`/admin/auth/reports?timeframe=${timeframe || '6M'}`);
+      if (res && res.success && res.data) {
+        if (res.data.revenueData?.length) setRevenueData(res.data.revenueData);
+        if (res.data.bookingsData?.length) setBookingsData(res.data.bookingsData);
+        if (res.data.userGrowthData?.length) setUserGrowthData(res.data.userGrowthData);
+        if (res.data.summaryCards) setSummaryCards(res.data.summaryCards);
+        if (res.data.chartCategories?.length) setChartCategories(res.data.chartCategories);
+        if (res.data.chartSeries) setDynamicChartSeries(res.data.chartSeries);
+      }
+    } catch (err) {
+      console.error('Failed to load dynamic reports:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReports(selectedTimeframe);
+  }, [selectedTimeframe]);
+
+  // Trigger Real Dynamic Export (Excel or PDF Printable)
   const handleExport = (format) => {
-    const filename = `Airbnb_${activeTab.toUpperCase()}_Report_${new Date().toISOString().split('T')[0]}.${format === 'excel' ? 'xlsx' : 'pdf'}`;
+    const dateStr = new Date().toISOString().split('T')[0];
+    const filename = `Airbnb_${activeTab.toUpperCase()}_Report_${dateStr}.${format === 'excel' ? 'xls' : 'pdf'}`;
+    
+    try {
+      if (format === 'excel') {
+        // Build clean formatted HTML Table for Excel (.xls / .xlsx readable)
+        let tableHtml = `
+          <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+          <head>
+            <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Airbnb ${activeTab.toUpperCase()} Report</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+            <meta http-equiv="content-type" content="text/plain; charset=UTF-8"/>
+            <style>
+              th { background-color: #ff385c; color: #ffffff; font-weight: bold; padding: 10px; border: 1px solid #ddd; }
+              td { padding: 8px; border: 1px solid #ddd; font-family: Arial, sans-serif; }
+              .title { font-size: 18px; font-weight: bold; margin-bottom: 12px; }
+            </style>
+          </head>
+          <body>
+            <div class="title">Airbnb Platform Report - ${activeTab.toUpperCase()} (${dateStr})</div>
+            <table>
+        `;
+
+        if (activeTab === 'revenue') {
+          tableHtml += `
+            <thead>
+              <tr>
+                <th>Sr. No.</th>
+                <th>Month / Period</th>
+                <th>Gross Booking Value (GMV)</th>
+                <th>Host Payouts Disbursed</th>
+                <th>Platform Fee (Commission)</th>
+                <th>GST / Taxes (18%)</th>
+                <th>Net Platform Revenue</th>
+                <th>Growth Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${revenueData.map((row, i) => `
+                <tr>
+                  <td>${i + 1}</td>
+                  <td>${row.month}</td>
+                  <td>₹${Number(row.grossVolume).toLocaleString('en-IN')}</td>
+                  <td>₹${Number(row.hostPayouts).toLocaleString('en-IN')}</td>
+                  <td>₹${Number(row.platformCommission).toLocaleString('en-IN')}</td>
+                  <td>₹${Number(row.gstCollected).toLocaleString('en-IN')}</td>
+                  <td>₹${Number(row.netProfit).toLocaleString('en-IN')}</td>
+                  <td>${row.growth}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          `;
+        } else if (activeTab === 'bookings') {
+          tableHtml += `
+            <thead>
+              <tr>
+                <th>Sr. No.</th>
+                <th>Reporting Period</th>
+                <th>Total Reservations</th>
+                <th>Completed Stays</th>
+                <th>Upcoming Bookings</th>
+                <th>Cancellations</th>
+                <th>Avg Length of Stay</th>
+                <th>Average Booking Value</th>
+                <th>Dispute Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${bookingsData.map((row, i) => `
+                <tr>
+                  <td>${i + 1}</td>
+                  <td>${row.period}</td>
+                  <td>${row.totalBookings}</td>
+                  <td>${row.completedStays}</td>
+                  <td>${row.upcomingStays}</td>
+                  <td>${row.cancellations}</td>
+                  <td>${row.avgNightsPerStay} nights</td>
+                  <td>₹${Number(row.avgOrderValue).toLocaleString('en-IN')}</td>
+                  <td>${row.disputeRate}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          `;
+        } else {
+          tableHtml += `
+            <thead>
+              <tr>
+                <th>Sr. No.</th>
+                <th>Period</th>
+                <th>New Guests Registered</th>
+                <th>New Verified Hosts</th>
+                <th>Total Active Platform Users</th>
+                <th>KYC Verification Rate</th>
+                <th>Repeat Guest Share</th>
+                <th>MoM Acquisition Growth</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${userGrowthData.map((row, i) => `
+                <tr>
+                  <td>${i + 1}</td>
+                  <td>${row.period}</td>
+                  <td>+${Number(row.newGuests).toLocaleString('en-IN')}</td>
+                  <td>+${row.newHosts}</td>
+                  <td>${Number(row.totalActiveUsers).toLocaleString('en-IN')}</td>
+                  <td>${row.kycVerificationRate}</td>
+                  <td>${row.repeatGuestShare}</td>
+                  <td>${row.growthRate}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          `;
+        }
+
+        tableHtml += `
+            </table>
+          </body>
+          </html>
+        `;
+
+        const blob = new Blob([tableHtml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Airbnb_${activeTab.toUpperCase()}_Report_${dateStr}.xls`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } else {
+        // PDF: Open a clean, beautifully styled printable report window dedicated only to the report content
+        const printWindow = window.open('', '_blank', 'width=1000,height=750');
+        if (!printWindow) {
+          window.print();
+          return;
+        }
+
+        let reportHeaderTitle = 'Revenue & Financials Report';
+        let reportThead = '';
+        let reportTbody = '';
+
+        if (activeTab === 'revenue') {
+          reportHeaderTitle = 'Revenue & Financials Performance Report';
+          reportThead = `
+            <tr>
+              <th style="width: 50px;">#</th>
+              <th>Month / Period</th>
+              <th>Gross Booking Value (GMV)</th>
+              <th>Host Payouts Disbursed</th>
+              <th>Platform Commission</th>
+              <th>GST (18%)</th>
+              <th>Net Platform Revenue</th>
+              <th>Growth</th>
+            </tr>
+          `;
+          reportTbody = revenueData.map((r, i) => `
+            <tr>
+              <td>${i + 1}</td>
+              <td style="font-weight: 600;">${r.month}</td>
+              <td>₹${Number(r.grossVolume).toLocaleString('en-IN')}</td>
+              <td>₹${Number(r.hostPayouts).toLocaleString('en-IN')}</td>
+              <td style="color: #16a34a; font-weight: 600;">₹${Number(r.platformCommission).toLocaleString('en-IN')}</td>
+              <td>₹${Number(r.gstCollected).toLocaleString('en-IN')}</td>
+              <td style="color: #ff385c; font-weight: 700;">₹${Number(r.netProfit).toLocaleString('en-IN')}</td>
+              <td style="color: #16a34a; font-weight: 600;">${r.growth}</td>
+            </tr>
+          `).join('');
+        } else if (activeTab === 'bookings') {
+          reportHeaderTitle = 'Booking Fulfillment & Reservations Report';
+          reportThead = `
+            <tr>
+              <th style="width: 50px;">#</th>
+              <th>Reporting Period</th>
+              <th>Total Reservations</th>
+              <th>Completed Stays</th>
+              <th>Upcoming Bookings</th>
+              <th>Cancellations</th>
+              <th>Avg Stay Length</th>
+              <th>Avg Order Value</th>
+              <th>Dispute Rate</th>
+            </tr>
+          `;
+          reportTbody = bookingsData.map((b, i) => `
+            <tr>
+              <td>${i + 1}</td>
+              <td style="font-weight: 600;">${b.period}</td>
+              <td style="font-weight: 700;">${b.totalBookings}</td>
+              <td style="color: #16a34a; font-weight: 600;">${b.completedStays}</td>
+              <td style="color: #2563eb;">${b.upcomingStays}</td>
+              <td style="color: #dc2626;">${b.cancellations}</td>
+              <td>${b.avgNightsPerStay} nights</td>
+              <td style="font-weight: 600;">₹${Number(b.avgOrderValue).toLocaleString('en-IN')}</td>
+              <td style="color: #059669;">${b.disputeRate}</td>
+            </tr>
+          `).join('');
+        } else {
+          reportHeaderTitle = 'User Acquisition & Host Growth Report';
+          reportThead = `
+            <tr>
+              <th style="width: 50px;">#</th>
+              <th>Period</th>
+              <th>New Guests</th>
+              <th>New Verified Hosts</th>
+              <th>Active Platform Users</th>
+              <th>KYC Verification Rate</th>
+              <th>Repeat Guest Share</th>
+              <th>Growth Rate</th>
+            </tr>
+          `;
+          reportTbody = userGrowthData.map((u, i) => `
+            <tr>
+              <td>${i + 1}</td>
+              <td style="font-weight: 600;">${u.period}</td>
+              <td style="color: #2563eb; font-weight: 600;">+${Number(u.newGuests).toLocaleString('en-IN')}</td>
+              <td style="color: #ff385c; font-weight: 700;">+${u.newHosts}</td>
+              <td style="font-weight: 600;">${Number(u.totalActiveUsers).toLocaleString('en-IN')}</td>
+              <td style="color: #16a34a;">${u.kycVerificationRate}</td>
+              <td>${u.repeatGuestShare}</td>
+              <td style="color: #16a34a; font-weight: 600;">${u.growthRate}</td>
+            </tr>
+          `).join('');
+        }
+
+        const printableDoc = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>${reportHeaderTitle}</title>
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                margin: 20px;
+                color: #1e293b;
+              }
+              table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 0;
+                font-size: 13px;
+              }
+              th {
+                background: #f1f5f9;
+                color: #334155;
+                font-weight: 700;
+                text-align: left;
+                padding: 10px 12px;
+                border: 1px solid #cbd5e1;
+              }
+              td {
+                padding: 10px 12px;
+                border: 1px solid #e2e8f0;
+              }
+              tr:nth-child(even) td {
+                background: #fafafa;
+              }
+              @media print {
+                body { margin: 10mm; }
+                @page { size: landscape; margin: 8mm; }
+              }
+            </style>
+          </head>
+          <body>
+            <table>
+              <thead>
+                ${reportThead}
+              </thead>
+              <tbody>
+                ${reportTbody}
+              </tbody>
+            </table>
+
+            <script>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                }, 250);
+              };
+            </script>
+          </body>
+          </html>
+        `;
+
+        printWindow.document.open();
+        printWindow.document.write(printableDoc);
+        printWindow.document.close();
+      }
+    } catch (e) {
+      console.warn('Export trigger error:', e);
+    }
+
     setExportNotice({
       format: format.toUpperCase(),
       filename: filename
@@ -70,24 +367,26 @@ export default function Reports() {
 
   // ApexCharts Configuration Generator based on activeTab
   const getChartConfig = () => {
-    const months = ['May 2026', 'Jun 2026', 'Jul 2026', 'Aug 2026', 'Sep 2026', 'Oct 2026'];
+    const months = chartCategories;
 
     if (activeTab === 'revenue') {
+      const series = dynamicChartSeries?.revenue || [
+        {
+          name: 'Gross Booking Volume (₹)',
+          data: [...revenueData].reverse().map(r => r.grossVolume)
+        },
+        {
+          name: 'Host Payouts Disbursed (₹)',
+          data: [...revenueData].reverse().map(r => r.hostPayouts)
+        },
+        {
+          name: 'Platform Commission (₹)',
+          data: [...revenueData].reverse().map(r => r.platformCommission)
+        }
+      ];
+
       return {
-        series: [
-          {
-            name: 'Gross Booking Volume (₹)',
-            data: [2890000, 3150000, 3410000, 3720000, 3950000, 4280000]
-          },
-          {
-            name: 'Host Payouts Disbursed (₹)',
-            data: [2456500, 2677500, 2898500, 3162000, 3357500, 3638000]
-          },
-          {
-            name: 'Platform Commission (₹)',
-            data: [289000, 315000, 341000, 372000, 395000, 428000]
-          }
-        ],
+        series,
         options: {
           chart: {
             type: 'area',
@@ -146,21 +445,23 @@ export default function Reports() {
     }
 
     if (activeTab === 'bookings') {
+      const series = dynamicChartSeries?.bookings || [
+        {
+          name: 'Total Reservations',
+          data: [...bookingsData].reverse().map(b => b.totalBookings)
+        },
+        {
+          name: 'Completed Stays',
+          data: [...bookingsData].reverse().map(b => b.completedStays)
+        },
+        {
+          name: 'Cancellations',
+          data: [...bookingsData].reverse().map(b => b.cancellations)
+        }
+      ];
+
       return {
-        series: [
-          {
-            name: 'Total Reservations',
-            data: [590, 640, 692, 745, 790, 842]
-          },
-          {
-            name: 'Completed Stays',
-            data: [558, 605, 651, 702, 742, 620]
-          },
-          {
-            name: 'Cancellations',
-            data: [30, 32, 36, 35, 36, 24]
-          }
-        ],
+        series,
         options: {
           chart: {
             type: 'area',
@@ -218,17 +519,19 @@ export default function Reports() {
     }
 
     // User & Host Growth Tab
+    const series = dynamicChartSeries?.users || [
+      {
+        name: 'New Registered Guests',
+        data: [...userGrowthData].reverse().map(u => u.newGuests)
+      },
+      {
+        name: 'New Verified Hosts',
+        data: [...userGrowthData].reverse().map(u => u.newHosts)
+      }
+    ];
+
     return {
-      series: [
-        {
-          name: 'New Registered Guests',
-          data: [890, 980, 1080, 1190, 1280, 1420]
-        },
-        {
-          name: 'New Verified Hosts',
-          data: [49, 55, 61, 68, 74, 86]
-        }
-      ],
+      series,
       options: {
         chart: {
           type: 'area',
@@ -301,12 +604,12 @@ export default function Reports() {
               </div>
             </div>
             <div>
-              <div className={styles.statValue}>₹42.8L</div>
+              <div className={styles.statValue}>{summaryCards.grossVolume?.formatted || '₹0'}</div>
               <div className={styles.statFooter}>
                 <span className={`${styles.badgeTrend} ${styles.badgeSuccess}`}>
-                  <FaArrowUp size={8} /> +18.4% MoM
+                  <FaArrowUp size={8} /> {summaryCards.grossVolume?.trend || '+0.0% MoM'}
                 </span>
-                <span className={styles.statSubtext}>Current Month MTD</span>
+                <span className={styles.statSubtext}>{summaryCards.grossVolume?.subtext || 'Current Real Volume'}</span>
               </div>
             </div>
           </div>
@@ -322,12 +625,12 @@ export default function Reports() {
               </div>
             </div>
             <div>
-              <div className={styles.statValue}>842</div>
+              <div className={styles.statValue}>{summaryCards.totalReservations?.formatted || '0'}</div>
               <div className={styles.statFooter}>
                 <span className={`${styles.badgeTrend} ${styles.badgeBlue}`}>
-                  97.1% Fulfillment
+                  {summaryCards.totalReservations?.fulfillment || '0% Fulfillment'}
                 </span>
-                <span className={styles.statSubtext}>Low 0.4% Dispute</span>
+                <span className={styles.statSubtext}>{summaryCards.totalReservations?.subtext || '0 Completed / 0 Total'}</span>
               </div>
             </div>
           </div>
@@ -343,12 +646,12 @@ export default function Reports() {
               </div>
             </div>
             <div>
-              <div className={styles.statValue}>1,506</div>
+              <div className={styles.statValue}>{summaryCards.newUsers?.formatted || '0'}</div>
               <div className={styles.statFooter}>
                 <span className={`${styles.badgeTrend} ${styles.badgePink}`}>
-                  +19.2% Growth
+                  {summaryCards.newUsers?.growth || '+0.0% Growth'}
                 </span>
-                <span className={styles.statSubtext}>1,420 Guests / 86 Hosts</span>
+                <span className={styles.statSubtext}>{summaryCards.newUsers?.subtext || '0 Guests / 0 Hosts'}</span>
               </div>
             </div>
           </div>
@@ -364,12 +667,12 @@ export default function Reports() {
               </div>
             </div>
             <div>
-              <div className={styles.statValue}>₹4.28L</div>
+              <div className={styles.statValue}>{summaryCards.netCommission?.formatted || '₹0'}</div>
               <div className={styles.statFooter}>
                 <span className={`${styles.badgeTrend} ${styles.badgePurple}`}>
-                  10.0% Take Rate
+                  {summaryCards.netCommission?.takeRate || '0.0% Take Rate'}
                 </span>
-                <span className={styles.statSubtext}>Post Host Settlement</span>
+                <span className={styles.statSubtext}>{summaryCards.netCommission?.subtext || 'Post Host Settlement'}</span>
               </div>
             </div>
           </div>
@@ -398,7 +701,7 @@ export default function Reports() {
             >
               <FaRupeeSign size={12} />
               Revenue & Financials
-              <span className={styles.tabCount}>{REVENUE_DATA.length}M</span>
+              <span className={styles.tabCount}>{revenueData.length}M</span>
             </button>
             <button 
               className={`${styles.tabBtn} ${activeTab === 'bookings' ? styles.tabBtnActive : ''}`}
@@ -406,7 +709,7 @@ export default function Reports() {
             >
               <FaCalendarCheck size={12} />
               Booking Fulfillment
-              <span className={styles.tabCount}>{BOOKINGS_DATA.length}M</span>
+              <span className={styles.tabCount}>{bookingsData.length}M</span>
             </button>
             <button 
               className={`${styles.tabBtn} ${activeTab === 'users' ? styles.tabBtnActive : ''}`}
@@ -414,7 +717,7 @@ export default function Reports() {
             >
               <FaUserPlus size={12} />
               User & Host Growth
-              <span className={styles.tabCount}>{USER_GROWTH_DATA.length}M</span>
+              <span className={styles.tabCount}>{userGrowthData.length}M</span>
             </button>
           </div>
         </div>
@@ -513,7 +816,7 @@ export default function Reports() {
                 </tr>
               </thead>
               <tbody>
-                {REVENUE_DATA.map((row, idx) => (
+                {revenueData.map((row, idx) => (
                   <tr key={row.id}>
                     {/* Sr. No. */}
                     <td className={styles.srNoCol}>{idx + 1}</td>
@@ -528,27 +831,27 @@ export default function Reports() {
 
                     {/* Gross Volume */}
                     <td className={styles.numberCol}>
-                      ₹{row.grossVolume.toLocaleString('en-IN')}
+                      ₹{Number(row.grossVolume).toLocaleString('en-IN')}
                     </td>
 
                     {/* Host Payouts */}
                     <td style={{ color: '#4b5563' }}>
-                      ₹{row.hostPayouts.toLocaleString('en-IN')}
+                      ₹{Number(row.hostPayouts).toLocaleString('en-IN')}
                     </td>
 
                     {/* Platform Commission */}
                     <td style={{ fontWeight: '700', color: '#16a34a' }}>
-                      ₹{row.platformCommission.toLocaleString('en-IN')}
+                      ₹{Number(row.platformCommission).toLocaleString('en-IN')}
                     </td>
 
                     {/* GST Collected */}
                     <td style={{ color: '#6b7280' }}>
-                      ₹{row.gstCollected.toLocaleString('en-IN')}
+                      ₹{Number(row.gstCollected).toLocaleString('en-IN')}
                     </td>
 
                     {/* Net Profit */}
                     <td className={styles.numberCol} style={{ color: '#ff385c' }}>
-                      ₹{row.netProfit.toLocaleString('en-IN')}
+                      ₹{Number(row.netProfit).toLocaleString('en-IN')}
                     </td>
 
                     {/* Growth */}
@@ -585,7 +888,7 @@ export default function Reports() {
                 </tr>
               </thead>
               <tbody>
-                {BOOKINGS_DATA.map((row, idx) => (
+                {bookingsData.map((row, idx) => (
                   <tr key={row.id}>
                     {/* Sr. No. */}
                     <td className={styles.srNoCol}>{idx + 1}</td>
@@ -625,7 +928,7 @@ export default function Reports() {
 
                     {/* Avg Order Value */}
                     <td className={styles.numberCol}>
-                      ₹{row.avgOrderValue.toLocaleString('en-IN')}
+                      ₹{Number(row.avgOrderValue).toLocaleString('en-IN')}
                     </td>
 
                     {/* Dispute Rate */}
@@ -660,7 +963,7 @@ export default function Reports() {
                 </tr>
               </thead>
               <tbody>
-                {USER_GROWTH_DATA.map((row, idx) => (
+                {userGrowthData.map((row, idx) => (
                   <tr key={row.id}>
                     {/* Sr. No. */}
                     <td className={styles.srNoCol}>{idx + 1}</td>
@@ -675,7 +978,7 @@ export default function Reports() {
 
                     {/* New Guests */}
                     <td className={styles.numberCol}>
-                      +{row.newGuests.toLocaleString('en-IN')}
+                      +{Number(row.newGuests).toLocaleString('en-IN')}
                     </td>
 
                     {/* New Hosts */}
@@ -685,7 +988,7 @@ export default function Reports() {
 
                     {/* Total Active Users */}
                     <td style={{ fontWeight: '600', color: '#1e293b' }}>
-                      {row.totalActiveUsers.toLocaleString('en-IN')}
+                      {Number(row.totalActiveUsers).toLocaleString('en-IN')}
                     </td>
 
                     {/* KYC Rate */}

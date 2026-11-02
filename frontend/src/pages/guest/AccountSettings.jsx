@@ -89,29 +89,29 @@ function AccountSettings() {
 
   // Dynamic Profile state from Backend PostgreSQL
   const [profileUser, setProfileUser] = useState({
-    id: null,
-    firstName: 'Mohammad',
-    lastName: 'Zeeshan',
+    id: authUser?.id || null,
+    firstName: authUser?.firstName || '',
+    lastName: authUser?.lastName || '',
     preferredFirstName: '',
     useFirstNameOnly: true,
     hostDisplayName: '',
-    email: 'zeeshandivanextechnologies@gmail.com',
-    phone: '',
+    email: authUser?.email || '',
+    phone: authUser?.phone || '',
     identityVerificationStatus: 'Not started',
-    residentialAddress: 'Provided',
+    residentialAddress: '',
     postalAddress: '',
     emergencyContactName: '',
     emergencyContactRelationship: '',
     emergencyContactLanguage: 'English',
     emergencyContactEmail: '',
     emergencyContactPhone: '',
-    passwordUpdatedAt: '2026-10-09T10:00:00.000Z',
+    passwordUpdatedAt: null,
     passkeyEnabled: false,
     passkeyType: 'Fingerprint, face or PIN',
     passkeyCreatedAt: null,
-    lastActiveDevice: 'Windows 10.0 • Chrome',
-    lastActiveLocation: 'Jaipur, Rajasthan',
-    lastLoginAt: '2026-10-07T11:48:00.000Z'
+    lastActiveDevice: typeof navigator !== 'undefined' ? (navigator.userAgent.includes('Windows') ? 'Windows • Chrome' : 'Current Device') : 'Current Device',
+    lastActiveLocation: 'Current Location',
+    lastLoginAt: new Date().toISOString()
   });
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -266,6 +266,67 @@ function AccountSettings() {
     fetchProfile();
     return () => { isMounted = false; };
   }, [authUser?.id, authUser?.email]);
+
+  // Professional Hosting Tools Handlers
+  const handleToggleProHostingTools = async () => {
+    const nextVal = !proHostingTools;
+    setProHostingTools(nextVal);
+    try {
+      const res = await updateUserProfileApi({
+        id: profileUser.id || authUser?.id,
+        proHostingTools: nextVal
+      });
+      if (res.success) {
+        toast.success(nextVal ? 'Professional hosting tools enabled!' : 'Professional hosting tools disabled.');
+      }
+    } catch (e) {
+      toast.error('Failed to update hosting tools');
+    }
+  };
+
+  const handleSaveCustomUrl = async () => {
+    if (!customProfileUrl.trim()) return;
+    try {
+      setIsSavingCustomUrl(true);
+      const res = await updateUserProfileApi({
+        id: profileUser.id || authUser?.id,
+        customProfileUrl: customProfileUrl.trim()
+      });
+      if (res.success) {
+        toast.success('Custom profile URL saved successfully!');
+      } else {
+        toast.error(res.message || 'Failed to save URL');
+      }
+    } catch (e) {
+      toast.error('Network error saving custom URL');
+    } finally {
+      setIsSavingCustomUrl(false);
+    }
+  };
+
+  // Travel for Work Handler
+  const handleSaveWorkEmail = async () => {
+    if (!workEmail.trim() || !workEmail.includes('@')) {
+      toast.error('Please enter a valid work email address');
+      return;
+    }
+    try {
+      setIsSavingWorkEmail(true);
+      const res = await updateUserProfileApi({
+        id: profileUser.id || authUser?.id,
+        workEmail: workEmail.trim()
+      });
+      if (res.success) {
+        toast.success(`Work email ${workEmail.trim()} verified & linked to Airbnb for Work!`);
+      } else {
+        toast.error(res.message || 'Failed to link work email');
+      }
+    } catch (e) {
+      toast.error('Network error linking work email');
+    } finally {
+      setIsSavingWorkEmail(false);
+    }
+  };
 
   const handleStartEdit = (item) => {
     setFormData({
@@ -1317,7 +1378,7 @@ function AccountSettings() {
                                       className={styles.formControl} 
                                       value={formData.hostDisplayName}
                                       onChange={(e) => setFormData(prev => ({ ...prev, hostDisplayName: e.target.value }))}
-                                      placeholder="e.g. The Zeeshan Villa" 
+                                      placeholder="e.g. The Grand Villa" 
                                     />
                                   </div>
                                 )}

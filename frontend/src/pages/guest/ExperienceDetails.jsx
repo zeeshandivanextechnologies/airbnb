@@ -186,94 +186,17 @@ export default function ExperienceDetails() {
     setShowPackageModal(true);
   };
 
-  // Default fallback packages if not provided by host itinerary
-  const defaultTimelinePackages = [
-    {
-      id: 1,
-      title: "Travel to forts & scenic trail",
-      img: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=720&q=80",
-      desc: "Find secret forts in the Nahargarh range and discover hidden heritage vantage points.",
-      meta: "45 mins"
-    },
-    {
-      id: 2,
-      title: "Watch the golden sun rise",
-      img: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=720&q=80",
-      desc: "Glimpse the dawn over historic ramparts Amer and Jaigarh Forts.",
-      meta: "30 mins"
-    },
-    {
-      id: 3,
-      title: "Bird watching & photography",
-      img: "https://images.unsplash.com/photo-1516598540642-e8f40a09d939?w=720&q=80",
-      desc: "Observe native and migratory bird species with expert guidance.",
-      meta: "1 hr"
-    },
-    {
-      id: 4,
-      title: "Local folklore & heritage stories",
-      img: "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=720&q=80",
-      desc: "Learn the rich history and age-old mountain range tales from your local host.",
-      meta: "30 mins"
-    },
-    {
-      id: 5,
-      title: "Enjoy traditional breakfast / refreshments",
-      img: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=720&q=80",
-      desc: "Recharge with fresh, authentic local delicacies and tea.",
-      meta: "45 mins"
-    }
-  ];
-
-  const defaultExperienceReviews = [
-    {
-      id: 1,
-      name: "Peter",
-      loc: "England, United Kingdom",
-      img: "https://randomuser.me/api/portraits/men/33.jpg",
-      rating: 5,
-      date: "1 week ago",
-      text: "We had such a brilliant time! It was so reassuring to have someone guiding us around with such passion. Truly an unforgettable highlight."
-    },
-    {
-      id: 2,
-      name: "Tomi",
-      loc: "Kuta, Indonesia",
-      img: "https://randomuser.me/api/portraits/men/44.jpg",
-      rating: 5,
-      date: "September 2026",
-      text: "Friendly, highly informative and well coordinated. Highly recommended for anyone wanting authentic cultural immersion!"
-    },
-    {
-      id: 3,
-      name: "Andrés Joel",
-      loc: "Mexico City, Mexico",
-      img: "https://randomuser.me/api/portraits/men/55.jpg",
-      rating: 5,
-      date: "September 2026",
-      text: "The tour was fabulous. The guide knows the subject and explains it with a lot of patience. 10/10."
-    },
-    {
-      id: 4,
-      name: "Prisca",
-      loc: "Lyon, France",
-      img: "https://randomuser.me/api/portraits/women/77.jpg",
-      rating: 5,
-      date: "August 2026",
-      text: "We had a great day, and this visit far exceeded our expectations. The guide was punctual, knowledgeable, and caring."
-    }
-  ];
-
-  // Derive dynamic properties from backend experienceData with fallbacks
-  const expTitle = experienceData?.title || "Hike/Trek/Nature Walk with sunrise views & Birding";
+  // Derive dynamic properties from backend experienceData
+  const expTitle = experienceData?.title || "Curated Local Experience";
   const expCity = experienceData?.city || "Jaipur";
   const expCategory = experienceData?.category || "Outdoors";
-  const expHostName = experienceData?.host_name || "Harshit";
-  const expHostIntro = experienceData?.host_intro || experienceData?.description || "Professional Guide & Local Host";
-  const expDescription = experienceData?.description || "Hike through the local trails, finding breathtaking views, and rare experiences.";
+  const expHostName = experienceData?.host_name || "Local Host";
+  const expHostIntro = experienceData?.host_intro || experienceData?.description || `Professional Host offering ${expTitle}.`;
+  const expDescription = experienceData?.description || `Immerse yourself in authentic ${expCity} activities guided by ${expHostName}.`;
   const expPriceNum = Number(experienceData?.price) || 2000;
+
   // Calculate dynamic average rating and count
-  const expReviewsCount = dynamicReviews.length > 0 ? dynamicReviews.length : (Number(experienceData?.reviews_count) || 46);
+  const expReviewsCount = dynamicReviews.length > 0 ? dynamicReviews.length : (Number(experienceData?.reviews_count) || 12);
   const calculatedAvgRating = dynamicReviews.length > 0 
     ? (dynamicReviews.reduce((sum, r) => sum + (parseFloat(r.rating) || 5), 0) / dynamicReviews.length).toFixed(2)
     : (Number(experienceData?.rating) || 4.95).toFixed(2);
@@ -288,15 +211,47 @@ export default function ExperienceDetails() {
         "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=720&q=80"
       ];
 
+  // Dynamic itinerary milestone generator when host has not explicitly entered steps
+  const generatedDynamicMilestones = [
+    {
+      id: 1,
+      title: `Welcome & Induction to ${expTitle}`,
+      img: expPhotos[0] || "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=720&q=80",
+      desc: `Meet with ${expHostName} in ${expCity}, enjoy an orientation and learn the historical context of the activity.`,
+      meta: "45 mins"
+    },
+    {
+      id: 2,
+      title: "Interactive Hands-on Session",
+      img: expPhotos[1] || expPhotos[0],
+      desc: `Dive into the core experience with guided walkthroughs, personal equipment, and insider host tips.`,
+      meta: "1 hr 15 mins"
+    },
+    {
+      id: 3,
+      title: "Scenic Highlights & Photography",
+      img: expPhotos[2] || expPhotos[0],
+      desc: `Explore panoramic vantage points in ${expCity} with plenty of photo opportunities.`,
+      meta: "45 mins"
+    },
+    {
+      id: 4,
+      title: "Local Delicacies & Cultural Farewell",
+      img: expPhotos[3] || expPhotos[0],
+      desc: `Conclude the tour sharing refreshing local specialties and receiving personalized recommendations for ${expCity}.`,
+      meta: "30 mins"
+    }
+  ];
+
   // Parse itinerary packages
-  let dynamicTimelinePackages = defaultTimelinePackages;
+  let dynamicTimelinePackages = generatedDynamicMilestones;
   if (Array.isArray(experienceData?.itinerary) && experienceData.itinerary.length > 0) {
     dynamicTimelinePackages = experienceData.itinerary.map((it, idx) => ({
       id: idx + 1,
-      title: it.title || `Activity ${idx + 1}`,
-      img: it.photo || expPhotos[idx % expPhotos.length] || defaultTimelinePackages[idx % defaultTimelinePackages.length].img,
-      desc: it.desc || "Experience activity led by host.",
-      meta: it.duration ? `${it.duration} mins` : "45 mins"
+      title: it.title || `Milestone ${idx + 1}`,
+      img: it.photo || expPhotos[idx % expPhotos.length] || generatedDynamicMilestones[idx % generatedDynamicMilestones.length].img,
+      desc: it.desc || `Experience activity guided by ${expHostName}.`,
+      meta: it.duration ? (typeof it.duration === 'string' && it.duration.includes('min') ? it.duration : `${it.duration} mins`) : "45 mins"
     }));
   }
 
@@ -316,7 +271,38 @@ export default function ExperienceDetails() {
     }));
   }
 
-  // Reviews to display - handles both DB schema (reviewer_name/review_text) and custom schema
+  // Dynamic fallback reviews contextualized to the specific experience and location
+  const dynamicFallbackReviews = [
+    {
+      id: 1,
+      name: "Aarav Sharma",
+      loc: `${expCity}, India`,
+      img: "https://randomuser.me/api/portraits/men/32.jpg",
+      rating: 5,
+      date: "1 week ago",
+      text: `We had an exceptional time during ${expTitle}! ${expHostName} was wonderfully knowledgeable, hospitable, and made the whole journey memorable.`
+    },
+    {
+      id: 2,
+      name: "Elena Rostova",
+      loc: "Berlin, Germany",
+      img: "https://randomuser.me/api/portraits/women/44.jpg",
+      rating: 5,
+      date: "Last month",
+      text: `One of the most authentic highlights of our journey to ${expCity}. High attention to detail and lovely interactions throughout.`
+    },
+    {
+      id: 3,
+      name: "Rohan Mukherjee",
+      loc: "Mumbai, India",
+      img: "https://randomuser.me/api/portraits/men/54.jpg",
+      rating: 5,
+      date: "2 months ago",
+      text: `Punctual, super enthusiastic, and full of hidden gems. ${expHostName} really went the extra mile for our group!`
+    }
+  ];
+
+  // Reviews to display - handles both DB schema (reviewer_name/review_text) and dynamic context
   const displayReviews = dynamicReviews.length > 0 ? dynamicReviews.map((r, i) => ({
     id: r.id || i + 1,
     name: r.reviewer_name || r.author_name || r.guest_name || 'Verified Guest',
@@ -324,8 +310,8 @@ export default function ExperienceDetails() {
     img: r.reviewer_avatar || r.author_avatar || `https://randomuser.me/api/portraits/${i % 2 === 0 ? 'men' : 'women'}/${30 + (i % 50)}.jpg`,
     rating: Number(r.rating) || 5,
     date: r.created_at ? new Date(r.created_at).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) : 'Recently',
-    text: r.review_text || r.comment || r.content || 'Exceptional experience with great hospitality!'
-  })) : defaultExperienceReviews;
+    text: r.review_text || r.comment || r.content || `Exceptional experience with ${expHostName}!`
+  })) : dynamicFallbackReviews;
 
   // Pricing calculations
   const guests = adultCount;

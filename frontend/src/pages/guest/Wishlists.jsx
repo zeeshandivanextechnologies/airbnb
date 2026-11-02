@@ -2,27 +2,48 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaTimes } from 'react-icons/fa';
 import styles from '../../components/styles/Wishlists.module.css';
-import { getStoredWishlists, deleteWishlist } from '../../utils/wishlistStorage';
+import { getStoredWishlists, fetchLiveWishlists, deleteWishlist } from '../../utils/wishlistStorage';
 import toast from 'react-hot-toast';
 
 function Wishlists() {
   const navigate = useNavigate();
   const [wishlists, setWishlists] = useState(getStoredWishlists());
+  const [dynamicThumbnails, setDynamicThumbnails] = useState(() => {
+    try {
+      const cached = localStorage.getItem('airbnb_wishlists_dynamic_thumbnails');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   const [wishlistToDelete, setWishlistToDelete] = useState(null);
 
   useEffect(() => {
+    // Initial fetch from backend PostgreSQL database
+    fetchLiveWishlists().then(data => {
+      if (Array.isArray(data)) setWishlists(data);
+      try {
+        const cached = localStorage.getItem('airbnb_wishlists_dynamic_thumbnails');
+        if (cached) setDynamicThumbnails(JSON.parse(cached));
+      } catch {}
+    });
+
     const handleUpdate = () => {
       setWishlists(getStoredWishlists());
+      try {
+        const cached = localStorage.getItem('airbnb_wishlists_dynamic_thumbnails');
+        if (cached) setDynamicThumbnails(JSON.parse(cached));
+      } catch {}
     };
     window.addEventListener('airbnb_wishlists_updated', handleUpdate);
     return () => window.removeEventListener('airbnb_wishlists_updated', handleUpdate);
   }, []);
 
   const defaultThumbnails = [
-    'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=400&q=80',
-    'https://images.unsplash.com/photo-1548013146-72479768bada?w=400&q=80',
-    'https://images.unsplash.com/photo-1510414842594-a61c69b5ae57?w=400&q=80',
-    'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400&q=80'
+    dynamicThumbnails[0] || 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=400&q=80',
+    dynamicThumbnails[1] || 'https://images.unsplash.com/photo-1548013146-72479768bada?w=400&q=80',
+    dynamicThumbnails[2] || 'https://images.unsplash.com/photo-1510414842594-a61c69b5ae57?w=400&q=80',
+    dynamicThumbnails[3] || 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400&q=80'
   ];
 
   const handleDeleteConfirm = () => {
