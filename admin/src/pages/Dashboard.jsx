@@ -41,24 +41,8 @@ export default function Dashboard() {
     conversionRate: '0.0%'
   });
 
-  const [dailyChartData, setDailyChartData] = useState([
-    { label: 'Mon', revenue: 0, bookings: 0 },
-    { label: 'Tue', revenue: 0, bookings: 0 },
-    { label: 'Wed', revenue: 0, bookings: 0 },
-    { label: 'Thu', revenue: 0, bookings: 0 },
-    { label: 'Fri', revenue: 0, bookings: 0 },
-    { label: 'Sat', revenue: 0, bookings: 0 },
-    { label: 'Sun', revenue: 0, bookings: 0 }
-  ]);
-
-  const [monthlyChartData, setMonthlyChartData] = useState([
-    { label: 'May', revenue: 0, bookings: 0 },
-    { label: 'Jun', revenue: 0, bookings: 0 },
-    { label: 'Jul', revenue: 0, bookings: 0 },
-    { label: 'Aug', revenue: 0, bookings: 0 },
-    { label: 'Sep', revenue: 0, bookings: 0 },
-    { label: 'Oct', revenue: 0, bookings: 0 }
-  ]);
+  const [dailyChartData, setDailyChartData] = useState([]);
+  const [monthlyChartData, setMonthlyChartData] = useState([]);
 
   const [categoryShareList, setCategoryShareList] = useState([]);
   const [liveActivities, setLiveActivities] = useState([]);
@@ -151,17 +135,10 @@ export default function Dashboard() {
     const revenueValues = activeData.map(d => d.revenue);
     const bookingsValues = activeData.map(d => d.bookings);
 
-    // Fallback if data is 0 across all
-    const hasAnyVal = revenueValues.some(v => v > 0) || bookingsValues.some(v => v > 0);
-    const finalCategories = hasAnyVal 
-      ? categories 
-      : (isDaily ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct']);
-    const finalRevenue = hasAnyVal 
-      ? revenueValues 
-      : (isDaily ? [45000, 62000, 58000, 78000, 95000, 120000, 105000] : [2800000, 3200000, 3600000, 4100000, 4450000, 4825000]);
-    const finalBookings = hasAnyVal 
-      ? bookingsValues 
-      : (isDaily ? [32, 44, 39, 55, 72, 94, 86] : [2100, 2450, 2780, 3120, 3410, 3680]);
+    // Dynamic chart values straight from database
+    const finalCategories = categories.length > 0 ? categories : (isDaily ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct']);
+    const finalRevenue = revenueValues;
+    const finalBookings = bookingsValues;
 
     return {
       series: [
@@ -268,66 +245,15 @@ export default function Dashboard() {
 
   const chartConfig = getApexChartConfig();
 
-  // 4. Recent Realtime Activity (from DB or fallback)
-  const fallbackActivities = [
-    {
-      id: 1,
-      title: 'New booking confirmed for "Sunset Hilltop Heritage"',
-      sub: 'Guest: Rahul Verma • 3 Nights • Total: ₹17,200',
-      time: '12 mins ago',
-      icon: <FaCalendarCheck />,
-      bg: '#fefce8',
-      color: '#ca8a04'
-    },
-    {
-      id: 2,
-      title: 'New listing submitted: "Goan Beachfront Eco Cottage"',
-      sub: 'Host: Ananya Roy • North Goa • Needs Quality Approval',
-      time: '35 mins ago',
-      icon: <FaPlusCircle />,
-      bg: '#fff1f2',
-      color: '#ff385c'
-    },
-    {
-      id: 3,
-      title: 'Commission credited: ₹11,440 (20% platform fee)',
-      sub: 'Transaction Ref #TXN-99824 • Automated payout settlement',
-      time: '1 hour ago',
-      icon: <FaPercentage />,
-      bg: '#f0fdf4',
-      color: '#16a34a'
-    },
-    {
-      id: 4,
-      title: 'Host verified: Priya Sharma (Jaipur)',
-      sub: 'KYC documents verified • Government ID verified',
-      time: '2 hours ago',
-      icon: <FaCheckCircle />,
-      bg: '#eff6ff',
-      color: '#2563eb'
-    },
-    {
-      id: 5,
-      title: '5-star guest review published for Mohammad Art Stay',
-      sub: '"Incredible hospitality and memorable sketches"',
-      time: '3 hours ago',
-      icon: <FaStar />,
-      bg: '#fdf2f8',
-      color: '#db2777'
-    }
-  ];
-
-  const recentActivities = liveActivities.length > 0 
-    ? liveActivities.map((act, idx) => ({
-        id: act.id || idx,
-        title: act.title,
-        sub: act.sub,
-        time: act.time,
-        icon: act.status === 'CONFIRMED' ? <FaCalendarCheck /> : act.status === 'CANCELLED' ? <FaArrowDown /> : <FaPlusCircle />,
-        bg: act.status === 'CONFIRMED' ? '#f0fdf4' : act.status === 'CANCELLED' ? '#fff1f2' : '#fefce8',
-        color: act.status === 'CONFIRMED' ? '#16a34a' : act.status === 'CANCELLED' ? '#ff385c' : '#ca8a04'
-      }))
-    : fallbackActivities;
+  const recentActivities = liveActivities.map((act, idx) => ({
+    id: act.id || idx,
+    title: act.title,
+    sub: act.sub,
+    time: act.time,
+    icon: act.status === 'CONFIRMED' ? <FaCalendarCheck /> : act.status === 'CANCELLED' ? <FaArrowDown /> : <FaPlusCircle />,
+    bg: act.status === 'CONFIRMED' ? '#f0fdf4' : act.status === 'CANCELLED' ? '#fff1f2' : '#fefce8',
+    color: act.status === 'CONFIRMED' ? '#16a34a' : act.status === 'CANCELLED' ? '#ff385c' : '#ca8a04'
+  }));
 
   return (
     <>
@@ -488,7 +414,7 @@ export default function Dashboard() {
               {categoryShareList.length > 0 ? (
                 (() => {
                   const totalCatRev = categoryShareList.reduce((acc, c) => acc + (parseFloat(c.total_revenue) || 0), 0) || 1;
-                  const catColors = ['#ff385c', '#2563eb', '#16a34a', '#ca8a04'];
+                  const catColors = ['#ff385c', '#2563eb', '#16a34a', '#ca8a04', '#9333ea'];
                   return categoryShareList.map((cat, idx) => {
                     const catRev = parseFloat(cat.total_revenue) || 0;
                     const pct = Math.max(5, Math.round((catRev / totalCatRev) * 100));
@@ -514,47 +440,9 @@ export default function Dashboard() {
                   });
                 })()
               ) : (
-                <>
-                  <div className={styles.metricBarRow}>
-                    <div className={styles.metricBarHeader}>
-                      <span className={styles.metricBarLabel}>Villas & Luxury Stays</span>
-                      <span className={styles.metricBarValue}>₹22.5L (46%)</span>
-                    </div>
-                    <div className={styles.metricProgressTrack}>
-                      <div className={styles.metricProgressBar} style={{ width: '46%', background: '#ff385c' }} />
-                    </div>
-                  </div>
-
-                  <div className={styles.metricBarRow}>
-                    <div className={styles.metricBarHeader}>
-                      <span className={styles.metricBarLabel}>Homestays & Heritage</span>
-                      <span className={styles.metricBarValue}>₹14.2L (30%)</span>
-                    </div>
-                    <div className={styles.metricProgressTrack}>
-                      <div className={styles.metricProgressBar} style={{ width: '30%', background: '#2563eb' }} />
-                    </div>
-                  </div>
-
-                  <div className={styles.metricBarRow}>
-                    <div className={styles.metricBarHeader}>
-                      <span className={styles.metricBarLabel}>Experiences & Workshops</span>
-                      <span className={styles.metricBarValue}>₹7.8L (16%)</span>
-                    </div>
-                    <div className={styles.metricProgressTrack}>
-                      <div className={styles.metricProgressBar} style={{ width: '16%', background: '#16a34a' }} />
-                    </div>
-                  </div>
-
-                  <div className={styles.metricBarRow}>
-                    <div className={styles.metricBarHeader}>
-                      <span className={styles.metricBarLabel}>Cottages & Cabins</span>
-                      <span className={styles.metricBarValue}>₹3.75L (8%)</span>
-                    </div>
-                    <div className={styles.metricProgressTrack}>
-                      <div className={styles.metricProgressBar} style={{ width: '8%', background: '#ca8a04' }} />
-                    </div>
-                  </div>
-                </>
+                <div style={{ padding: '24px 0', textAlign: 'center', color: '#717171', fontSize: '14px' }}>
+                  No category data recorded yet
+                </div>
               )}
             </div>
 
@@ -588,23 +476,29 @@ export default function Dashboard() {
             </div>
 
             <div className={styles.activityList}>
-              {recentActivities.map((act) => (
-                <div key={act.id} className={styles.activityItem}>
-                  <div className={styles.activityLeft}>
-                    <div 
-                      className={styles.activityIcon}
-                      style={{ backgroundColor: act.bg, color: act.color }}
-                    >
-                      {act.icon}
+              {recentActivities.length > 0 ? (
+                recentActivities.map((act) => (
+                  <div key={act.id} className={styles.activityItem}>
+                    <div className={styles.activityLeft}>
+                      <div 
+                        className={styles.activityIcon}
+                        style={{ backgroundColor: act.bg, color: act.color }}
+                      >
+                        {act.icon}
+                      </div>
+                      <div className={styles.activityDetails}>
+                        <span className={styles.activityTitle}>{act.title}</span>
+                        <span className={styles.activitySub}>{act.sub}</span>
+                      </div>
                     </div>
-                    <div className={styles.activityDetails}>
-                      <span className={styles.activityTitle}>{act.title}</span>
-                      <span className={styles.activitySub}>{act.sub}</span>
-                    </div>
+                    <div className={styles.activityTime}>{act.time}</div>
                   </div>
-                  <div className={styles.activityTime}>{act.time}</div>
+                ))
+              ) : (
+                <div style={{ padding: '24px 0', textAlign: 'center', color: '#717171', fontSize: '14px' }}>
+                  No recent activities recorded yet
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>

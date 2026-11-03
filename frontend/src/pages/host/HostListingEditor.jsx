@@ -652,19 +652,22 @@ function HostListingEditor() {
       if (data.success && data.data) {
         setListing(prev => ({
           ...prev,
-          title: editFormData.title,
-          description: editFormData.description,
-          price: editFormData.price,
-          category: editFormData.category,
-          host_name: editFormData.host_name,
-          years_experience: editFormData.years_experience,
-          host_intro: editFormData.host_intro,
-          host_qualifications: editFormData.host_qualifications,
-          host_recognition: editFormData.host_recognition,
-          host_phone: editFormData.host_phone,
-          experience_description: editFormData.experience_description,
-          degree: editFormData.degree,
-          career_highlight: editFormData.career_highlight
+          title: editFormData.title !== undefined ? editFormData.title : prev.title,
+          description: editFormData.description !== undefined ? editFormData.description : prev.description,
+          price: editFormData.price !== undefined ? editFormData.price : prev.price,
+          category: editFormData.category !== undefined ? editFormData.category : prev.category,
+          max_guests: editFormData.max_guests !== undefined ? editFormData.max_guests : prev.max_guests,
+          amenities: editFormData.amenities !== undefined ? editFormData.amenities : prev.amenities,
+          discounts: editFormData.discounts !== undefined ? editFormData.discounts : prev.discounts,
+          host_name: editFormData.host_name !== undefined ? editFormData.host_name : prev.host_name,
+          years_experience: editFormData.years_experience !== undefined ? editFormData.years_experience : prev.years_experience,
+          host_intro: editFormData.host_intro !== undefined ? editFormData.host_intro : prev.host_intro,
+          host_qualifications: editFormData.host_qualifications !== undefined ? editFormData.host_qualifications : prev.host_qualifications,
+          host_recognition: editFormData.host_recognition !== undefined ? editFormData.host_recognition : prev.host_recognition,
+          host_phone: editFormData.host_phone !== undefined ? editFormData.host_phone : prev.host_phone,
+          experience_description: editFormData.experience_description !== undefined ? editFormData.experience_description : prev.experience_description,
+          degree: editFormData.degree !== undefined ? editFormData.degree : prev.degree,
+          career_highlight: editFormData.career_highlight !== undefined ? editFormData.career_highlight : prev.career_highlight
         }));
         if (['experience_detail', 'degree_detail', 'career_highlight_detail'].includes(editModal)) {
           setEditModal('qualifications');
@@ -1473,10 +1476,14 @@ function HostListingEditor() {
               {/* 6. Pricing Card */}
               <div 
                 className={`${styles.cardItem} ${styles.editableCard}`}
-                style={{cursor: 'pointer'}}
+                style={{
+                  cursor: 'pointer',
+                  border: editModal === 'price' ? '2px solid #222222' : '1px solid #ebebeb',
+                  backgroundColor: editModal === 'price' ? '#fcfcfc' : '#ffffff'
+                }}
                 onClick={() => {
                   setEditFormData(prev => ({ ...prev, price: Number(listing.price) || 0 }));
-                  setEditModal('price');
+                  setEditModal(editModal === 'price' ? null : 'price');
                 }}
               >
                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
@@ -1489,10 +1496,37 @@ function HostListingEditor() {
               </div>
 
               {/* 8. Discounts Card */}
-              <div className={styles.cardItem}>
-                <h3 className={styles.cardTitleLg}>Discounts</h3>
+              <div 
+                className={`${styles.cardItem} ${styles.editableCard}`}
+                style={{
+                  cursor: 'pointer',
+                  border: editModal === 'discounts' ? '2px solid #222222' : '1px solid #ebebeb',
+                  backgroundColor: editModal === 'discounts' ? '#fcfcfc' : '#ffffff'
+                }}
+                onClick={() => {
+                  setEditFormData(prev => ({
+                    ...prev,
+                    discounts: typeof listing.discounts === 'object' && listing.discounts !== null ? listing.discounts : {}
+                  }));
+                  setEditModal(editModal === 'discounts' ? null : 'discounts');
+                }}
+              >
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <h3 className={styles.cardTitleLg}>Discounts</h3>
+                  <FaEdit size={14} color="#717171" />
+                </div>
                 {listing.discounts && Object.keys(listing.discounts).length > 0 ? (
                   <>
+                    {listing.discounts.weekly && (
+                      <p className={styles.cardSub} style={{marginBottom: '4px'}}>
+                        {listing.discounts.weekly}% weekly discount
+                      </p>
+                    )}
+                    {listing.discounts.monthly && (
+                      <p className={styles.cardSub} style={{marginBottom: '4px'}}>
+                        {listing.discounts.monthly}% monthly discount
+                      </p>
+                    )}
                     {listing.discounts.limitedTime && (
                       <p className={styles.cardSub} style={{marginBottom: '4px'}}>
                         {listing.discounts.limitedTime}% limited-time promotional discount
@@ -1500,13 +1534,16 @@ function HostListingEditor() {
                     )}
                     {listing.discounts.earlyBird && (
                       <p className={styles.cardSub} style={{marginBottom: '4px'}}>
-                        20% early-bird discount (booked 3+ weeks in advance)
+                        {listing.discounts.earlyBird}% early-bird discount
                       </p>
                     )}
                     {listing.discounts.largeGroup && (
                       <p className={styles.cardSub}>
                         {listing.discounts.largeGroupDiscount || 10}% large group discount ({listing.discounts.minGuests || 4}+ guests)
                       </p>
+                    )}
+                    {!listing.discounts.weekly && !listing.discounts.monthly && !listing.discounts.limitedTime && !listing.discounts.earlyBird && (
+                      <p className={styles.cardSub}>Custom discounts configured</p>
                     )}
                   </>
                 ) : (
@@ -1520,10 +1557,14 @@ function HostListingEditor() {
               {/* 9. Description Card */}
               <div 
                 className={`${styles.cardItem} ${styles.editableCard}`}
-                style={{cursor: 'pointer'}}
+                style={{
+                  cursor: 'pointer',
+                  border: editModal === 'description' ? '2px solid #222222' : '1px solid #ebebeb',
+                  backgroundColor: editModal === 'description' ? '#fcfcfc' : '#ffffff'
+                }}
                 onClick={() => {
                   setEditFormData(prev => ({ ...prev, description: listing.description || '' }));
-                  setEditModal('description');
+                  setEditModal(editModal === 'description' ? null : 'description');
                 }}
               >
                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
@@ -1536,35 +1577,66 @@ function HostListingEditor() {
               </div>
 
               {/* 10. Number of Guests */}
-              <div className={styles.cardItem}>
-                <h3 className={styles.cardTitleLg}>Number of guests</h3>
+              <div 
+                className={`${styles.cardItem} ${styles.editableCard}`}
+                style={{
+                  cursor: 'pointer',
+                  border: editModal === 'max_guests' ? '2px solid #222222' : '1px solid #ebebeb',
+                  backgroundColor: editModal === 'max_guests' ? '#fcfcfc' : '#ffffff'
+                }}
+                onClick={() => {
+                  setEditFormData(prev => ({ ...prev, max_guests: Number(listing.max_guests) || 4 }));
+                  setEditModal(editModal === 'max_guests' ? null : 'max_guests');
+                }}
+              >
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <h3 className={styles.cardTitleLg}>Number of guests</h3>
+                  <FaEdit size={14} color="#717171" />
+                </div>
                 <p className={styles.cardSub}>{listing.max_guests || 4} guests maximum</p>
               </div>
 
               {/* 11. Amenities Card */}
-              <div className={styles.cardItem}>
-                 <h3 className={styles.cardTitleLg}>Amenities</h3>
-                 <div style={{display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '16px'}}>
-                   {Array.isArray(listing.amenities) && listing.amenities.length > 0 ? (
-                     listing.amenities.map((am, i) => (
-                       <div key={i} style={{display: 'flex', alignItems: 'center', gap: '14px'}}>
-                         <FaCheckCircle size={18} color="#16a34a" />
-                         <span style={{fontSize: '15px', color: '#222222'}}>{am}</span>
-                       </div>
-                     ))
-                   ) : (
-                     <>
-                       <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
-                         <FaSnowflake size={24} color="#222222" />
-                         <span style={{fontSize: '16px', color: '#222222'}}>Air conditioning</span>
-                       </div>
-                       <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
-                         <FaDoorClosed size={24} color="#222222" />
-                         <span style={{fontSize: '16px', color: '#222222'}}>Essentials</span>
-                       </div>
-                     </>
-                   )}
-                 </div>
+              <div 
+                className={`${styles.cardItem} ${styles.editableCard}`}
+                style={{
+                  cursor: 'pointer',
+                  border: editModal === 'amenities' ? '2px solid #222222' : '1px solid #ebebeb',
+                  backgroundColor: editModal === 'amenities' ? '#fcfcfc' : '#ffffff'
+                }}
+                onClick={() => {
+                  setEditFormData(prev => ({
+                    ...prev,
+                    amenities: Array.isArray(listing.amenities) ? [...listing.amenities] : ['Air conditioning', 'Essentials']
+                  }));
+                  setEditModal(editModal === 'amenities' ? null : 'amenities');
+                }}
+              >
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <h3 className={styles.cardTitleLg}>Amenities</h3>
+                  <FaEdit size={14} color="#717171" />
+                </div>
+                <div style={{display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '16px'}}>
+                  {Array.isArray(listing.amenities) && listing.amenities.length > 0 ? (
+                    listing.amenities.map((am, i) => (
+                      <div key={i} style={{display: 'flex', alignItems: 'center', gap: '14px'}}>
+                        <FaCheckCircle size={18} color="#16a34a" />
+                        <span style={{fontSize: '15px', color: '#222222'}}>{am}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <>
+                      <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
+                        <FaSnowflake size={24} color="#222222" />
+                        <span style={{fontSize: '16px', color: '#222222'}}>Air conditioning</span>
+                      </div>
+                      <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
+                        <FaDoorClosed size={24} color="#222222" />
+                        <span style={{fontSize: '16px', color: '#222222'}}>Essentials</span>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
 
               {/* 12. Location Card */}
@@ -1630,28 +1702,56 @@ function HostListingEditor() {
               </div>
 
               {/* 14. House Rules */}
-              <div className={styles.cardItem}>
-                 <h3 className={styles.cardTitleLg}>House rules</h3>
-                 <div style={{display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px'}}>
-                   <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
-                     <FaClock size={20} color="#222222" />
-                     <span style={{fontSize: '15px', color: '#222222'}}>
-                       Check-in after {checkInStart || '3:00 pm'}
-                     </span>
-                   </div>
-                   <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
-                     <FaUserFriends size={20} color="#222222" />
-                     <span style={{fontSize: '15px', color: '#222222'}}>
-                       {listing.max_guests || 4} guests maximum
-                     </span>
-                   </div>
-                 </div>
+              <div 
+                className={`${styles.cardItem} ${styles.editableCard}`}
+                style={{
+                  cursor: 'pointer',
+                  border: editModal === 'house_rules' ? '2px solid #222222' : '1px solid #ebebeb',
+                  backgroundColor: editModal === 'house_rules' ? '#fcfcfc' : '#ffffff'
+                }}
+                onClick={() => {
+                  setEditModal(editModal === 'house_rules' ? null : 'house_rules');
+                }}
+              >
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <h3 className={styles.cardTitleLg}>House rules</h3>
+                  <FaEdit size={14} color="#717171" />
+                </div>
+                <div style={{display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px'}}>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
+                    <FaClock size={20} color="#222222" />
+                    <span style={{fontSize: '15px', color: '#222222'}}>
+                      Check-in after {checkInStart || '3:00 pm'}
+                    </span>
+                  </div>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
+                    <FaUserFriends size={20} color="#222222" />
+                    <span style={{fontSize: '15px', color: '#222222'}}>
+                      {listing.max_guests || 4} guests maximum
+                    </span>
+                  </div>
+                </div>
               </div>
 
               {/* 15. Cancellation Policy */}
-              <div className={styles.cardItem}>
-                <h3 className={styles.cardTitleLg}>Cancellation policy</h3>
-                <p className={styles.cardSub} style={{marginBottom: '4px'}}>Flexible cancellation 24h prior</p>
+              <div 
+                className={`${styles.cardItem} ${styles.editableCard}`}
+                style={{
+                  cursor: 'pointer',
+                  border: editModal === 'cancellation_policy' ? '2px solid #222222' : '1px solid #ebebeb',
+                  backgroundColor: editModal === 'cancellation_policy' ? '#fcfcfc' : '#ffffff'
+                }}
+                onClick={() => {
+                  setEditModal(editModal === 'cancellation_policy' ? null : 'cancellation_policy');
+                }}
+              >
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <h3 className={styles.cardTitleLg}>Cancellation policy</h3>
+                  <FaEdit size={14} color="#717171" />
+                </div>
+                <p className={styles.cardSub} style={{marginBottom: '4px'}}>
+                  {listing.cancellation_policy || 'Flexible cancellation 24h prior'}
+                </p>
                 <p className={styles.cardSub}>Full refund within grace period</p>
               </div>
             </>
@@ -1662,17 +1762,34 @@ function HostListingEditor() {
 
           {activeTab === 'Arrival guide' && (
             <>
-              <div className={styles.cardItemOutline} style={{display: 'flex', padding: 0, overflow: 'hidden'}}>
+              <div 
+                className={`${styles.cardItemOutline} ${styles.editableCard}`}
+                style={{
+                  display: 'flex', 
+                  padding: 0, 
+                  overflow: 'hidden', 
+                  cursor: 'pointer',
+                  border: editModal === 'arrival_times' ? '2px solid #222222' : '1px solid #ebebeb',
+                  backgroundColor: editModal === 'arrival_times' ? '#fcfcfc' : '#ffffff'
+                }}
+                onClick={() => setEditModal(editModal === 'arrival_times' ? null : 'arrival_times')}
+              >
                 <div style={{flex: 1, padding: '24px', borderRight: '1px solid #ebebeb'}}>
-                  <h3 className={styles.cardTitleLg} style={{fontSize: '14px'}}>
-                    {isService ? 'Service Start' : 'Check-in'}
-                  </h3>
+                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                    <h3 className={styles.cardTitleLg} style={{fontSize: '14px'}}>
+                      {isService ? 'Service Start' : 'Check-in'}
+                    </h3>
+                    <FaEdit size={12} color="#717171" />
+                  </div>
                   <p className={styles.cardSub} style={{fontSize: '14px'}}>{checkInStart}</p>
                 </div>
                 <div style={{flex: 1, padding: '24px'}}>
-                  <h3 className={styles.cardTitleLg} style={{fontSize: '14px'}}>
-                    {isService ? 'Service End' : 'Checkout'}
-                  </h3>
+                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                    <h3 className={styles.cardTitleLg} style={{fontSize: '14px'}}>
+                      {isService ? 'Service End' : 'Checkout'}
+                    </h3>
+                    <FaEdit size={12} color="#717171" />
+                  </div>
                   <p className={styles.cardSub} style={{fontSize: '14px'}}>{checkoutTime}</p>
                 </div>
               </div>
@@ -3223,6 +3340,612 @@ function HostListingEditor() {
                     }
                   }}
                 />
+              </div>
+            </div>
+          ) : editModal === 'price' ? (
+            /* Price Editor Right Panel Screen */
+            <form onSubmit={handleSaveModal} className={styles.rightTitleEditorContainer}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', width: '100%' }}>
+                <div style={{ maxWidth: '580px', width: '100%', textAlign: 'center' }}>
+                  <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#222222', marginBottom: '8px' }}>
+                    Base price
+                  </h1>
+                  <p style={{ fontSize: '15px', color: '#717171', marginBottom: '32px' }}>
+                    Set your base nightly price. You can change this at any time.
+                  </p>
+
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '1px solid #b0b0b0',
+                    borderRadius: '16px',
+                    padding: '18px 24px',
+                    backgroundColor: '#ffffff',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
+                    maxWidth: '420px',
+                    margin: '0 auto'
+                  }}>
+                    <span style={{ fontSize: '32px', fontWeight: '700', color: '#222222', marginRight: '8px' }}>₹</span>
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={editFormData.price || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, price: Number(e.target.value) })}
+                      style={{
+                        border: 'none',
+                        outline: 'none',
+                        fontSize: '36px',
+                        fontWeight: '700',
+                        color: '#222222',
+                        width: '180px',
+                        textAlign: 'center'
+                      }}
+                      placeholder="0"
+                      autoFocus
+                      required
+                    />
+                    <span style={{ fontSize: '16px', color: '#717171', whiteSpace: 'nowrap', marginLeft: '6px' }}>/ night</span>
+                  </div>
+
+                  <div style={{ marginTop: '24px', padding: '14px 24px', backgroundColor: '#f7f7f7', borderRadius: '12px', fontSize: '14px', color: '#717171', display: 'inline-block' }}>
+                    Guest price before taxes: <strong style={{ color: '#222222' }}>₹{Number(editFormData.price || 0).toLocaleString()}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.titleEditorFooter}>
+                <button 
+                  type="button" 
+                  className={styles.titleCancelBtn} 
+                  onClick={() => setEditModal(null)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className={styles.titleSaveBtn} 
+                  disabled={saving || !editFormData.price || editFormData.price <= 0}
+                >
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </form>
+          ) : editModal === 'description' ? (
+            /* Description Editor Right Panel Screen */
+            <form onSubmit={handleSaveModal} className={styles.rightTitleEditorContainer}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', width: '100%' }}>
+                <div style={{ maxWidth: '640px', width: '100%' }}>
+                  <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#222222', marginBottom: '8px', textAlign: 'center' }}>
+                    Description
+                  </h1>
+                  <p style={{ fontSize: '15px', color: '#717171', marginBottom: '24px', textAlign: 'center' }}>
+                    Share what makes your space special, highlight the ambiance, amenities, and neighborhood.
+                  </p>
+
+                  <div style={{ textAlign: 'right', fontSize: '13px', color: '#717171', marginBottom: '8px' }}>
+                    {Math.max(0, 1000 - (editFormData.description || '').length)}/1000 available
+                  </div>
+
+                  <textarea
+                    rows={8}
+                    maxLength={1000}
+                    value={editFormData.description || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                    placeholder="Tell guests about your space, what makes it unique, and what they can expect during their stay..."
+                    style={{
+                      width: '100%',
+                      padding: '18px 20px',
+                      borderRadius: '16px',
+                      border: '1px solid #b0b0b0',
+                      fontSize: '16px',
+                      lineHeight: '1.6',
+                      color: '#222222',
+                      outline: 'none',
+                      resize: 'vertical',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+                    }}
+                    autoFocus
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className={styles.titleEditorFooter}>
+                <button 
+                  type="button" 
+                  className={styles.titleCancelBtn} 
+                  onClick={() => setEditModal(null)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className={styles.titleSaveBtn} 
+                  disabled={saving || !editFormData.description?.trim()}
+                >
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </form>
+          ) : editModal === 'discounts' ? (
+            /* Discounts Editor Right Panel Screen */
+            <form onSubmit={handleSaveModal} className={styles.rightTitleEditorContainer}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', width: '100%' }}>
+                <div style={{ maxWidth: '600px', width: '100%' }}>
+                  <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#222222', marginBottom: '8px', textAlign: 'center' }}>
+                    Discounts
+                  </h1>
+                  <p style={{ fontSize: '15px', color: '#717171', marginBottom: '32px', textAlign: 'center' }}>
+                    Attract more bookings by offering discounts for longer stays.
+                  </p>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    {/* Weekly Discount */}
+                    <div style={{ border: '1px solid #ebebeb', borderRadius: '16px', padding: '20px 24px', backgroundColor: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <div style={{ fontSize: '16px', fontWeight: '600', color: '#222222' }}>Weekly discount</div>
+                          <div style={{ fontSize: '13px', color: '#717171' }}>For stays of 7 nights or more</div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <input
+                            type="number"
+                            min="0"
+                            max="90"
+                            value={editFormData.discounts?.weekly ?? (listing.discounts?.weekly || 10)}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              setEditFormData(prev => ({
+                                ...prev,
+                                discounts: { ...(prev.discounts || listing.discounts || {}), weekly: val }
+                              }));
+                            }}
+                            style={{
+                              width: '74px',
+                              padding: '8px 12px',
+                              borderRadius: '8px',
+                              border: '1px solid #b0b0b0',
+                              textAlign: 'center',
+                              fontSize: '16px',
+                              fontWeight: '600'
+                            }}
+                          />
+                          <span style={{ fontSize: '16px', fontWeight: '600', color: '#222222' }}>%</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Monthly Discount */}
+                    <div style={{ border: '1px solid #ebebeb', borderRadius: '16px', padding: '20px 24px', backgroundColor: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <div style={{ fontSize: '16px', fontWeight: '600', color: '#222222' }}>Monthly discount</div>
+                          <div style={{ fontSize: '13px', color: '#717171' }}>For stays of 28 nights or more</div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <input
+                            type="number"
+                            min="0"
+                            max="90"
+                            value={editFormData.discounts?.monthly ?? (listing.discounts?.monthly || 20)}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              setEditFormData(prev => ({
+                                ...prev,
+                                discounts: { ...(prev.discounts || listing.discounts || {}), monthly: val }
+                              }));
+                            }}
+                            style={{
+                              width: '74px',
+                              padding: '8px 12px',
+                              borderRadius: '8px',
+                              border: '1px solid #b0b0b0',
+                              textAlign: 'center',
+                              fontSize: '16px',
+                              fontWeight: '600'
+                            }}
+                          />
+                          <span style={{ fontSize: '16px', fontWeight: '600', color: '#222222' }}>%</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Early Bird Discount */}
+                    <div style={{ border: '1px solid #ebebeb', borderRadius: '16px', padding: '20px 24px', backgroundColor: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <div style={{ fontSize: '16px', fontWeight: '600', color: '#222222' }}>Early bird discount</div>
+                          <div style={{ fontSize: '13px', color: '#717171' }}>For bookings made 3+ weeks in advance</div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <input
+                            type="number"
+                            min="0"
+                            max="90"
+                            value={editFormData.discounts?.earlyBird ?? (listing.discounts?.earlyBird || 15)}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              setEditFormData(prev => ({
+                                ...prev,
+                                discounts: { ...(prev.discounts || listing.discounts || {}), earlyBird: val }
+                              }));
+                            }}
+                            style={{
+                              width: '74px',
+                              padding: '8px 12px',
+                              borderRadius: '8px',
+                              border: '1px solid #b0b0b0',
+                              textAlign: 'center',
+                              fontSize: '16px',
+                              fontWeight: '600'
+                            }}
+                          />
+                          <span style={{ fontSize: '16px', fontWeight: '600', color: '#222222' }}>%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.titleEditorFooter}>
+                <button 
+                  type="button" 
+                  className={styles.titleCancelBtn} 
+                  onClick={() => setEditModal(null)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className={styles.titleSaveBtn} 
+                  disabled={saving}
+                >
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </form>
+          ) : editModal === 'max_guests' ? (
+            /* Max Guests Editor Right Panel Screen */
+            <form onSubmit={handleSaveModal} className={styles.rightTitleEditorContainer}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', width: '100%' }}>
+                <div style={{ maxWidth: '580px', width: '100%' }}>
+                  <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#222222', marginBottom: '8px', textAlign: 'center' }}>
+                    Number of guests
+                  </h1>
+                  <p style={{ fontSize: '15px', color: '#717171', marginBottom: '32px', textAlign: 'center' }}>
+                    Set the maximum number of guests your space can comfortably accommodate.
+                  </p>
+
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '28px 32px',
+                    border: '1px solid #ebebeb',
+                    borderRadius: '20px',
+                    backgroundColor: '#ffffff',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.04)'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '18px', fontWeight: '600', color: '#222222' }}>Guests</div>
+                      <div style={{ fontSize: '14px', color: '#717171' }}>Ages 13 or above</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                      <button
+                        type="button"
+                        disabled={(editFormData.max_guests || listing.max_guests || 4) <= 1}
+                        onClick={() => setEditFormData(prev => ({
+                          ...prev,
+                          max_guests: Math.max(1, (prev.max_guests || listing.max_guests || 4) - 1)
+                        }))}
+                        style={{
+                          width: '44px',
+                          height: '44px',
+                          borderRadius: '50%',
+                          border: '1px solid #b0b0b0',
+                          backgroundColor: '#ffffff',
+                          cursor: (editFormData.max_guests || listing.max_guests || 4) <= 1 ? 'not-allowed' : 'pointer',
+                          opacity: (editFormData.max_guests || listing.max_guests || 4) <= 1 ? 0.3 : 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '18px'
+                        }}
+                      >
+                        <FaMinus size={14} />
+                      </button>
+                      <span style={{ fontSize: '24px', fontWeight: '700', color: '#222222', minWidth: '36px', textAlign: 'center' }}>
+                        {editFormData.max_guests ?? listing.max_guests ?? 4}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={(editFormData.max_guests || listing.max_guests || 4) >= 30}
+                        onClick={() => setEditFormData(prev => ({
+                          ...prev,
+                          max_guests: Math.min(30, (prev.max_guests || listing.max_guests || 4) + 1)
+                        }))}
+                        style={{
+                          width: '44px',
+                          height: '44px',
+                          borderRadius: '50%',
+                          border: '1px solid #b0b0b0',
+                          backgroundColor: '#ffffff',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '18px'
+                        }}
+                      >
+                        <FaPlus size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.titleEditorFooter}>
+                <button 
+                  type="button" 
+                  className={styles.titleCancelBtn} 
+                  onClick={() => setEditModal(null)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className={styles.titleSaveBtn} 
+                  disabled={saving}
+                >
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </form>
+          ) : editModal === 'amenities' ? (
+            /* Amenities Editor Right Panel Screen */
+            <form onSubmit={handleSaveModal} className={styles.rightTitleEditorContainer}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', width: '100%', overflowY: 'auto' }}>
+                <div style={{ maxWidth: '680px', width: '100%' }}>
+                  <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#222222', marginBottom: '8px', textAlign: 'center' }}>
+                    Amenities
+                  </h1>
+                  <p style={{ fontSize: '15px', color: '#717171', marginBottom: '28px', textAlign: 'center' }}>
+                    Select the amenities available at your space. Guests often filter by these options.
+                  </p>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px', maxHeight: '52vh', overflowY: 'auto', padding: '4px' }}>
+                    {[
+                      'Air conditioning',
+                      'Wifi',
+                      'Kitchen',
+                      'Free parking',
+                      'Dedicated workspace',
+                      'TV',
+                      'Washer',
+                      'Essentials',
+                      'Fridge',
+                      'Pool',
+                      'Hot tub',
+                      'Smoke alarm',
+                      'First aid kit',
+                      'Fire extinguisher',
+                      'Balcony',
+                      'Gym'
+                    ].map((item) => {
+                      const currentAmenities = Array.isArray(editFormData.amenities)
+                        ? editFormData.amenities
+                        : (Array.isArray(listing.amenities) ? listing.amenities : []);
+                      const isSelected = currentAmenities.includes(item);
+                      return (
+                        <div
+                          key={item}
+                          onClick={() => {
+                            const updated = isSelected
+                              ? currentAmenities.filter(a => a !== item)
+                              : [...currentAmenities, item];
+                            setEditFormData(prev => ({ ...prev, amenities: updated }));
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '16px 20px',
+                            borderRadius: '14px',
+                            border: isSelected ? '2px solid #222222' : '1px solid #ebebeb',
+                            backgroundColor: isSelected ? '#f7f7f7' : '#ffffff',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <span style={{ fontSize: '15px', fontWeight: isSelected ? '600' : '400', color: '#222222' }}>
+                            {item}
+                          </span>
+                          <div style={{
+                            width: '22px',
+                            height: '22px',
+                            borderRadius: '6px',
+                            border: isSelected ? '2px solid #222222' : '2px solid #b0b0b0',
+                            backgroundColor: isSelected ? '#222222' : 'transparent',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#fff',
+                            fontSize: '12px'
+                          }}>
+                            {isSelected && <FaCheck size={11} />}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.titleEditorFooter}>
+                <button 
+                  type="button" 
+                  className={styles.titleCancelBtn} 
+                  onClick={() => setEditModal(null)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className={styles.titleSaveBtn} 
+                  disabled={saving}
+                >
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </form>
+          ) : editModal === 'house_rules' ? (
+            /* House Rules Editor Right Panel Screen */
+            <div className={styles.rightTitleEditorContainer}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', width: '100%' }}>
+                <div style={{ maxWidth: '600px', width: '100%' }}>
+                  <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#222222', marginBottom: '8px', textAlign: 'center' }}>
+                    House rules
+                  </h1>
+                  <p style={{ fontSize: '15px', color: '#717171', marginBottom: '32px', textAlign: 'center' }}>
+                    Guests must agree to your house rules before booking.
+                  </p>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    {/* Check-in time */}
+                    <div style={{ border: '1px solid #ebebeb', borderRadius: '16px', padding: '24px', backgroundColor: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                      <div style={{ fontSize: '16px', fontWeight: '600', color: '#222222', marginBottom: '6px' }}>Check-in window</div>
+                      <div style={{ fontSize: '14px', color: '#717171', marginBottom: '16px' }}>Guests can arrive between these hours</div>
+                      <div style={{ display: 'flex', gap: '16px' }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ fontSize: '12px', color: '#717171', display: 'block', marginBottom: '6px' }}>From</label>
+                          <select
+                            value={checkInStart}
+                            onChange={(e) => setCheckInStart(e.target.value)}
+                            style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid #b0b0b0', fontSize: '15px', backgroundColor: '#fff' }}
+                          >
+                            {['12:00 pm', '1:00 pm', '2:00 pm', '3:00 pm', '4:00 pm', '5:00 pm', '6:00 pm'].map(t => (
+                              <option key={t} value={t}>{t}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ fontSize: '12px', color: '#717171', display: 'block', marginBottom: '6px' }}>Checkout by</label>
+                          <select
+                            value={checkoutTime}
+                            onChange={(e) => setCheckoutTime(e.target.value)}
+                            style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid #b0b0b0', fontSize: '15px', backgroundColor: '#fff' }}
+                          >
+                            {['10:00 am', '11:00 am', '12:00 pm', '1:00 pm'].map(t => (
+                              <option key={t} value={t}>{t}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Maximum guests */}
+                    <div style={{ border: '1px solid #ebebeb', borderRadius: '16px', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                      <div>
+                        <div style={{ fontSize: '16px', fontWeight: '600', color: '#222222' }}>Maximum guests</div>
+                        <div style={{ fontSize: '13px', color: '#717171' }}>Allowed occupancy</div>
+                      </div>
+                      <div style={{ fontSize: '16px', fontWeight: '700', color: '#222222' }}>
+                        {listing.max_guests || 4} guests
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.titleEditorFooter}>
+                <button 
+                  type="button" 
+                  className={styles.titleCancelBtn} 
+                  onClick={() => setEditModal(null)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className={styles.titleSaveBtn} 
+                  disabled={arrivalSaving}
+                  onClick={async () => {
+                    await handleSaveArrivalTimes();
+                    setEditModal(null);
+                  }}
+                >
+                  {arrivalSaving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          ) : editModal === 'arrival_times' ? (
+            /* Arrival Times Editor Right Panel Screen */
+            <div className={styles.rightTitleEditorContainer}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', width: '100%' }}>
+                <div style={{ maxWidth: '600px', width: '100%' }}>
+                  <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#222222', marginBottom: '8px', textAlign: 'center' }}>
+                    {isService ? 'Service Hours' : 'Check-in and checkout times'}
+                  </h1>
+                  <p style={{ fontSize: '15px', color: '#717171', marginBottom: '32px', textAlign: 'center' }}>
+                    {isService ? 'Set your scheduled service start and completion hours.' : 'Specify when guests can check in and when they should check out.'}
+                  </p>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ border: '1px solid #ebebeb', borderRadius: '16px', padding: '24px', backgroundColor: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                      <div style={{ fontSize: '16px', fontWeight: '600', color: '#222222', marginBottom: '8px' }}>
+                        {isService ? 'Service start' : 'Check-in start'}
+                      </div>
+                      <select
+                        value={checkInStart}
+                        onChange={(e) => setCheckInStart(e.target.value)}
+                        style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid #b0b0b0', fontSize: '15px', backgroundColor: '#fff' }}
+                      >
+                        {['8:00 am', '9:00 am', '10:00 am', '11:00 am', '12:00 pm', '1:00 pm', '2:00 pm', '3:00 pm', '4:00 pm', '5:00 pm', '6:00 pm'].map(t => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div style={{ border: '1px solid #ebebeb', borderRadius: '16px', padding: '24px', backgroundColor: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                      <div style={{ fontSize: '16px', fontWeight: '600', color: '#222222', marginBottom: '8px' }}>
+                        {isService ? 'Service end' : 'Checkout time'}
+                      </div>
+                      <select
+                        value={checkoutTime}
+                        onChange={(e) => setCheckoutTime(e.target.value)}
+                        style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid #b0b0b0', fontSize: '15px', backgroundColor: '#fff' }}
+                      >
+                        {['9:00 am', '10:00 am', '11:00 am', '12:00 pm', '1:00 pm', '2:00 pm', '3:00 pm', '4:00 pm', '5:00 pm', '6:00 pm', '7:00 pm', '8:00 pm'].map(t => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.titleEditorFooter}>
+                <button 
+                  type="button" 
+                  className={styles.titleCancelBtn} 
+                  onClick={() => setEditModal(null)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className={styles.titleSaveBtn} 
+                  disabled={arrivalSaving}
+                  onClick={async () => {
+                    await handleSaveArrivalTimes();
+                    setEditModal(null);
+                  }}
+                >
+                  {arrivalSaving ? 'Saving...' : 'Save'}
+                </button>
               </div>
             </div>
           ) : !isSettingsOpen ? (

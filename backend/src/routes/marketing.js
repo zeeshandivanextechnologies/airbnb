@@ -132,10 +132,19 @@ router.post('/campaigns', async (req, res) => {
   }
 });
 
-// GET all referrals
+// GET all referrals (Supports filtering by email or user_type or getting rewards summary)
 router.get('/referrals', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM marketing_referrals ORDER BY id ASC');
+    const { email } = req.query;
+    let query = 'SELECT * FROM marketing_referrals';
+    const params = [];
+    if (email) {
+      params.push(email.toLowerCase().trim());
+      query += ' WHERE LOWER(referrer_email) = $1';
+    }
+    query += ' ORDER BY id ASC';
+
+    const result = await pool.query(query, params);
     const mapped = result.rows.map(r => ({
       id: r.id,
       referrerName: r.referrer_name,
@@ -149,7 +158,43 @@ router.get('/referrals', async (req, res) => {
       payoutStatus: r.payout_status,
       referredList: Array.isArray(r.referred_list) ? r.referred_list : (typeof r.referred_list === 'string' ? JSON.parse(r.referred_list) : [])
     }));
-    return res.status(200).json({ success: true, count: mapped.length, data: mapped });
+
+    // Dynamic referral reward stats based on current market listings
+    const statsQuery = await pool.query(`
+      SELECT 
+        ROUND(AVG(CASE WHEN type ILIKE '%stay%' OR type ILIKE '%entire%' OR type ILIKE '%villa%' OR type ILIKE '%cabin%' OR type ILIKE '%chalet%' OR type ILIKE '%apartment%' OR type ILIKE '%room%' THEN price ELSE NULL END)) as home_avg,
+        ROUND(AVG(CASE WHEN type ILIKE '%experience%' THEN price ELSE NULL END)) as exp_avg,
+        ROUND(AVG(CASE WHEN type ILIKE '%service%' THEN price ELSE NULL END)) as svc_avg
+      FROM listings
+    `);
+    const homeAvg = Number(statsQuery.rows[0]?.home_avg) || 3500;
+    const expAvg = Number(statsQuery.rows[0]?.exp_avg) || 3500;
+    const svcAvg = Number(statsQuery.rows[0]?.svc_avg) || 4000;
+
+    // Referral reward tier estimates (scaled from platform economics)
+    const rewardsConfig = {
+      home: {
+        min: Math.round(homeAvg * 0.35 / 50) * 50 || 1900,
+        max: Math.round(homeAvg * 0.65 / 50) * 50 || 3400,
+        label: `₹${(Math.round(homeAvg * 0.35 / 50) * 50 || 1928).toLocaleString('en-IN')} INR – ₹${(Math.round(homeAvg * 0.65 / 50) * 50 || 3374).toLocaleString('en-IN')} INR`
+      },
+      experience: {
+        amount: Math.round(expAvg * 1.35 / 50) * 50 || 4800,
+        label: `₹${(Math.round(expAvg * 1.35 / 50) * 50 || 4820).toLocaleString('en-IN')} INR`
+      },
+      service: {
+        min: Math.round(svcAvg * 0.45 / 50) * 50 || 1900,
+        max: Math.round(svcAvg * 2.35 / 50) * 50 || 9600,
+        label: `₹${(Math.round(svcAvg * 0.45 / 50) * 50 || 1928).toLocaleString('en-IN')} INR – ₹${(Math.round(svcAvg * 2.35 / 50) * 50 || 9640).toLocaleString('en-IN')} INR`
+      }
+    };
+
+    return res.status(200).json({ 
+      success: true, 
+      count: mapped.length, 
+      data: mapped,
+      rewardsConfig 
+    });
   } catch (error) {
     console.error('Fetch referrals error:', error);
     return res.status(500).json({ success: false, message: 'Failed to fetch referrals' });

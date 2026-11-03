@@ -3,20 +3,34 @@ import styles from '../../components/styles/HostToday.module.css';
 import VerifyBanner from '../../components/VerifyBanner';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import Loader from '../../components/Loader';
 
 function HostToday() {
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth || {});
   const [activeTab, setActiveTab] = useState('Today');
   const [reservations, setReservations] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
     const fetchReservations = async () => {
       setLoading(true);
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const hostId = user?.id || 4;
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      
+      // Get active host id from Redux user or localStorage
+      let hostId = user?.id || (user?._id);
+      if (!hostId) {
+        try {
+          const stored = localStorage.getItem('user');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            hostId = parsed.id || parsed._id;
+          }
+        } catch (e) {}
+      }
+      if (!hostId) hostId = 4; // default demo host id
+
       const timeframeParam = activeTab === 'Today' ? 'today' : 'upcoming';
       try {
         const res = await fetch(`${baseUrl}/payments/host/reservations?host_id=${hostId}&timeframe=${timeframeParam}`);
@@ -82,8 +96,13 @@ function HostToday() {
           </button>
         </div>
 
-        {/* Dynamic Reservation List or Empty State */}
-        {reservations.length > 0 ? (
+        {/* Loading State with Universal Loader */}
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '260px' }}>
+            <Loader size="medium" text={`Checking ${activeTab.toLowerCase()} reservations...`} />
+          </div>
+        ) : reservations.length > 0 ? (
+          /* Dynamic Reservation List */
           <div className={`${styles.reservationList} ${styles.fadeInUp}`} key={activeTab}>
             {reservations.map((res) => {
               const coverImg = res.cover_img || (Array.isArray(res.photos) && res.photos[0]) || '/book_01.avif';

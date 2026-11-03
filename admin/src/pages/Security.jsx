@@ -31,7 +31,8 @@ export default function Security() {
     totalAuditEvents: 0,
     threatsPrevented: 0,
     enforcedAdmins: '100%',
-    activeSessions: 0
+    activeSessions: 0,
+    sessionTimeoutHours: 8
   });
   const [loading, setLoading] = useState(true);
 
@@ -82,7 +83,8 @@ export default function Security() {
             totalAuditEvents: d.data.totalAuditEvents,
             threatsPrevented: d.data.threatsPrevented,
             enforcedAdmins: d.data.enforcedAdmins,
-            activeSessions: d.data.activeSessions
+            activeSessions: d.data.activeSessions,
+            sessionTimeoutHours: d.data.sessionTimeoutHours || 8
           });
         }
       }
@@ -242,15 +244,17 @@ export default function Security() {
                 <FaUserCheck />
               </div>
             </div>
-            <div>
-              <div className={styles.statValue}>{overviewMetrics.activeSessions} Active</div>
-              <div className={styles.statFooter}>
-                <span className={`${styles.badgeTrend} ${styles.badgePurple}`}>
-                  Secure TLS 1.3
-                </span>
-                <span className={styles.statSubtext}>8h Session Expiry</span>
+              <div>
+                <div className={styles.statValue}>{overviewMetrics.activeSessions} Active</div>
+                <div className={styles.statFooter}>
+                  <span className={`${styles.badgeTrend} ${styles.badgePurple}`}>
+                    Secure TLS 1.3
+                  </span>
+                  <span className={styles.statSubtext}>
+                    {overviewMetrics.sessionTimeoutHours || twoFactorConfig.sessionTimeoutHours || 8}h Session Expiry
+                  </span>
+                </div>
               </div>
-            </div>
           </div>
         </div>
       </div>
@@ -341,12 +345,9 @@ export default function Security() {
                   onChange={(e) => setModuleFilter(e.target.value)}
                 >
                   <option value="ALL">All Modules</option>
-                  <option value="Settings & Tax">Settings & Tax</option>
-                  <option value="Listings Management">Listings Management</option>
-                  <option value="Bookings & Refunds">Bookings & Refunds</option>
-                  <option value="Reviews & Safety">Reviews & Safety</option>
-                  <option value="Marketing & Promos">Marketing & Promos</option>
-                  <option value="Hosts Management">Hosts Management</option>
+                  {Array.from(new Set(auditLogs.map(l => l.module).filter(Boolean))).map(mod => (
+                    <option key={mod} value={mod}>{mod}</option>
+                  ))}
                 </select>
               </div>
 

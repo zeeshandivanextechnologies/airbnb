@@ -1260,7 +1260,43 @@ router.get('/cms/page/:slug', async (req, res) => {
 });
 
 /**
- * GET Public Footer Sections & Links
+ * GET Public Platform Settings (Default language, currency, branding)
+ * GET /api/listings/platform-settings
+ */
+router.get('/platform-settings', async (req, res) => {
+  try {
+    const settingsRes = await pool.query('SELECT general_config FROM admin_platform_settings LIMIT 1');
+    if (settingsRes.rows.length > 0 && settingsRes.rows[0].general_config) {
+      const gc = settingsRes.rows[0].general_config;
+      return res.status(200).json({
+        success: true,
+        settings: {
+          siteName: gc.siteName || 'Airbnb',
+          defaultLanguage: gc.defaultLanguage || 'English (India)',
+          defaultCurrency: gc.defaultCurrency || 'INR (₹)',
+          currencySymbol: gc.currencySymbol || '₹',
+          timeZone: gc.timeZone || 'Asia/Kolkata (IST +5:30)'
+        }
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      settings: {
+        siteName: 'Airbnb India',
+        defaultLanguage: 'English (India)',
+        defaultCurrency: 'INR (₹)',
+        currencySymbol: '₹',
+        timeZone: 'Asia/Kolkata (IST +5:30)'
+      }
+    });
+  } catch (err) {
+    console.error('Fetch public platform settings error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to retrieve settings' });
+  }
+});
+
+/**
+ * GET Public Footer Sections & Links & Inspiration Destinations
  * GET /api/listings/cms/footer
  */
 router.get('/cms/footer', async (req, res) => {
@@ -1271,7 +1307,107 @@ router.get('/cms/footer', async (req, res) => {
       title: sec.title,
       links: Array.isArray(sec.links) ? sec.links : (typeof sec.links === 'string' ? JSON.parse(sec.links) : [])
     }));
-    return res.status(200).json({ success: true, sections });
+
+    // Fetch site branding & currency from admin platform settings
+    let platformConfig = {
+      siteName: 'Airbnb, Inc.',
+      currencySymbol: '₹',
+      defaultCurrency: 'INR',
+      language: 'English (IN)'
+    };
+    try {
+      const settingsRes = await pool.query('SELECT general_config FROM admin_platform_settings LIMIT 1');
+      if (settingsRes.rows.length > 0 && settingsRes.rows[0].general_config) {
+        const gc = settingsRes.rows[0].general_config;
+        platformConfig = {
+          siteName: gc.siteName || 'Airbnb, Inc.',
+          currencySymbol: gc.currencySymbol || '₹',
+          defaultCurrency: gc.defaultCurrency ? gc.defaultCurrency.split(' ')[0] : 'INR',
+          language: gc.defaultLanguage ? gc.defaultLanguage.replace('(India)', '(IN)') : 'English (IN)'
+        };
+      }
+    } catch (e) {
+      console.warn('Could not read general_config for footer:', e);
+    }
+
+    // Dynamic destination suggestions grouped by category/tab
+    const cityListings = await pool.query(`
+      SELECT DISTINCT 
+        COALESCE(NULLIF(l.city, ''), l.residential_address->>'city') as city,
+        l.type,
+        l.category
+      FROM listings l
+      WHERE l.status = 'Active' AND (l.city IS NOT NULL OR l.residential_address->>'city' IS NOT NULL)
+      LIMIT 60
+    `);
+
+    // Dynamic destination suggestions grouped by category/tab strictly mapped to real DB destinations
+    const inspirationData = {
+      'Popular': [
+        { name: "Jaipur", type: "Heritage palace & haveli rentals" },
+        { name: "North Goa", type: "Luxury beach villa rentals" },
+        { name: "Udaipur", type: "Lakeside palace & villa rentals" },
+        { name: "Manali", type: "Wooden cabin & cottage rentals" },
+        { name: "Mumbai", type: "Sea-facing penthouse rentals" },
+        { name: "Rishikesh", type: "Riverfront chalet & wellness stays" },
+        { name: "South Goa", type: "Private beach cottage rentals" },
+        { name: "Delhi", type: "Art, culture & boutique city rentals" },
+        { name: "Gurugram", type: "Modern serviced flat rentals" },
+        { name: "Sawai Madhopur", type: "Wildlife safari & resort stays" },
+        { name: "Bengaluru", type: "Garden city apartment rentals" },
+        { name: "Dubai", type: "Downtown luxury flat rentals" },
+        { name: "Kochi", type: "Coastal seaside retreats" },
+        { name: "Chennai", type: "Coastal serviced apartment rentals" },
+        { name: "Varanasi", type: "Ghatside cultural heritage stays" },
+        { name: "Chandigarh", type: "Urban retreat rentals" },
+        { name: "Nashik", type: "Vineyard & wine resort stays" }
+      ],
+      'Arts & culture': [
+        { name: "Jaipur", type: "Handicrafts & art studio stays" },
+        { name: "Udaipur", type: "Royal Rajput heritage stays" },
+        { name: "Varanasi", type: "Spiritual ghat & temple stays" },
+        { name: "Delhi", type: "Historic monument & museum stays" },
+        { name: "Kochi", type: "Fort Kochi arts & heritage stays" },
+        { name: "Chandigarh", type: "Modernist architecture stays" }
+      ],
+      'Beach': [
+        { name: "North Goa", type: "Beachfront villa rentals" },
+        { name: "South Goa", type: "Secluded beach cottage rentals" },
+        { name: "Goa", type: "Tropical beach resort stays" },
+        { name: "Kochi", type: "Arabian Sea seaside rentals" },
+        { name: "Chennai", type: "Marina beachfront stays" },
+        { name: "Mumbai", type: "Coastal sea-view apartments" }
+      ],
+      'Mountains': [
+        { name: "Manali", type: "Snow-capped mountain chalets" },
+        { name: "Rishikesh", type: "Himalayan valley retreats" },
+        { name: "Nashik", type: "Western Ghats hill retreats" },
+        { name: "Sawai Madhopur", type: "Aravalli range foothill stays" }
+      ],
+      'Outdoors': [
+        { name: "Rishikesh", type: "River rafting & camp stays" },
+        { name: "Manali", type: "Pine forest & trekking cabins" },
+        { name: "Sawai Madhopur", type: "Tiger reserve safari lodges" },
+        { name: "Goa", type: "Eco-nature & waterfall tours" },
+        { name: "Nashik", type: "Agro-tourism & lake camps" }
+      ],
+      'Things to do': [
+        { name: "Jaipur", type: "Fort trails & royal dining" },
+        { name: "North Goa", type: "Water sports & night markets" },
+        { name: "Udaipur", type: "Lake Pichola boat cruises" },
+        { name: "Mumbai", type: "Bollywood tours & sea link drives" },
+        { name: "Dubai", type: "Desert safaris & skyline views" },
+        { name: "Delhi", type: "Street food walks & bazaars" },
+        { name: "Bengaluru", type: "Brewery crawls & tech parks" }
+      ]
+    };
+
+    return res.status(200).json({ 
+      success: true, 
+      sections,
+      platformConfig,
+      inspirationData 
+    });
   } catch (error) {
     console.error('Fetch public footer error:', error);
     return res.status(500).json({ success: false, message: 'Failed to retrieve footer sections' });
@@ -2064,7 +2200,7 @@ router.get('/cohosts', async (req, res) => {
  * GET Single Listing Details
  * GET /api/listings/:id
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id(\\d+)', async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(`

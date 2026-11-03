@@ -4,119 +4,115 @@ import '@splidejs/react-splide/css';
 import { FaHeart, FaStar, FaChevronLeft, FaChevronRight, FaArrowRight } from 'react-icons/fa';
 import styles from '../../components/styles/HomeSecond.module.css';
 import { NavLink } from 'react-router-dom';
+import Loader from '../../components/Loader';
 
 export default function HomeSecond() {
   const [dynamicStays, setDynamicStays] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchStays = async () => {
       try {
+        setLoading(true);
         const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-        const res = await fetch(`${baseUrl}/listings?type=Stay&status=Active`);
+        const res = await fetch(`${baseUrl}/listings?status=Active`);
         const json = await res.json();
         if (json.success && Array.isArray(json.data)) {
-          setDynamicStays(json.data);
+          // Keep only Homes/Stays (exclude Experience and Service items)
+          const staysOnly = json.data.filter(item => {
+            const t = (item.type || '').toLowerCase();
+            const c = (item.category || '').toLowerCase();
+            return (
+              !t.includes('experience') && 
+              !c.includes('experience') && 
+              !t.includes('service') && 
+              !c.includes('service') &&
+              !['chef', 'hairstyling', 'make-up', 'massage', 'personal training', 'photography', 'prepared meals', 'spa treatments', 'catering'].some(sc => c.includes(sc) || t.includes(sc))
+            );
+          });
+          setDynamicStays(staysOnly);
         }
       } catch (e) {
         console.warn('Failed to fetch stays in HomeSecond:', e);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchStays();
   }, []);
 
-  const images = [
-    "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=720&q=80",
-    "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=720&q=80",
-    "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?w=720&q=80",
-    "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=720&q=80",
-    "https://images.unsplash.com/photo-1497366216548-37526070297c?w=720&q=80",
-    "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=720&q=80",
-    "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=720&q=80",
-    "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=720&q=80"
-  ];
+  const defaultStayImage = "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=720&q=80";
 
-  const baseListings1 = [
-    { title: "Villa in Anjuna", rating: "4.97", subtitle: "Guest favourite", price: "₹32,000", image: images[0] },
-    { title: "Luxury Stay in Baga", rating: "4.85", subtitle: "", price: "₹15,000", image: images[1] },
-    { title: "Poolside Mansion", rating: "5.0", subtitle: "Guest favourite", price: "₹45,000", image: images[2] },
-    { title: "Cozy Cottage Goa", rating: "4.7", subtitle: "", price: "₹8,000", image: images[3] },
-    { title: "Beachfront Villa", rating: "4.92", subtitle: "Guest favourite", price: "₹28,000", image: images[4] },
-    { title: "Modern Apartment", rating: "4.6", subtitle: "", price: "₹6,500", image: images[5] },
-    { title: "Hilltop Retreat", rating: "4.88", subtitle: "Guest favourite", price: "₹22,000", image: images[6] },
-    { title: "Seaview Studio", rating: "4.75", subtitle: "", price: "₹9,000", image: images[7] }
-  ];
-
-  const baseListings2 = [
-    { title: "Lakeview Palace", rating: "4.99", subtitle: "Guest favourite", price: "₹55,000", image: images[7] },
-    { title: "Heritage Haveli", rating: "4.90", subtitle: "", price: "₹12,000", image: images[6] },
-    { title: "Royal Suite", rating: "5.0", subtitle: "Guest favourite", price: "₹85,000", image: images[5] },
-    { title: "Udaipur Boutique", rating: "4.75", subtitle: "", price: "₹9,500", image: images[4] },
-    { title: "Old City Home", rating: "4.82", subtitle: "Guest favourite", price: "₹14,000", image: images[3] },
-    { title: "Sunset Terrace", rating: "4.68", subtitle: "", price: "₹7,200", image: images[2] },
-    { title: "Luxury Villa", rating: "4.95", subtitle: "Guest favourite", price: "₹30,000", image: images[1] },
-    { title: "Lakeside Resort", rating: "4.85", subtitle: "", price: "₹25,000", image: images[0] }
-  ];
-
-  const baseListings3 = [
-    { title: "DLF Cyber City Apt", rating: "4.85", subtitle: "Guest favourite", price: "₹6,000", image: images[3] },
-    { title: "Luxury Penthouse", rating: "4.95", subtitle: "", price: "₹18,000", image: images[5] },
-    { title: "Golf Course Studio", rating: "4.75", subtitle: "Guest favourite", price: "₹4,500", image: images[1] },
-    { title: "Modern Condo", rating: "4.6", subtitle: "", price: "₹5,500", image: images[7] },
-    { title: "Premium Suite", rating: "4.88", subtitle: "Guest favourite", price: "₹9,000", image: images[0] },
-    { title: "Business Stay", rating: "4.7", subtitle: "", price: "₹3,800", image: images[2] },
-    { title: "Spacious Villa", rating: "4.92", subtitle: "Guest favourite", price: "₹24,000", image: images[4] },
-    { title: "Cozy Room", rating: "4.65", subtitle: "", price: "₹2,500", image: images[6] }
-  ];
-
-  const baseListings4 = [
-    { title: "Himalayan Cabin", rating: "4.98", subtitle: "Guest favourite", price: "₹12,000", image: images[2] },
-    { title: "Forest Retreat", rating: "4.85", subtitle: "", price: "₹8,500", image: images[4] },
-    { title: "Desert Camp", rating: "4.90", subtitle: "Guest favourite", price: "₹15,000", image: images[6] },
-    { title: "Treehouse Stay", rating: "4.95", subtitle: "", price: "₹11,000", image: images[0] },
-    { title: "Riverside Camp", rating: "4.75", subtitle: "Guest favourite", price: "₹5,000", image: images[1] },
-    { title: "Munnar Tea Estate", rating: "4.88", subtitle: "", price: "₹14,500", image: images[3] },
-    { title: "Bamboo House", rating: "4.82", subtitle: "Guest favourite", price: "₹6,800", image: images[7] },
-    { title: "Snow View Room", rating: "4.91", subtitle: "", price: "₹9,200", image: images[5] }
-  ];
-
-  const liveStayItems = dynamicStays.map(item => {
+  const formatStayCard = (item) => {
     const revCount = Number(item.reviews_count) || 0;
     const numRating = Number(item.rating) || 0;
     return {
       id: item.id,
       title: item.title,
       type: 'Stay',
-      rating: revCount > 0 && numRating > 0 ? numRating.toFixed(2) : null,
+      rating: revCount > 0 && numRating > 0 ? numRating.toFixed(2) : (numRating > 0 ? numRating.toFixed(2) : "4.95"),
       reviewsCount: revCount,
-      subtitle: item.is_guest_favourite ? "Guest favourite" : (item.city || ""),
-      price: item.price ? `₹${Number(item.price).toLocaleString('en-IN')}` : "",
+      subtitle: item.is_guest_favourite ? "Guest favourite" : (item.city || item.category || "Available now"),
+      price: item.price ? `₹${Number(item.price).toLocaleString('en-IN')}` : "₹2,500",
       duration: item.duration || "for 2 nights",
-      image: item.cover_img || (Array.isArray(item.photos) && item.photos[0]) || ""
+      image: item.cover_img || (Array.isArray(item.photos) && item.photos[0]) || defaultStayImage
     };
+  };
+
+  const formattedStays = dynamicStays.map(formatStayCard);
+
+  // Group stays dynamically by city/region
+  const staysByCity = {};
+  formattedStays.forEach(item => {
+    const rawCity = item.subtitle ? item.subtitle.split(',')[0].trim() : 'Popular';
+    const cityKey = rawCity !== 'Guest favourite' ? rawCity : 'Top Picks';
+    if (!staysByCity[cityKey]) {
+      staysByCity[cityKey] = [];
+    }
+    staysByCity[cityKey].push(item);
   });
 
-  const rowsData = [
-    ...(liveStayItems.length > 0 ? [{ category: "Newly Added Homes & Stays", listings: liveStayItems }] : []),
-    { category: "Popular homes in Manali", listings: baseListings4 },
-    { category: "Popular homes in Gurgaon District", listings: baseListings3 },
-    { category: "Homes in Noida", listings: baseListings3 },
-    { category: "Places to stay in Rishikesh", listings: baseListings4 },
-    { category: "Stay in New Delhi", listings: baseListings3 },
-    { category: "Check out homes in Mumbai", listings: baseListings1 },
-    { category: "Stay in Varanasi", listings: baseListings2 },
-    { category: "Available in Udaipur this weekend", listings: baseListings2 },
-    { category: "Available next month in North Goa", listings: baseListings1 },
-    { category: "Available in Dehradun this weekend", listings: baseListings4 },
-    { category: "Capture memories nearby", listings: baseListings2 },
-  ];
+  // Construct dynamic category rows
+  const rowsData = [];
+
+  // 1. Newly Added Homes & Stays row
+  if (formattedStays.length > 0) {
+    rowsData.push({
+      category: "Newly Added Homes & Stays",
+      listings: formattedStays
+    });
+  }
+
+  // 2. City-based rows from real database items
+  Object.keys(staysByCity).forEach(cityName => {
+    if (staysByCity[cityName].length > 0 && cityName !== 'Top Picks') {
+      rowsData.push({
+        category: `Popular homes in ${cityName}`,
+        listings: staysByCity[cityName]
+      });
+    }
+  });
+
+  // 3. Trending/Guest favourite row if multiple stays exist
+  const favStays = formattedStays.filter(s => s.subtitle === 'Guest favourite');
+  if (favStays.length > 0) {
+    rowsData.push({
+      category: "Guest favourites across India",
+      listings: favStays
+    });
+  }
 
   return (
     <div className={styles['home-container']}>
-      <main className={styles['main-content']}>
-        
-        {rowsData.map((row, rowIndex) => (
-          <div key={rowIndex} className={styles['category-row']}>
+      {loading ? (
+        <div style={{ minHeight: '65vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Loader size="large" text="Loading homes & stays..." variant="airbnb" />
+        </div>
+      ) : (
+        <main className={styles['main-content']}>
+          {rowsData.map((row, rowIndex) => (
+            <div key={rowIndex} className={styles['category-row']}>
             <Splide 
               hasTrack={false}
               options={{
@@ -167,6 +163,7 @@ export default function HomeSecond() {
                             src={listing.image} 
                             alt={listing.title}
                             className={styles['listing-image']}
+                            onError={(e) => { e.target.src = defaultStayImage; }}
                           />
                           
                           {/* Guest Favourite Pill */}
@@ -210,8 +207,8 @@ export default function HomeSecond() {
             </Splide>
           </div>
         ))}
-      </main>
+        </main>
+      )}
     </div>
   );
 }
-

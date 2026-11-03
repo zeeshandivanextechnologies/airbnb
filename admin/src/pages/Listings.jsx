@@ -122,7 +122,7 @@ export default function Listings() {
   const [newListing, setNewListing] = useState(initialNewListing);
   const [photoInput, setPhotoInput] = useState('');
 
-  const baseUrl = 'http://localhost:5000/api';
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
   // Fetch listings from live database
   const fetchListings = async () => {

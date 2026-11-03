@@ -6,9 +6,12 @@ import styles from '../../components/styles/Services.module.css';
 import { NavLink } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { getStoredWishlists, addWishlist, isItemInAnyWishlist, removeItemFromWishlists } from '../../utils/wishlistStorage';
+import Loader from '../../components/Loader';
 
 export default function Services() {
   const [dynamicListings, setDynamicListings] = useState([]);
+  const [serviceCategories, setServiceCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isWishlistModalOpen, setIsWishlistModalOpen] = useState(false);
   const [wishlistName, setWishlistName] = useState('');
   const [selectedListingForWishlist, setSelectedListingForWishlist] = useState(null);
@@ -63,122 +66,43 @@ export default function Services() {
     closeWishlistModal();
   };
 
+  // Fetch both dynamic listings and active admin categories
   useEffect(() => {
     const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-    fetch(`${baseUrl}/listings?status=Active`)
+    setLoading(true);
+
+    const pCategories = fetch(`${baseUrl}/listings/host-categories?type=service&all=false`)
+      .then(res => res.json())
+      .then(catData => {
+        if (catData.success && Array.isArray(catData.data)) {
+          setServiceCategories(catData.data);
+        }
+      })
+      .catch(err => console.error('Failed to load host categories:', err));
+
+    const pListings = fetch(`${baseUrl}/listings?status=Active`)
       .then(res => res.json())
       .then(data => {
         if (data.success && Array.isArray(data.data)) {
-          // Strictly keep only Service items (exclude Stays and Experiences)
           const servicesOnly = data.data.filter(item => {
             const t = (item.type || '').toLowerCase();
             const c = (item.category || '').toLowerCase();
-            return !t.includes('experience') && !c.includes('experience');
+            return (
+              t.includes('service') || 
+              ['chef', 'hairstyling', 'make-up', 'makeup', 'massage', 'personal training', 'photography', 'prepared meals', 'spa treatments', 'catering'].some(sc => c.includes(sc) || t.includes(sc))
+            ) && !t.includes('experience') && !c.includes('experience');
           });
           setDynamicListings(servicesOnly);
         }
       })
       .catch(err => console.error('Failed to load dynamic listings for services:', err));
+
+    Promise.allSettled([pCategories, pListings]).finally(() => {
+      setLoading(false);
+    });
   }, []);
 
-  const photoImages = [
-    "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=720&q=80",
-    "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=720&q=80",
-    "https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=720&q=80",
-    "https://images.unsplash.com/photo-1519638399535-1b036603ac77?w=720&q=80",
-    "https://images.unsplash.com/photo-1472396961693-142e6e269027?w=720&q=80",
-    "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=720&q=80",
-    "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=720&q=80",
-    "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=720&q=80"
-  ];
-
-  const laImages = [
-    "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=720&q=80",
-    "https://images.unsplash.com/photo-1528181304800-259b08848526?w=720&q=80",
-    "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=720&q=80",
-    "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?w=720&q=80",
-    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=720&q=80",
-    "https://images.unsplash.com/photo-1516598540642-e8f40a09d939?w=720&q=80",
-    "https://images.unsplash.com/photo-1528605105345-5344ea20e269?w=720&q=80",
-    "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=720&q=80"
-  ];
-
-  const londonImages = [
-    "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=720&q=80",
-    "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=720&q=80",
-    "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?w=720&q=80",
-    "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=720&q=80",
-    "https://images.unsplash.com/photo-1497366216548-37526070297c?w=720&q=80",
-    "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=720&q=80",
-    "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=720&q=80",
-    "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=720&q=80"
-  ];
-
-  const romeImages = [
-    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=720&q=80",
-    "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=720&q=80",
-    "https://images.unsplash.com/photo-1516598540642-e8f40a09d939?w=720&q=80",
-    "https://images.unsplash.com/photo-1528605105345-5344ea20e269?w=720&q=80",
-    "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=720&q=80",
-    "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?w=720&q=80",
-    "https://images.unsplash.com/photo-1528181304800-259b08848526?w=720&q=80",
-    "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=720&q=80"
-  ];
-
-  const rowsData = [
-    {
-      category: "Photography",
-      listings: [
-        { title: "Portrait Photoshoot", rating: "4.97", subtitle: "Guest favourite", price: "₹2,000", image: photoImages[0] },
-        { title: "Wedding Photography", rating: "4.85", subtitle: "", price: "₹15,000", image: photoImages[1] },
-        { title: "Nature Photography Walk", rating: "5.0", subtitle: "Guest favourite", price: "₹1,500", image: photoImages[2] },
-        { title: "Studio Photoshoot", rating: "4.7", subtitle: "", price: "₹3,000", image: photoImages[3] },
-        { title: "Street Photography Tour", rating: "4.92", subtitle: "Guest favourite", price: "₹2,500", image: photoImages[4] },
-        { title: "Fashion Shoot", rating: "4.6", subtitle: "", price: "₹5,500", image: photoImages[5] },
-        { title: "Food Photography", rating: "4.88", subtitle: "Guest favourite", price: "₹4,000", image: photoImages[6] },
-        { title: "Product Photography", rating: "4.75", subtitle: "", price: "₹3,500", image: photoImages[7] }
-      ]
-    },
-    {
-      category: "Services in Los Angeles",
-      listings: [
-        { title: "Hollywood Hills Tour", rating: "4.99", subtitle: "Guest favourite", price: "₹5,000", image: laImages[0] },
-        { title: "Venice Beach Walk", rating: "4.90", subtitle: "", price: "₹2,000", image: laImages[1] },
-        { title: "Santa Monica Pier", rating: "5.0", subtitle: "Guest favourite", price: "₹3,500", image: laImages[2] },
-        { title: "Beverly Hills Shopping", rating: "4.75", subtitle: "", price: "₹8,500", image: laImages[3] },
-        { title: "Griffith Observatory", rating: "4.82", subtitle: "Guest favourite", price: "₹1,000", image: laImages[4] },
-        { title: "Downtown LA Art Tour", rating: "4.68", subtitle: "", price: "₹2,200", image: laImages[5] },
-        { title: "Malibu Beach Surf", rating: "4.95", subtitle: "Guest favourite", price: "₹4,000", image: laImages[6] },
-        { title: "Sunset Boulevard Drive", rating: "4.85", subtitle: "", price: "₹3,000", image: laImages[7] }
-      ]
-    },
-    {
-      category: "Services in London",
-      listings: [
-        { title: "Big Ben & Parliament", rating: "4.85", subtitle: "Guest favourite", price: "₹3,000", image: londonImages[0] },
-        { title: "London Eye Experience", rating: "4.95", subtitle: "", price: "₹4,000", image: londonImages[1] },
-        { title: "Tower Bridge Tour", rating: "4.75", subtitle: "Guest favourite", price: "₹2,500", image: londonImages[2] },
-        { title: "British Museum Walk", rating: "4.6", subtitle: "", price: "₹1,500", image: londonImages[3] },
-        { title: "Camden Market Food", rating: "4.88", subtitle: "Guest favourite", price: "₹2,000", image: londonImages[4] },
-        { title: "Luxury Spa Day", rating: "4.7", subtitle: "", price: "₹8,000", image: londonImages[5] },
-        { title: "London Park Yoga", rating: "4.92", subtitle: "Guest favourite", price: "₹1,500", image: londonImages[6] },
-        { title: "Professional Photoshoot", rating: "4.65", subtitle: "", price: "₹5,000", image: londonImages[7] }
-      ]
-    },
-    {
-      category: "Services in Rome",
-      listings: [
-        { title: "Colosseum Tour", rating: "4.98", subtitle: "Guest favourite", price: "₹4,200", image: romeImages[0] },
-        { title: "Vatican Museums", rating: "4.85", subtitle: "", price: "₹5,500", image: romeImages[1] },
-        { title: "Trevi Fountain Walk", rating: "4.90", subtitle: "Guest favourite", price: "₹1,500", image: romeImages[2] },
-        { title: "Pantheon Visit", rating: "4.95", subtitle: "", price: "₹2,000", image: romeImages[3] },
-        { title: "Roman Forum Guide", rating: "4.75", subtitle: "Guest favourite", price: "₹3,000", image: romeImages[4] },
-        { title: "Pasta Making Class", rating: "4.88", subtitle: "", price: "₹4,500", image: romeImages[5] },
-        { title: "Trastevere Food Tour", rating: "4.82", subtitle: "Guest favourite", price: "₹3,800", image: romeImages[6] },
-        { title: "Piazza Navona Evening", rating: "4.91", subtitle: "", price: "₹2,200", image: romeImages[7] }
-      ]
-    }
-  ];
+  const fallbackServiceImage = "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=720&q=80";
 
   // Format raw listing object for Splide slider card
   const formatListingCard = (item) => ({
@@ -188,13 +112,12 @@ export default function Services() {
     rating: item.rating ? Number(item.rating).toFixed(2) : "4.95",
     subtitle: item.is_guest_favourite ? "Guest favourite" : (item.city || "Available now"),
     price: `₹${Number(item.price).toLocaleString('en-IN')}`,
-    image: item.cover_img || (Array.isArray(item.photos) && item.photos[0]) || photoImages[0]
+    image: item.cover_img || (Array.isArray(item.photos) && item.photos[0]) || fallbackServiceImage
   });
 
   // Group dynamic services by category
   const dynamicByCategory = {};
   dynamicListings.forEach(item => {
-    // Determine category name
     const rawCat = (item.category || '').trim();
     const catName = rawCat && rawCat !== 'Services' && rawCat !== 'Service' ? rawCat : 'Featured Services';
     if (!dynamicByCategory[catName]) {
@@ -203,45 +126,46 @@ export default function Services() {
     dynamicByCategory[catName].push(formatListingCard(item));
   });
 
-  // Map predefined static demo rows, augmenting with any matching dynamic services
+  // Build rows dynamically based on admin categories & listings
   const matchedCategories = new Set();
-  const enhancedStaticRows = rowsData.map((r, rIdx) => {
-    // Check if dynamic listings match this row's category
-    const matchingDynamic = dynamicByCategory[r.category] || [];
-    if (matchingDynamic.length > 0) {
-      matchedCategories.add(r.category);
+  const displayRows = [];
+
+  // Priority 1: Iterate over categories configured in Admin (host_categories)
+  if (serviceCategories.length > 0) {
+    serviceCategories.forEach(cat => {
+      const catName = cat.name;
+      // Match case-insensitively with grouped listings
+      const matchedKey = Object.keys(dynamicByCategory).find(k => k.toLowerCase() === catName.toLowerCase());
+      if (matchedKey && dynamicByCategory[matchedKey].length > 0) {
+        displayRows.push({
+          category: catName,
+          listings: dynamicByCategory[matchedKey]
+        });
+        matchedCategories.add(matchedKey);
+      }
+    });
+  }
+
+  // Priority 2: Add any remaining categories that have services but were not in host_categories
+  Object.keys(dynamicByCategory).forEach(catName => {
+    if (!matchedCategories.has(catName) && dynamicByCategory[catName].length > 0) {
+      displayRows.push({
+        category: catName,
+        listings: dynamicByCategory[catName]
+      });
     }
-    return {
-      category: r.category,
-      listings: [
-        ...matchingDynamic,
-        ...r.listings.map((item, idx) => ({
-          ...item,
-          category: r.category,
-          // Give each demo card an independent unique ID so saving one does not affect others
-          id: `demo-${rIdx}-${idx}`
-        }))
-      ]
-    };
   });
-
-  // Create rows for dynamic categories not present in static rows
-  const newDynamicRows = Object.keys(dynamicByCategory)
-    .filter(cat => !matchedCategories.has(cat))
-    .map(cat => ({
-      category: cat,
-      listings: dynamicByCategory[cat]
-    }));
-
-  // Put newly published dynamic category rows at the top so they are immediately visible
-  const displayRows = [...newDynamicRows, ...enhancedStaticRows];
 
   return (
     <div className={styles['home-container']}>
-      <main className={styles['main-content']}>
-        
-        {displayRows.map((row, rowIndex) => (
-          <div key={rowIndex} className={styles['category-row']}>
+      {loading ? (
+        <div style={{ minHeight: '65vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Loader size="large" text="Finding curated services..." variant="airbnb" />
+        </div>
+      ) : (
+        <main className={styles['main-content']}>
+          {displayRows.map((row, rowIndex) => (
+            <div key={rowIndex} className={styles['category-row']}>
             <Splide 
               hasTrack={false}
               options={{
@@ -282,7 +206,7 @@ export default function Services() {
                 const isSaved = isItemInAnyWishlist(listing.id, listing.title, row.category);
 
                 return (
-                  <SplideSlide key={index}>
+                  <SplideSlide key={listing.id || index}>
                     <NavLink to={`/service/${listing.id || index}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                       <div className={styles['listing-card']}>
                         
@@ -300,22 +224,18 @@ export default function Services() {
                               {listing.subtitle}
                             </div>
                           )}
-                          
+
                           {/* Heart Button */}
                           <button 
-                            type="button"
-                            className={styles['heart-btn']}
+                            className={styles['heart-button']}
                             onClick={(e) => handleHeartClick(e, listing, row.category)}
-                            title={isSaved ? "Remove from wishlist" : "Save to wishlist"}
+                            aria-label={isSaved ? "Remove from wishlist" : "Add to wishlist"}
                           >
-                            <FaHeart 
-                              size={24} 
-                              className={`${styles['heart-icon']} ${isSaved ? styles['heart-icon-active'] : ''}`} 
-                            />
+                            <FaHeart className={isSaved ? styles['heart-icon-active'] : styles['heart-icon']} />
                           </button>
                         </div>
-                        
-                        {/* Listing Details */}
+
+                        {/* Listing Info */}
                         <div className={styles['listing-info']}>
                           <h3 className={styles['listing-title']}>
                             {listing.title}
@@ -339,7 +259,8 @@ export default function Services() {
             </Splide>
           </div>
         ))}
-      </main>
+        </main>
+      )}
 
       {/* Create Wishlist Modal */}
       {isWishlistModalOpen && (

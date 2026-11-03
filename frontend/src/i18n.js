@@ -382,6 +382,26 @@ export const applyGoogleTranslate = (languageName) => {
 
 const savedLang = localStorage.getItem('airbnb_preferred_language') || 'English';
 
+// Dynamically check backend platform settings for default language if not already customized by user
+if (typeof window !== 'undefined') {
+  if (!localStorage.getItem('airbnb_preferred_language')) {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    fetch(`${baseUrl}/listings/platform-settings`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.settings?.defaultLanguage) {
+          const raw = data.settings.defaultLanguage;
+          const cleanLang = raw.includes('Hindi') ? 'Hindi' : 'English';
+          if (cleanLang !== 'English' && !localStorage.getItem('airbnb_preferred_language')) {
+            i18n.changeLanguage(cleanLang);
+            applyGoogleTranslate(cleanLang);
+          }
+        }
+      })
+      .catch(() => {});
+  }
+}
+
 // Apply on initial load if saved language is not English
 if (typeof window !== 'undefined' && savedLang && savedLang !== 'English') {
   setTimeout(() => {

@@ -1,11 +1,79 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import styles from './styles/Footer.module.css';
 import { FaGlobe, FaFacebookSquare, FaTwitter, FaInstagram } from 'react-icons/fa';
 
 export default function Footer() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Popular');
   const [footerSections, setFooterSections] = useState([]);
+  const [platformConfig, setPlatformConfig] = useState({
+    siteName: 'Airbnb, Inc.',
+    currencySymbol: '₹',
+    defaultCurrency: 'INR',
+    language: 'English (IN)'
+  });
+
+  const defaultTabData = {
+    'Popular': [
+      { name: "Jaipur", type: "Heritage palace rentals" },
+      { name: "North Goa", type: "Luxury beach villa rentals" },
+      { name: "Udaipur", type: "Lakeside haveli rentals" },
+      { name: "Manali", type: "Wooden cabin & cottage rentals" },
+      { name: "Mumbai", type: "Sea-facing penthouse rentals" },
+      { name: "Dubai", type: "Downtown luxury flat rentals" },
+      { name: "South Goa", type: "Private beach cottage rentals" },
+      { name: "Rishikesh", type: "Riverfront chalet rentals" },
+      { name: "Gurugram", type: "Modern serviced flat rentals" },
+      { name: "Varanasi", type: "Ghatside heritage stays" },
+      { name: "Delhi", type: "Art & design city rentals" },
+      { name: "Bengaluru", type: "Garden city apartment rentals" }
+    ],
+    'Arts & culture': [
+      { name: "Paris", type: "Flat rentals" },
+      { name: "Jaipur", type: "Handicrafts & art studio stays" },
+      { name: "Rome", type: "Historic holiday rentals" },
+      { name: "Florence", type: "Villa rentals" },
+      { name: "Kyoto", type: "Traditional house rentals" },
+      { name: "Athens", type: "Acropolis view flat rentals" },
+      { name: "Varanasi", type: "Cultural & spiritual stays" }
+    ],
+    'Beach': [
+      { name: "North Goa", type: "Beachfront villa rentals" },
+      { name: "South Goa", type: "Beach house rentals" },
+      { name: "Maldives", type: "Water villa rentals" },
+      { name: "Miami", type: "Oceanfront flat rentals" },
+      { name: "Phuket", type: "Tropical holiday rentals" },
+      { name: "Bali", type: "Private pool villas" },
+      { name: "Kochi", type: "Coastal seaside retreats" }
+    ],
+    'Mountains': [
+      { name: "Manali", type: "Snow-view cottage rentals" },
+      { name: "Rishikesh", type: "Himalayan valley retreats" },
+      { name: "Aspen", type: "Alpine cabin rentals" },
+      { name: "Banff", type: "Chalet rentals" },
+      { name: "Zermatt", type: "Mountain holiday rentals" },
+      { name: "Chamonix", type: "Ski villa rentals" }
+    ],
+    'Outdoors': [
+      { name: "Rishikesh", type: "Rafting & camping retreats" },
+      { name: "Yosemite", type: "National park cabin rentals" },
+      { name: "Zion", type: "House rentals" },
+      { name: "Yellowstone", type: "Lodge rentals" },
+      { name: "Sedona", type: "Desert house rentals" },
+      { name: "Kullu", type: "Eco retreat rentals" }
+    ],
+    'Things to do': [
+      { name: "Dubai", type: "Desert safaris & luxury stays" },
+      { name: "New York", type: "Broadway city breaks" },
+      { name: "Tokyo", type: "Urban food exploration" },
+      { name: "Las Vegas", type: "Entertainment & resort stays" },
+      { name: "Singapore", type: "Marina city escapes" },
+      { name: "Jaipur", type: "Fort tours & culinary sessions" }
+    ]
+  };
+
+  const [tabData, setTabData] = useState(defaultTabData);
 
   useEffect(() => {
     let isMounted = true;
@@ -14,8 +82,16 @@ export default function Footer() {
         const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
         const res = await fetch(`${baseUrl}/listings/cms/footer`);
         const data = await res.json();
-        if (data && data.success && Array.isArray(data.sections) && isMounted) {
-          setFooterSections(data.sections);
+        if (data && data.success && isMounted) {
+          if (Array.isArray(data.sections) && data.sections.length > 0) {
+            setFooterSections(data.sections);
+          }
+          if (data.platformConfig) {
+            setPlatformConfig(data.platformConfig);
+          }
+          if (data.inspirationData && typeof data.inspirationData === 'object') {
+            setTabData(data.inspirationData);
+          }
         }
       } catch (e) {
         console.warn('Failed to load dynamic footer:', e);
@@ -25,74 +101,17 @@ export default function Footer() {
     return () => { isMounted = false; };
   }, []);
 
-  const tabs = ['Popular', 'Arts & culture', 'Beach', 'Mountains', 'Outdoors', 'Things to do'];
+  const tabs = Object.keys(tabData).length > 0 
+    ? Object.keys(tabData) 
+    : ['Popular', 'Arts & culture', 'Beach', 'Mountains', 'Outdoors', 'Things to do'];
 
-  const tabData = {
-    'Popular': [
-      { name: "Canmore", type: "Flat rentals" },
-      { name: "Benalmádena", type: "Beach house rentals" },
-      { name: "Marbella", type: "Flat rentals" },
-      { name: "Mijas", type: "House rentals" },
-      { name: "Prescott", type: "Holiday rentals" },
-      { name: "Scottsdale", type: "House rentals" },
-      { name: "Tucson", type: "Holiday rentals" },
-      { name: "Jasper", type: "Cabin rentals" },
-      { name: "Mountain View", type: "Holiday rentals" },
-      { name: "Devonport", type: "Cottage rentals" },
-      { name: "Mallacoota", type: "Pet-friendly rentals" },
-      { name: "Ibiza", type: "Holiday rentals" },
-      { name: "Anaheim", type: "Holiday rentals" },
-      { name: "Monterey", type: "Cottage rentals" },
-      { name: "Paso Robles", type: "House rentals" },
-      { name: "Santa Barbara", type: "Cottage rentals" },
-      { name: "Sonoma", type: "Holiday rentals" },
-      { name: "Show more ˅", type: "" }
-    ],
-    'Arts & culture': [
-      { name: "Paris", type: "Flat rentals" },
-      { name: "London", type: "Apartment rentals" },
-      { name: "Rome", type: "Holiday rentals" },
-      { name: "Florence", type: "Villa rentals" },
-      { name: "Kyoto", type: "House rentals" },
-      { name: "Athens", type: "Holiday rentals" },
-      { name: "Show more ˅", type: "" }
-    ],
-    'Beach': [
-      { name: "Miami", type: "Beachfront rentals" },
-      { name: "Goa", type: "Villa rentals" },
-      { name: "Phuket", type: "Holiday rentals" },
-      { name: "Bali", type: "House rentals" },
-      { name: "Maui", type: "Condo rentals" },
-      { name: "Malibu", type: "Beach house rentals" },
-      { name: "Show more ˅", type: "" }
-    ],
-    'Mountains': [
-      { name: "Aspen", type: "Cabin rentals" },
-      { name: "Manali", type: "Cottage rentals" },
-      { name: "Banff", type: "Chalet rentals" },
-      { name: "Zermatt", type: "Holiday rentals" },
-      { name: "Chamonix", type: "Villa rentals" },
-      { name: "Whistler", type: "Cabin rentals" },
-      { name: "Show more ˅", type: "" }
-    ],
-    'Outdoors': [
-      { name: "Yosemite", type: "Cabin rentals" },
-      { name: "Zion", type: "House rentals" },
-      { name: "Moab", type: "Holiday rentals" },
-      { name: "Banff", type: "Cabin rentals" },
-      { name: "Yellowstone", type: "Lodge rentals" },
-      { name: "Sedona", type: "House rentals" },
-      { name: "Show more ˅", type: "" }
-    ],
-    'Things to do': [
-      { name: "New York", type: "City breaks" },
-      { name: "Tokyo", type: "Urban exploration" },
-      { name: "Dubai", type: "Luxury stays" },
-      { name: "Las Vegas", type: "Entertainment" },
-      { name: "Singapore", type: "City escapes" },
-      { name: "Macau", type: "Holiday rentals" },
-      { name: "Show more ˅", type: "" }
-    ]
+  const currentItems = tabData[activeTab] || defaultTabData[activeTab] || [];
+
+  const handleDestinationClick = (destName) => {
+    if (!destName || destName.includes('Show more')) return;
+    const cleanLocation = destName.trim();
+    // Navigate straight to the location search results page
+    navigate(`/search/${encodeURIComponent(cleanLocation)}`);
   };
 
   return (
@@ -116,8 +135,13 @@ export default function Footer() {
           </div>
           
           <div className={styles['footer-grid-6']}>
-            {tabData[activeTab].map((item, index) => (
-              <div key={index} className={styles['inspiration-item']}>
+            {currentItems.map((item, index) => (
+              <div 
+                key={index} 
+                className={styles['inspiration-item']}
+                onClick={() => handleDestinationClick(item.name)}
+                style={{ cursor: item.name?.includes('Show more') ? 'default' : 'pointer' }}
+              >
                 <strong>{item.name}</strong>
                 <span>{item.type}</span>
               </div>
@@ -182,10 +206,10 @@ export default function Footer() {
           )}
         </div>
 
-        {/* Bottom Bar */}
+        {/* Bottom Bar with Dynamic Year and Currency */}
         <div className={styles['footer-bottom']}>
           <div className={styles['footer-bottom-left']}>
-            <span>© 2026 Airbnb, Inc.</span>
+            <span>© {new Date().getFullYear()} {platformConfig.siteName || 'Airbnb, Inc.'}</span>
             <ul>
               <li><Link to="/privacy-policy">Privacy</Link></li>
               <li><Link to="/terms-of-service">Terms</Link></li>
@@ -196,23 +220,23 @@ export default function Footer() {
           
           <div className={styles['footer-bottom-right']}>
             <div className={styles['footer-buttons']}>
-              <button>
+              <button title="Change Language">
                 <FaGlobe className={styles['globe-icon']} />
-                English (IN)
+                {platformConfig.language || 'English (IN)'}
               </button>
-              <button>
-                ₹ INR
+              <button title="Currency">
+                {platformConfig.currencySymbol || '₹'} {platformConfig.defaultCurrency || 'INR'}
               </button>
             </div>
             
             <div className={styles['footer-socials']}>
-              <a href="#" aria-label="Facebook">
+              <a href="https://facebook.com" target="_blank" rel="noreferrer" aria-label="Facebook">
                 <FaFacebookSquare className={styles['social-icon']} />
               </a>
-              <a href="#" aria-label="Twitter">
+              <a href="https://twitter.com" target="_blank" rel="noreferrer" aria-label="Twitter">
                 <FaTwitter className={styles['social-icon']} />
               </a>
-              <a href="#" aria-label="Instagram">
+              <a href="https://instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram">
                 <FaInstagram className={styles['social-icon']} />
               </a>
             </div>

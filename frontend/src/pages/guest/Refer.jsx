@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import styles from '../../components/styles/Refer.module.css';
 import { FaQrcode, FaPen, FaConciergeBell, FaWhatsapp, FaEnvelope, FaFacebook, FaCommentDots, FaFacebookMessenger, FaEllipsisH } from 'react-icons/fa';
 import { FaXTwitter } from 'react-icons/fa6';
 import { FcHome, FcGlobe } from 'react-icons/fc';
-import { FiCopy, FiPlus } from 'react-icons/fi';
+import { FiCopy, FiPlus, FiTrash2 } from 'react-icons/fi';
 import { IoMdClose } from 'react-icons/io';
 import AuthModal from '../../components/AuthModal';
+import { updateUserProfileApi, getUserProfileApi } from '../../services/api';
 import toast from 'react-hot-toast';
 
 function Refer() {
@@ -20,7 +21,57 @@ function Refer() {
   // Card selection state: 'home' | 'experience' | 'service'
   const [selectedCard, setSelectedCard] = useState('home');
 
-  // Derive referral code
+  // Dynamic rewards config from backend/marketing
+  const [rewardsConfig, setRewardsConfig] = useState({
+    home: { label: "You'll earn ₹1,928 INR – ₹3,374 INR" },
+    experience: { label: "You'll earn ₹4,820 INR" },
+    service: { label: "You'll earn ₹1,928 INR – ₹9,640 INR" }
+  });
+
+  // User's custom referral links list persisted in DB
+  const [customLinks, setCustomLinks] = useState([]);
+  const [newLinkSuffix, setNewLinkSuffix] = useState('');
+  const [isSavingCustomLink, setIsSavingCustomLink] = useState(false);
+
+  // Fetch marketing rewards configuration dynamically from backend
+  useEffect(() => {
+    const fetchRewardsConfig = async () => {
+      try {
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+        const res = await fetch(`${baseUrl}/marketing/referrals`);
+        const json = await res.json();
+        if (json.success && json.rewardsConfig) {
+          setRewardsConfig({
+            home: { label: `You'll earn ${json.rewardsConfig.home.label}` },
+            experience: { label: `You'll earn ${json.rewardsConfig.experience.label}` },
+            service: { label: `You'll earn ${json.rewardsConfig.service.label}` }
+          });
+        }
+      } catch (err) {
+        console.warn('Failed to fetch dynamic referral rewards:', err);
+      }
+    };
+    fetchRewardsConfig();
+  }, []);
+
+  // Sync custom referral links from user state or backend profile
+  useEffect(() => {
+    if (user) {
+      if (Array.isArray(user.customReferralLinks)) {
+        setCustomLinks(user.customReferralLinks);
+      } else if (user.id || user._id) {
+        getUserProfileApi(user.id || user._id)
+          .then((res) => {
+            if (res.success && res.user && Array.isArray(res.user.customReferralLinks)) {
+              setCustomLinks(res.user.customReferralLinks);
+            }
+          })
+          .catch(() => {});
+      }
+    }
+  }, [user]);
+
+  // Derive active referral code dynamically
   const referralCode = user?.referralCode || (user?.firstName ? `${user.firstName.toLowerCase()}${user.id || '4512'}` : 'mohammadz4512');
   const fullReferralLink = `https://airbnb.co.in/rp/${referralCode}`;
 
@@ -62,6 +113,55 @@ function Refer() {
     }).catch(() => {
       toast.error('Failed to copy link');
     });
+  };
+
+  // Add and persist custom link in backend
+  const handleAddCustomLink = async (e) => {
+    if (e) e.preventDefault();
+    if (!newLinkSuffix.trim()) return;
+
+    const cleaned = newLinkSuffix.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!cleaned) {
+      toast.error('Please enter valid letters or numbers');
+      return;
+    }
+
+    if (customLinks.length >= 3) {
+      toast.error('You can create up to 3 custom links');
+      return;
+    }
+
+    if (customLinks.includes(cleaned) || cleaned === referralCode.toLowerCase()) {
+      toast.error('This custom link already exists');
+      return;
+    }
+
+    const updated = [...customLinks, cleaned];
+    try {
+      setIsSavingCustomLink(true);
+      await updateUserProfileApi({ customReferralLinks: updated });
+      setCustomLinks(updated);
+      setNewLinkSuffix('');
+      const createdFullUrl = `https://airbnb.co.in/rp/${cleaned}`;
+      copyToClipboard(createdFullUrl);
+      toast.success('Custom link saved and copied!');
+    } catch (err) {
+      toast.error('Failed to save custom link to server');
+    } finally {
+      setIsSavingCustomLink(false);
+    }
+  };
+
+  // Delete custom link from backend
+  const handleDeleteCustomLink = async (linkToDelete) => {
+    const updated = customLinks.filter(l => l !== linkToDelete);
+    try {
+      await updateUserProfileApi({ customReferralLinks: updated });
+      setCustomLinks(updated);
+      toast.success('Custom link removed');
+    } catch (err) {
+      toast.error('Failed to update custom links');
+    }
   };
 
   const handleShareOption = (platform) => {
@@ -153,7 +253,7 @@ function Refer() {
 
         <h1 className={styles['refer-main-title']}>Refer a host, earn cash</h1>
 
-        {/* Bootstrap Grid for Cards */}
+        {/* Bootstrap Grid for Dynamic Cards */}
         <div className="row justify-content-center">
           
           <div className="col-lg-4 col-md-4 col-sm-12 mb-3">
@@ -163,7 +263,7 @@ function Refer() {
             >
               <div className={styles['refer-card-content']}>
                 <div className={styles['refer-card-title']}>Home</div>
-                <div className={styles['refer-card-subtitle']}>You'll earn ₹1,928 INR – ₹3,374 INR</div>
+                <div className={styles['refer-card-subtitle']}>{rewardsConfig.home.label}</div>
               </div>
               <div className={styles['refer-card-icon']}>
                 <FcHome />
@@ -178,7 +278,7 @@ function Refer() {
             >
               <div className={styles['refer-card-content']}>
                 <div className={styles['refer-card-title']}>Experience</div>
-                <div className={styles['refer-card-subtitle']}>You'll earn ₹4,820 INR</div>
+                <div className={styles['refer-card-subtitle']}>{rewardsConfig.experience.label}</div>
               </div>
               <div className={styles['refer-card-icon']}>
                 <FcGlobe />
@@ -193,7 +293,7 @@ function Refer() {
             >
               <div className={styles['refer-card-content']}>
                 <div className={styles['refer-card-title']}>Service</div>
-                <div className={styles['refer-card-subtitle']}>You'll earn ₹1,928 INR – ₹9,640 INR</div>
+                <div className={styles['refer-card-subtitle']}>{rewardsConfig.service.label}</div>
               </div>
               <div className={styles['refer-card-icon']}>
                 <FaConciergeBell />
@@ -216,11 +316,6 @@ function Refer() {
 
       </main>
 
-      {/* Footer Text */}
-      {/* <div className={styles['refer-footer-text']}>
-        Only for Airbnb members. Eligible locations and listing types only. Amounts expire on 6 Dec 2026. <a href="#">Terms apply</a>
-      </div> */}
-
       {/* Auth Modal for Unauthenticated Users */}
       <AuthModal show={showAuthModal} onClose={() => setShowAuthModal(false)} />
 
@@ -236,9 +331,10 @@ function Refer() {
               <IoMdClose />
             </button>
             <h2 className={styles['modal-title']}>Custom links</h2>
-            <p className={styles['modal-subtitle']}>Create up to 3 more homes referral links.</p>
+            <p className={styles['modal-subtitle']}>Create up to 3 more referral links.</p>
 
-            <div className={styles['custom-link-box']}>
+            {/* Primary Referral Link */}
+            <div className={styles['custom-link-box']} style={{ marginBottom: '12px' }}>
               <div className={styles['custom-link-content']}>
                 <span className={styles['custom-link-prefix']}>airbnb.co.in/rp/</span>
                 <span className={styles['custom-link-code']}>{referralCode}</span>
@@ -252,20 +348,70 @@ function Refer() {
               </button>
             </div>
 
-            <div
-              className={styles['create-link-box']}
-              onClick={() => {
-                const newCode = prompt('Enter custom link suffix (e.g. yourname):');
-                if (newCode && newCode.trim()) {
-                  const custom = `https://airbnb.co.in/rp/${newCode.trim().toLowerCase().replace(/[^a-z0-9]/g, '')}`;
-                  copyToClipboard(custom);
-                  toast.success('Custom link created and copied!');
-                }
-              }}
-            >
-              <span>Create a link</span>
-              <FiPlus size={20} />
-            </div>
+            {/* Persisted Custom Links List from Database */}
+            {customLinks.map((customCode) => {
+              const customUrl = `https://airbnb.co.in/rp/${customCode}`;
+              return (
+                <div key={customCode} className={styles['custom-link-box']} style={{ marginBottom: '12px' }}>
+                  <div className={styles['custom-link-content']}>
+                    <span className={styles['custom-link-prefix']}>airbnb.co.in/rp/</span>
+                    <span className={styles['custom-link-code']}>{customCode}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                      className={styles['custom-link-action-icon']}
+                      onClick={() => copyToClipboard(customUrl)}
+                      title="Copy custom link"
+                    >
+                      <FiCopy size={18} />
+                    </button>
+                    <button
+                      className={styles['custom-link-action-icon']}
+                      style={{ color: '#ff385c' }}
+                      onClick={() => handleDeleteCustomLink(customCode)}
+                      title="Delete link"
+                    >
+                      <FiTrash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Create dynamic custom link form */}
+            {customLinks.length < 3 && (
+              <form onSubmit={handleAddCustomLink} style={{ marginTop: '16px' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: '#f7f7f7', border: '1px solid #ddd', borderRadius: '12px', padding: '10px 14px' }}>
+                    <span style={{ fontSize: '13px', color: '#717171', marginRight: '4px' }}>airbnb.co.in/rp/</span>
+                    <input 
+                      type="text" 
+                      placeholder="customname"
+                      value={newLinkSuffix}
+                      onChange={(e) => setNewLinkSuffix(e.target.value)}
+                      style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: '14px', fontWeight: 600, color: '#222' }}
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isSavingCustomLink || !newLinkSuffix.trim()}
+                    style={{
+                      background: '#222',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '12px',
+                      padding: '12px 18px',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: isSavingCustomLink || !newLinkSuffix.trim() ? 'not-allowed' : 'pointer',
+                      opacity: isSavingCustomLink || !newLinkSuffix.trim() ? 0.6 : 1
+                    }}
+                  >
+                    {isSavingCustomLink ? 'Saving...' : 'Add'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

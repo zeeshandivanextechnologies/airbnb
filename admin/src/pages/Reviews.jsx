@@ -21,7 +21,7 @@ import toast from 'react-hot-toast';
 import styles from './styles/Reviews.module.css';
 
 export default function Reviews() {
-  const baseUrl = 'http://localhost:5000/api';
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);

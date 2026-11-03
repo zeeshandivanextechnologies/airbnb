@@ -34,6 +34,8 @@ import toast from 'react-hot-toast';
 import { renderCategoryIcon, AVAILABLE_ICONS } from '../utils/categoryIcons.jsx';
 import styles from './styles/MasterData.module.css';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
 export default function MasterData() {
   const [activeTab, setActiveTab] = useState('propertyTypes'); // 'propertyTypes' | 'amenities' | 'locations' | 'categories' | 'hostServices'
 
@@ -61,7 +63,7 @@ export default function MasterData() {
   const fetchStepSettings = async () => {
     try {
       setLoadingStepSettings(true);
-      const res = await fetch('http://localhost:5000/api/listings/step-settings');
+      const res = await fetch(`${API_BASE}/listings/step-settings`);
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setStepSettings(data.data);
@@ -77,7 +79,7 @@ export default function MasterData() {
   const fetchStepBasics = async () => {
     try {
       setLoadingStepBasics(true);
-      const res = await fetch('http://localhost:5000/api/listings/step-basics?all=true');
+      const res = await fetch(`${API_BASE}/listings/step-basics?all=true`);
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setStepBasics(data.data.map(b => ({
@@ -96,7 +98,7 @@ export default function MasterData() {
   const fetchPlaceTypes = async () => {
     try {
       setLoadingPlaceTypes(true);
-      const res = await fetch('http://localhost:5000/api/listings/place-types?all=true');
+      const res = await fetch(`${API_BASE}/listings/place-types?all=true`);
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setPlaceTypes(data.data.map(pl => ({
@@ -115,7 +117,7 @@ export default function MasterData() {
   const fetchPropertyTypes = async () => {
     try {
       setLoadingPropertyTypes(true);
-      const res = await fetch('http://localhost:5000/api/listings/property-types?all=true');
+      const res = await fetch(`${API_BASE}/listings/property-types?all=true`);
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setPropertyTypes(data.data.map(p => ({
@@ -135,7 +137,7 @@ export default function MasterData() {
   const fetchHostServices = async () => {
     try {
       setLoadingServices(true);
-      const res = await fetch('http://localhost:5000/api/listings/host-categories?all=true');
+      const res = await fetch(`${API_BASE}/listings/host-categories?all=true`);
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setHostServices(data.data);
@@ -155,7 +157,7 @@ export default function MasterData() {
   const fetchAmenities = async () => {
     try {
       setLoadingAmenities(true);
-      const res = await fetch('http://localhost:5000/api/listings/master-amenities?all=true');
+      const res = await fetch(`${API_BASE}/listings/master-amenities?all=true`);
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setAmenities(data.data.map(a => ({
@@ -178,7 +180,7 @@ export default function MasterData() {
   const fetchHighlights = async () => {
     try {
       setLoadingHighlights(true);
-      const res = await fetch('http://localhost:5000/api/listings/master-highlights?all=true');
+      const res = await fetch(`${API_BASE}/listings/master-highlights?all=true`);
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setHighlights(data.data.map(h => ({
@@ -201,7 +203,7 @@ export default function MasterData() {
   const fetchBookingOptions = async () => {
     try {
       setLoadingBookingOptions(true);
-      const res = await fetch('http://localhost:5000/api/listings/master-booking-options?all=true');
+      const res = await fetch(`${API_BASE}/listings/master-booking-options?all=true`);
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setBookingOptions(data.data.map(b => ({
@@ -224,7 +226,7 @@ export default function MasterData() {
   const fetchDiscounts = async () => {
     try {
       setLoadingDiscounts(true);
-      const res = await fetch('http://localhost:5000/api/listings/master-discounts?all=true');
+      const res = await fetch(`${API_BASE}/listings/master-discounts?all=true`);
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setDiscounts(data.data.map(d => ({
@@ -247,7 +249,7 @@ export default function MasterData() {
   const fetchSafetyItems = async () => {
     try {
       setLoadingSafetyItems(true);
-      const res = await fetch('http://localhost:5000/api/listings/master-safety-items?all=true');
+      const res = await fetch(`${API_BASE}/listings/master-safety-items?all=true`);
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setSafetyItems(data.data.map(s => ({
@@ -304,7 +306,7 @@ export default function MasterData() {
 
   const fetchLocations = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/listings/master-locations');
+      const res = await fetch(`${API_BASE}/listings/master-locations`);
       const data = await res.json();
       if (data.success && Array.isArray(data.data) && data.data.length > 0) {
         setLocations(data.data);
@@ -316,7 +318,7 @@ export default function MasterData() {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/listings/master-categories');
+      const res = await fetch(`${API_BASE}/listings/master-categories`);
       const data = await res.json();
       if (data.success && Array.isArray(data.data) && data.data.length > 0) {
         setCategories(data.data);
@@ -327,23 +329,10 @@ export default function MasterData() {
   };
 
   // 3. Locations (Countries, States & Cities)
-  const [locations, setLocations] = useState([
-    { id: 1, country: 'India', state: 'Rajasthan', city: 'Jaipur', tier: 'Top Destination', activeListings: 640, status: 'Active' },
-    { id: 2, country: 'India', state: 'Rajasthan', city: 'Udaipur', tier: 'Top Destination', activeListings: 420, status: 'Active' },
-    { id: 3, country: 'India', state: 'Goa', city: 'North Goa', tier: 'Top Destination', activeListings: 1180, status: 'Active' },
-    { id: 4, country: 'India', state: 'Himachal Pradesh', city: 'Manali', tier: 'Hill Station', activeListings: 350, status: 'Active' },
-    { id: 5, country: 'India', state: 'Kerala', city: 'Alleppey (Alappuzha)', tier: 'Backwaters', activeListings: 290, status: 'Active' },
-    { id: 6, country: 'India', state: 'Maharashtra', city: 'Mumbai', tier: 'Metro', activeListings: 920, status: 'Active' }
-  ]);
+  const [locations, setLocations] = useState([]);
 
   // 4. Categories & Homepage Sections / Banners
-  const [categories, setCategories] = useState([
-    { id: 1, title: 'Icons & Celebrity Stays', sectionKey: 'hero_icons', badge: 'New 2026', displayOrder: 1, bannerText: 'Extraordinary experiences hosted by legends', status: 'Active' },
-    { id: 2, title: 'Amazing Views & Lakefront', sectionKey: 'lakefront', badge: 'Trending', displayOrder: 2, bannerText: 'Wake up to breathtaking water & hilltop vistas', status: 'Active' },
-    { id: 3, title: 'Beachfront Cottages', sectionKey: 'beachfront', badge: 'Popular', displayOrder: 3, bannerText: 'Step directly onto warm golden sands', status: 'Active' },
-    { id: 4, title: 'Heritage & Castles', sectionKey: 'historical_homes', badge: 'Cultural', displayOrder: 4, bannerText: 'Live like royalty in restored forts & havelis', status: 'Active' },
-    { id: 5, title: 'Cabins in the Woods', sectionKey: 'cabins', badge: 'Peaceful', displayOrder: 5, bannerText: 'Disconnect in secluded nature retreats', status: 'Active' }
-  ]);
+  const [categories, setCategories] = useState([]);
 
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -356,7 +345,7 @@ export default function MasterData() {
     if (window.confirm('Delete this master data entry permanently?')) {
       if (type === 'propertyTypes') {
         try {
-          const res = await fetch(`http://localhost:5000/api/listings/property-types/${id}`, {
+          const res = await fetch(`${API_BASE}/listings/property-types/${id}`, {
             method: 'DELETE'
           });
           const data = await res.json();
@@ -372,7 +361,7 @@ export default function MasterData() {
       }
       if (type === 'placeTypes') {
         try {
-          const res = await fetch(`http://localhost:5000/api/listings/place-types/${id}`, {
+          const res = await fetch(`${API_BASE}/listings/place-types/${id}`, {
             method: 'DELETE'
           });
           const data = await res.json();
@@ -388,7 +377,7 @@ export default function MasterData() {
       }
       if (type === 'stepBasics') {
         try {
-          const res = await fetch(`http://localhost:5000/api/listings/step-basics/${id}`, {
+          const res = await fetch(`${API_BASE}/listings/step-basics/${id}`, {
             method: 'DELETE'
           });
           const data = await res.json();
@@ -404,7 +393,7 @@ export default function MasterData() {
       }
       if (type === 'amenities') {
         try {
-          const res = await fetch(`http://localhost:5000/api/listings/master-amenities/${id}`, {
+          const res = await fetch(`${API_BASE}/listings/master-amenities/${id}`, {
             method: 'DELETE'
           });
           const data = await res.json();
@@ -420,7 +409,7 @@ export default function MasterData() {
       }
       if (type === 'highlights') {
         try {
-          const res = await fetch(`http://localhost:5000/api/listings/master-highlights/${id}`, {
+          const res = await fetch(`${API_BASE}/listings/master-highlights/${id}`, {
             method: 'DELETE'
           });
           const data = await res.json();
@@ -436,7 +425,7 @@ export default function MasterData() {
       }
       if (type === 'bookingOptions') {
         try {
-          const res = await fetch(`http://localhost:5000/api/listings/master-booking-options/${id}`, {
+          const res = await fetch(`${API_BASE}/listings/master-booking-options/${id}`, {
             method: 'DELETE'
           });
           const data = await res.json();
@@ -452,7 +441,7 @@ export default function MasterData() {
       }
       if (type === 'discounts') {
         try {
-          const res = await fetch(`http://localhost:5000/api/listings/master-discounts/${id}`, {
+          const res = await fetch(`${API_BASE}/listings/master-discounts/${id}`, {
             method: 'DELETE'
           });
           const data = await res.json();
@@ -468,7 +457,7 @@ export default function MasterData() {
       }
       if (type === 'safetyItems') {
         try {
-          const res = await fetch(`http://localhost:5000/api/listings/master-safety-items/${id}`, {
+          const res = await fetch(`${API_BASE}/listings/master-safety-items/${id}`, {
             method: 'DELETE'
           });
           const data = await res.json();
@@ -501,7 +490,7 @@ export default function MasterData() {
       }
       if (type === 'locations') {
         try {
-          const res = await fetch(`http://localhost:5000/api/listings/master-locations/${id}`, { method: 'DELETE' });
+          const res = await fetch(`${API_BASE}/listings/master-locations/${id}`, { method: 'DELETE' });
           const data = await res.json();
           if (data.success) {
             toast.success('City / Location deleted successfully!');
@@ -515,7 +504,7 @@ export default function MasterData() {
       }
       if (type === 'categories') {
         try {
-          const res = await fetch(`http://localhost:5000/api/listings/master-categories/${id}`, { method: 'DELETE' });
+          const res = await fetch(`${API_BASE}/listings/master-categories/${id}`, { method: 'DELETE' });
           const data = await res.json();
           if (data.success) {
             toast.success('Category section deleted successfully!');
@@ -529,7 +518,7 @@ export default function MasterData() {
       }
       if (type === 'hostServices') {
         try {
-          const res = await fetch(`http://localhost:5000/api/listings/host-categories/${id}`, {
+          const res = await fetch(`${API_BASE}/listings/host-categories/${id}`, {
             method: 'DELETE'
           });
           const data = await res.json();
@@ -561,7 +550,7 @@ export default function MasterData() {
         };
 
         if (editingItem.id && typeof editingItem.id === 'number' && editingItem.id < 1000000000000) {
-          const res = await fetch(`http://localhost:5000/api/listings/step-basics/${editingItem.id}`, {
+          const res = await fetch(`${API_BASE}/listings/step-basics/${editingItem.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -574,7 +563,7 @@ export default function MasterData() {
             toast.error(data.message || 'Failed to update item');
           }
         } else {
-          const res = await fetch('http://localhost:5000/api/listings/step-basics', {
+          const res = await fetch(`${API_BASE}/listings/step-basics`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -601,7 +590,7 @@ export default function MasterData() {
           learn_more_link: editingItem.learn_more_link
         };
 
-        const res = await fetch(`http://localhost:5000/api/listings/step-settings/${editingItem.step_key}`, {
+        const res = await fetch(`${API_BASE}/listings/step-settings/${editingItem.step_key}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -627,7 +616,7 @@ export default function MasterData() {
         };
 
         if (editingItem.id && typeof editingItem.id === 'number' && editingItem.id < 1000000000000) {
-          const res = await fetch(`http://localhost:5000/api/listings/place-types/${editingItem.id}`, {
+          const res = await fetch(`${API_BASE}/listings/place-types/${editingItem.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -640,7 +629,7 @@ export default function MasterData() {
             toast.error(data.message || 'Failed to update place type');
           }
         } else {
-          const res = await fetch('http://localhost:5000/api/listings/place-types', {
+          const res = await fetch(`${API_BASE}/listings/place-types`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -667,7 +656,7 @@ export default function MasterData() {
         };
 
         if (editingItem.id && typeof editingItem.id === 'number' && editingItem.id < 1000000000000) {
-          const res = await fetch(`http://localhost:5000/api/listings/property-types/${editingItem.id}`, {
+          const res = await fetch(`${API_BASE}/listings/property-types/${editingItem.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -680,7 +669,7 @@ export default function MasterData() {
             toast.error(data.message || 'Failed to update property type');
           }
         } else {
-          const res = await fetch('http://localhost:5000/api/listings/property-types', {
+          const res = await fetch(`${API_BASE}/listings/property-types`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -710,7 +699,7 @@ export default function MasterData() {
         };
 
         if (editingItem.id && typeof editingItem.id === 'number' && editingItem.id < 1000000000000) {
-          const res = await fetch(`http://localhost:5000/api/listings/master-amenities/${editingItem.id}`, {
+          const res = await fetch(`${API_BASE}/listings/master-amenities/${editingItem.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -723,7 +712,7 @@ export default function MasterData() {
             toast.error(data.message || 'Failed to update amenity');
           }
         } else {
-          const res = await fetch('http://localhost:5000/api/listings/master-amenities', {
+          const res = await fetch(`${API_BASE}/listings/master-amenities`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -750,7 +739,7 @@ export default function MasterData() {
         };
 
         if (editingItem.id && typeof editingItem.id === 'number' && editingItem.id < 1000000000000) {
-          const res = await fetch(`http://localhost:5000/api/listings/master-highlights/${editingItem.id}`, {
+          const res = await fetch(`${API_BASE}/listings/master-highlights/${editingItem.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -763,7 +752,7 @@ export default function MasterData() {
             toast.error(data.message || 'Failed to update highlight');
           }
         } else {
-          const res = await fetch('http://localhost:5000/api/listings/master-highlights', {
+          const res = await fetch(`${API_BASE}/listings/master-highlights`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -792,7 +781,7 @@ export default function MasterData() {
         };
 
         if (editingItem.id && typeof editingItem.id === 'number' && editingItem.id < 1000000000000) {
-          const res = await fetch(`http://localhost:5000/api/listings/master-booking-options/${editingItem.id}`, {
+          const res = await fetch(`${API_BASE}/listings/master-booking-options/${editingItem.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -805,7 +794,7 @@ export default function MasterData() {
             toast.error(data.message || 'Failed to update booking option');
           }
         } else {
-          const res = await fetch('http://localhost:5000/api/listings/master-booking-options', {
+          const res = await fetch(`${API_BASE}/listings/master-booking-options`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -834,7 +823,7 @@ export default function MasterData() {
         };
 
         if (editingItem.id && typeof editingItem.id === 'number' && editingItem.id < 1000000000000) {
-          const res = await fetch(`http://localhost:5000/api/listings/master-discounts/${editingItem.id}`, {
+          const res = await fetch(`${API_BASE}/listings/master-discounts/${editingItem.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -847,7 +836,7 @@ export default function MasterData() {
             toast.error(data.message || 'Failed to update discount');
           }
         } else {
-          const res = await fetch('http://localhost:5000/api/listings/master-discounts', {
+          const res = await fetch(`${API_BASE}/listings/master-discounts`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -874,7 +863,7 @@ export default function MasterData() {
         };
 
         if (editingItem.id && typeof editingItem.id === 'number' && editingItem.id < 1000000000000) {
-          const res = await fetch(`http://localhost:5000/api/listings/master-safety-items/${editingItem.id}`, {
+          const res = await fetch(`${API_BASE}/listings/master-safety-items/${editingItem.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -887,7 +876,7 @@ export default function MasterData() {
             toast.error(data.message || 'Failed to update safety item');
           }
         } else {
-          const res = await fetch('http://localhost:5000/api/listings/master-safety-items', {
+          const res = await fetch(`${API_BASE}/listings/master-safety-items`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -961,7 +950,7 @@ export default function MasterData() {
         };
 
         if (editingItem.id && typeof editingItem.id === 'number' && editingItem.id < 1000000000000) {
-          const res = await fetch(`http://localhost:5000/api/listings/master-locations/${editingItem.id}`, {
+          const res = await fetch(`${API_BASE}/listings/master-locations/${editingItem.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -974,7 +963,7 @@ export default function MasterData() {
             toast.error(data.message || 'Failed to update location');
           }
         } else {
-          const res = await fetch('http://localhost:5000/api/listings/master-locations', {
+          const res = await fetch(`${API_BASE}/listings/master-locations`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -1003,7 +992,7 @@ export default function MasterData() {
         };
 
         if (editingItem.id && typeof editingItem.id === 'number' && editingItem.id < 1000000000000) {
-          const res = await fetch(`http://localhost:5000/api/listings/master-categories/${editingItem.id}`, {
+          const res = await fetch(`${API_BASE}/listings/master-categories/${editingItem.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -1016,7 +1005,7 @@ export default function MasterData() {
             toast.error(data.message || 'Failed to update category');
           }
         } else {
-          const res = await fetch('http://localhost:5000/api/listings/master-categories', {
+          const res = await fetch(`${API_BASE}/listings/master-categories`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -1046,7 +1035,7 @@ export default function MasterData() {
         };
 
         if (editingItem.id) {
-          const res = await fetch(`http://localhost:5000/api/listings/host-categories/${editingItem.id}`, {
+          const res = await fetch(`${API_BASE}/listings/host-categories/${editingItem.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -1059,7 +1048,7 @@ export default function MasterData() {
             toast.error(data.message || 'Failed to update');
           }
         } else {
-          const res = await fetch('http://localhost:5000/api/listings/host-categories', {
+          const res = await fetch(`${API_BASE}/listings/host-categories`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)

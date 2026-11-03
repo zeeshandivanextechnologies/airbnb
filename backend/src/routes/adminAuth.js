@@ -240,10 +240,16 @@ router.get('/dashboard-stats', async (req, res) => {
       bookings: dailyMap[d].bookings
     }));
 
-    // 7. Month-wise breakdown for monthly chart (Last 6 months)
-    const monthOrder = ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'];
+    // 7. Month-wise breakdown for monthly chart (Dynamic Last 6 Months)
+    const monthOrder = [];
     const monthMap = {};
-    monthOrder.forEach(m => { monthMap[m] = { revenue: 0, bookings: 0 }; });
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const mStr = d.toLocaleString('en-US', { month: 'short' });
+      monthOrder.push(mStr);
+      monthMap[mStr] = { revenue: 0, bookings: 0 };
+    }
 
     recentBookingsRes.rows.forEach(b => {
       const mName = b.month_name ? b.month_name.trim() : null;
@@ -261,21 +267,39 @@ router.get('/dashboard-stats', async (req, res) => {
       bookings: monthMap[m].bookings
     }));
 
-    // 8. Category Breakdown from listings & bookings
-    const catRes = await pool.query(`
+    // 8. Category Breakdown from listings & bookings (Fallback to popular listing categories if no bookings yet)
+    let catRes = await pool.query(`
       SELECT 
         COALESCE(l.category, 'Other') AS category_name,
         COUNT(b.id) AS bookings_count,
         COALESCE(SUM(b.total_amount), 0) AS total_revenue
       FROM bookings b
       LEFT JOIN listings l ON b.listing_id = l.id
+      WHERE l.category IS NOT NULL AND TRIM(l.category) != ''
       GROUP BY l.category
       ORDER BY total_revenue DESC
       LIMIT 4
     `);
 
-    // 9. Recent Real-time Activities from bookings and listings
-    const activitiesRes = await pool.query(`
+    let categoryShare = catRes.rows;
+    if (categoryShare.length === 0) {
+      // Pull dynamic categories from active listings so it's always real DB data
+      const listingCats = await pool.query(`
+        SELECT 
+          category AS category_name,
+          COUNT(*) AS bookings_count,
+          COALESCE(SUM(price), 0) AS total_revenue
+        FROM listings
+        WHERE category IS NOT NULL AND TRIM(category) != ''
+        GROUP BY category
+        ORDER BY bookings_count DESC
+        LIMIT 4
+      `);
+      categoryShare = listingCats.rows;
+    }
+
+    // 9. Recent Real-time Activities from bookings, listings, and users
+    let activitiesRes = await pool.query(`
       SELECT 
         b.id,
         b.booking_code,
@@ -289,7 +313,7 @@ router.get('/dashboard-stats', async (req, res) => {
       LIMIT 5
     `);
 
-    const recentActivities = activitiesRes.rows.map(item => {
+    let recentActivities = activitiesRes.rows.map(item => {
       const createdDate = new Date(item.created_at);
       const diffMs = Date.now() - createdDate.getTime();
       const diffMins = Math.floor(diffMs / (1000 * 60));
@@ -318,6 +342,23 @@ router.get('/dashboard-stats', async (req, res) => {
       };
     });
 
+    if (recentActivities.length === 0) {
+      // If no bookings yet, dynamically pull latest listings created from database
+      const latestListings = await pool.query(`
+        SELECT id, title, host_name, city, created_at
+        FROM listings
+        ORDER BY id DESC
+        LIMIT 5
+      `);
+      recentActivities = latestListings.rows.map(l => ({
+        id: l.id,
+        title: `New listing submitted: "${l.title}"`,
+        sub: `Host: ${l.host_name || 'Host'} • ${l.city || 'India'}`,
+        time: 'Recently',
+        status: 'NEW'
+      }));
+    }
+
     return res.status(200).json({
       success: true,
       stats: {
@@ -339,7 +380,7 @@ router.get('/dashboard-stats', async (req, res) => {
       },
       dailyData,
       monthlyData,
-      categoryShare: catRes.rows,
+      categoryShare,
       recentActivities
     });
 
@@ -775,6 +816,148 @@ router.patch('/hosts/:id/status', async (req, res) => {
  */
 router.get('/roles-data', async (req, res) => {
   try {
+    // Ensure admin_staff table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS admin_staff (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        phone VARCHAR(50),
+        role VARCHAR(50) NOT NULL DEFAULT 'support_staff',
+        department VARCHAR(100) DEFAULT 'Customer Delight',
+        status VARCHAR(50) DEFAULT 'Active',
+        last_active VARCHAR(50) DEFAULT 'Just now',
+        avatar_bg VARCHAR(50) DEFAULT '#2563eb',
+        custom_modules JSONB DEFAULT '["Bookings", "Users"]',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS admin_roles_config (
+        id VARCHAR(50) PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        color VARCHAR(50),
+        bg_color VARCHAR(50),
+        description TEXT,
+        permissions JSONB NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Seed admin_roles_config if empty
+    const rolesCount = await pool.query('SELECT COUNT(*) FROM admin_roles_config');
+    if (parseInt(rolesCount.rows[0].count, 10) === 0) {
+      const defaultRoles = [
+        {
+          id: 'super_admin',
+          name: 'Super Admin',
+          color: '#be185d',
+          bg_color: '#fdf2f8',
+          description: 'Unrestricted full access across all modules, sensitive financial configs, and security settings.',
+          permissions: {
+            dashboard: { view: true, edit: true, delete: true, export: true },
+            listings: { view: true, edit: true, delete: true, export: true },
+            users: { view: true, edit: true, delete: true, export: true },
+            hosts: { view: true, edit: true, delete: true, export: true },
+            bookings: { view: true, edit: true, delete: true, export: true },
+            finance: { view: true, edit: true, delete: true, export: true },
+            reviews: { view: true, edit: true, delete: true, export: true },
+            masterData: { view: true, edit: true, delete: true, export: true },
+            roles: { view: true, edit: true, delete: true, export: true },
+          }
+        },
+        {
+          id: 'sub_admin',
+          name: 'Sub-Admin',
+          color: '#15803d',
+          bg_color: '#f0fdf4',
+          description: 'Platform operations manager. Can approve listings, manage hosts & bookings, and view financial reports.',
+          permissions: {
+            dashboard: { view: true, edit: false, delete: false, export: true },
+            listings: { view: true, edit: true, delete: true, export: true },
+            users: { view: true, edit: true, delete: false, export: true },
+            hosts: { view: true, edit: true, delete: false, export: true },
+            bookings: { view: true, edit: true, delete: false, export: true },
+            finance: { view: true, edit: false, delete: false, export: true },
+            reviews: { view: true, edit: true, delete: true, export: true },
+            masterData: { view: true, edit: true, delete: false, export: true },
+            roles: { view: true, edit: false, delete: false, export: false },
+          }
+        },
+        {
+          id: 'support_staff',
+          name: 'Support Staff',
+          color: '#1d4ed8',
+          bg_color: '#eff6ff',
+          description: 'Customer assistance & booking care. Can view guests/hosts, update booking states, and issue refunds.',
+          permissions: {
+            dashboard: { view: true, edit: false, delete: false, export: false },
+            listings: { view: true, edit: false, delete: false, export: false },
+            users: { view: true, edit: true, delete: false, export: false },
+            hosts: { view: true, edit: false, delete: false, export: false },
+            bookings: { view: true, edit: true, delete: false, export: true },
+            finance: { view: false, edit: false, delete: false, export: false },
+            reviews: { view: true, edit: false, delete: false, export: false },
+            masterData: { view: false, edit: false, delete: false, export: false },
+            roles: { view: false, edit: false, delete: false, export: false },
+          }
+        },
+        {
+          id: 'moderator',
+          name: 'Content Moderator',
+          color: '#a16207',
+          bg_color: '#fefce8',
+          description: 'Trust & Safety team. Can inspect property photos, review quality, and take down abusive reviews or fake listings.',
+          permissions: {
+            dashboard: { view: true, edit: false, delete: false, export: false },
+            listings: { view: true, edit: true, delete: true, export: false },
+            users: { view: true, edit: false, delete: false, export: false },
+            hosts: { view: true, edit: false, delete: false, export: false },
+            bookings: { view: false, edit: false, delete: false, export: false },
+            finance: { view: false, edit: false, delete: false, export: false },
+            reviews: { view: true, edit: true, delete: true, export: true },
+            masterData: { view: false, edit: false, delete: false, export: false },
+            roles: { view: false, edit: false, delete: false, export: false },
+          }
+        }
+      ];
+
+      for (const r of defaultRoles) {
+        await pool.query(
+          `INSERT INTO admin_roles_config (id, name, color, bg_color, description, permissions)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           ON CONFLICT (id) DO NOTHING`,
+          [r.id, r.name, r.color, r.bg_color, r.description, JSON.stringify(r.permissions)]
+        );
+      }
+    }
+
+    // Seed admin_staff if empty from users table where role = admin or default staff
+    const staffCount = await pool.query('SELECT COUNT(*) FROM admin_staff');
+    if (parseInt(staffCount.rows[0].count, 10) === 0) {
+      const admins = await pool.query("SELECT * FROM users WHERE role = 'admin' LIMIT 5");
+      if (admins.rows.length > 0) {
+        for (const admin of admins.rows) {
+          await pool.query(
+            `INSERT INTO admin_staff (name, email, phone, role, department, status, last_active, avatar_bg, custom_modules)
+             VALUES ($1, $2, $3, 'super_admin', 'Executive Operations', 'Active', 'Just now', '#be185d', '["all"]')
+             ON CONFLICT (email) DO NOTHING`,
+            [admin.first_name ? `${admin.first_name} ${admin.last_name || ''}`.trim() : 'Super Administrator', admin.email, admin.phone || '+91 98765 43210']
+          );
+        }
+      } else {
+        await pool.query(`
+          INSERT INTO admin_staff (name, email, phone, role, department, status, last_active, avatar_bg, custom_modules)
+          VALUES 
+          ('Vikas Sharma', 'vikas.admin@airbnb.com', '+91 98765 43210', 'super_admin', 'Executive Operations', 'Active', 'Just now', '#be185d', '["all"]'),
+          ('Neha Kapoor', 'neha.ops@airbnb.com', '+91 98220 11223', 'sub_admin', 'Platform Operations', 'Active', '15 mins ago', '#15803d', '["Listings", "Hosts", "Bookings"]'),
+          ('Amit Patel', 'amit.support@airbnb.com', '+91 97112 33445', 'support_staff', 'Guest & Host Support', 'Active', '1 hour ago', '#1d4ed8', '["Bookings", "Users"]'),
+          ('Pooja Nair', 'pooja.trust@airbnb.com', '+91 99887 77665', 'moderator', 'Trust & Safety', 'Active', '3 hours ago', '#a16207', '["Listings", "Reviews"]')
+          ON CONFLICT (email) DO NOTHING
+        `);
+      }
+    }
+
     const staffRes = await pool.query('SELECT * FROM admin_staff ORDER BY id ASC');
     const rolesRes = await pool.query('SELECT * FROM admin_roles_config ORDER BY id ASC');
 
@@ -797,7 +980,7 @@ router.get('/roles-data', async (req, res) => {
       color: r.color,
       bgColor: r.bg_color,
       description: r.description,
-      permissions: r.permissions
+      permissions: typeof r.permissions === 'string' ? JSON.parse(r.permissions) : r.permissions
     }));
 
     return res.status(200).json({

@@ -22,20 +22,29 @@ router.get('/overview', async (req, res) => {
     const auditCountRes = await pool.query('SELECT COUNT(*) FROM security_audit_logs');
     const blockedRes = await pool.query("SELECT COUNT(*) FROM admin_login_history WHERE status = 'Blocked' OR status = 'Failed'");
     const activeStaffRes = await pool.query("SELECT COUNT(DISTINCT admin_name) FROM admin_login_history WHERE status = 'Success'");
+    const totalStaffRes = await pool.query("SELECT COUNT(*) FROM admin_staff");
+    const enrolledStaffRes = await pool.query("SELECT COUNT(*) FROM admin_staff WHERE status = 'Active'");
     const policyRes = await pool.query('SELECT * FROM security_policies ORDER BY id DESC LIMIT 1');
 
-    const totalAuditEvents = parseInt(auditCountRes.rows[0].count, 10);
-    const blockedThreats = parseInt(blockedRes.rows[0].count, 10);
-    const activeStaff = parseInt(activeStaffRes.rows[0].count, 10);
+    const totalAuditEvents = parseInt(auditCountRes.rows[0].count, 10) || 0;
+    const blockedThreats = parseInt(blockedRes.rows[0].count, 10) || 0;
+    const activeStaff = parseInt(activeStaffRes.rows[0].count, 10) || 0;
+    const totalStaff = parseInt(totalStaffRes.rows[0].count, 10) || 0;
+    const enrolledStaff = parseInt(enrolledStaffRes.rows[0].count, 10) || 0;
     const policy = policyRes.rows[0] || {};
+
+    const enforcedPct = totalStaff > 0 
+      ? `${Math.round((enrolledStaff / totalStaff) * 100)}%` 
+      : (policy.enforce_for_all_staff ? '100%' : '0%');
 
     return res.json({
       success: true,
       data: {
         totalAuditEvents,
         threatsPrevented: blockedThreats,
-        enforcedAdmins: '100%',
-        activeSessions: activeStaff > 0 ? activeStaff : 4,
+        enforcedAdmins: enforcedPct,
+        activeSessions: activeStaff,
+        sessionTimeoutHours: policy.session_timeout_hours || 8,
         policy
       }
     });
@@ -252,12 +261,18 @@ router.get('/staff', async (req, res) => {
   try {
     // 1. First check admin_staff table (from Roles & Permissions)
     const staffRes = await pool.query('SELECT name, role, email, status FROM admin_staff ORDER BY id ASC');
+    const policyRes = await pool.query('SELECT allowed_methods FROM security_policies ORDER BY id DESC LIMIT 1');
+    const allowed = policyRes.rows.length > 0 ? policyRes.rows[0].allowed_methods : {};
+    const preferredMethod = allowed.authenticator_app !== false 
+      ? 'Google Authenticator (TOTP)' 
+      : (allowed.sms_otp ? 'SMS OTP Verified' : 'Security Key (FIDO2)');
+
     if (staffRes.rows.length > 0) {
-      const staffList = staffRes.rows.map((row, idx) => ({
+      const staffList = staffRes.rows.map((row) => ({
         name: row.name,
         role: row.role,
         email: row.email,
-        method: idx % 2 === 0 ? 'Google Authenticator (TOTP)' : 'SMS OTP Verified',
+        method: preferredMethod,
         status: row.status === 'Active' ? 'Enrolled' : 'Pending Enrollment'
       }));
       return res.json({ success: true, data: staffList });
@@ -268,7 +283,7 @@ router.get('/staff', async (req, res) => {
     const staffList = result.rows.map(row => ({
       name: row.name,
       role: row.role,
-      method: 'Google Authenticator (TOTP)',
+      method: preferredMethod,
       status: 'Enrolled'
     }));
 

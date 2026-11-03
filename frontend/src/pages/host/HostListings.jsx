@@ -446,7 +446,7 @@ function HostListings() {
                       );
                     })()}
                     <img 
-                      src={item.cover_img || '/face_04.avif'} 
+                      src={item.cover_img || (Array.isArray(item.photos) && item.photos[0]) || '/face_04.avif'} 
                       alt={item.title} 
                       className={styles.listingImage}
                       onError={(e) => { e.target.src = '/face_04.avif'; }} 

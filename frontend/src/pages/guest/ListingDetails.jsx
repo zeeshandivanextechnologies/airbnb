@@ -420,7 +420,7 @@ export default function ListingDetails() {
   const basePrice = listingData?.price ? Number(listingData.price) : 2583;
   const originalPrice = Math.round(basePrice * 1.15);
   const refundablePrice = Math.round(basePrice * 1.11);
-  const maxAllowedGuests = listingData?.max_guests || 5;
+  const maxAllowedGuests = Math.max(listingData?.max_guests ? Number(listingData.max_guests) : 5, 4);
   const bedroomsCount = listingData?.bedrooms || 2;
   const bedsCount = listingData?.beds || 4;
   const bathroomsCount = listingData?.bathrooms || 2;

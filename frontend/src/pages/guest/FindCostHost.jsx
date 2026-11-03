@@ -9,6 +9,7 @@ import {
   FiSearch, FiMapPin, FiShield, FiKey, FiHome, FiCheckSquare, FiAward 
 } from 'react-icons/fi';
 import AuthModal from '../../components/AuthModal';
+import Loader from '../../components/Loader';
 import toast from 'react-hot-toast';
 
 export default function FindCostHost() {
@@ -18,8 +19,27 @@ export default function FindCostHost() {
   const [cohosts, setCohosts] = useState([]);
   const [loadingCohosts, setLoadingCohosts] = useState(true);
   const [searchCity, setSearchCity] = useState('');
+  const [availableCities, setAvailableCities] = useState([]);
+  const [selectedCityPill, setSelectedCityPill] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [savedFavorites, setSavedFavorites] = useState({});
+
+  // Fetch available cities dynamically from backend
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+        const res = await fetch(`${baseUrl}/listings/cohosts/cities`);
+        const json = await res.json();
+        if (json.success && Array.isArray(json.cities)) {
+          setAvailableCities(json.cities);
+        }
+      } catch (err) {
+        console.warn('Failed to load co-host cities:', err);
+      }
+    };
+    fetchCities();
+  }, []);
 
   // Fetch top co-hosts from backend database
   const fetchCoHosts = async (cityQuery = '') => {
@@ -50,14 +70,31 @@ export default function FindCostHost() {
   // Real-time live search with debounce
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchCoHosts(searchCity);
+      if (selectedCityPill) {
+        fetchCoHosts(selectedCityPill);
+      } else {
+        fetchCoHosts(searchCity);
+      }
     }, 250);
     return () => clearTimeout(timer);
-  }, [searchCity]);
+  }, [searchCity, selectedCityPill]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
+    setSelectedCityPill('');
     fetchCoHosts(searchCity.trim());
+  };
+
+  const handleCityPillClick = (cityName) => {
+    if (selectedCityPill === cityName) {
+      setSelectedCityPill('');
+      setSearchCity('');
+      fetchCoHosts('');
+    } else {
+      setSelectedCityPill(cityName);
+      setSearchCity(cityName);
+      fetchCoHosts(cityName);
+    }
   };
 
   const handleToggleFavorite = (idx, e) => {
@@ -140,7 +177,7 @@ export default function FindCostHost() {
               {/* Dynamic Co-Hosts Section matching Home.jsx Card Aesthetics */}
               <div className={styles['fch-cohosts-header']}>
                 <h2 className={styles['fch-section-title']}>
-                  <span>Top-rated co-hosts in India</span>
+                  <span>Top-rated co-hosts in {selectedCityPill || searchCity || 'India'}</span>
                   <FaArrowRight size={12} color="#717171" />
                 </h2>
               </div>
@@ -156,7 +193,10 @@ export default function FindCostHost() {
                   placeholder="Search city, area or co-host name (e.g. Jaipur, Goa)..." 
                   className={styles['fch-search-input']}
                   value={searchCity}
-                  onChange={(e) => setSearchCity(e.target.value)}
+                  onChange={(e) => {
+                    setSearchCity(e.target.value);
+                    if (selectedCityPill) setSelectedCityPill('');
+                  }}
                 />
                 {searchCity && (
                   <button 
@@ -164,6 +204,7 @@ export default function FindCostHost() {
                     className={styles['fch-clear-btn']} 
                     onClick={() => {
                       setSearchCity('');
+                      setSelectedCityPill('');
                       fetchCoHosts('');
                     }}
                     title="Clear search"
@@ -173,11 +214,54 @@ export default function FindCostHost() {
                 )}
               </form>
 
+              {/* Dynamic Available City Pills from Database */}
+              {availableCities.length > 0 && (
+                <div className={styles['fch-city-pills']}>
+                  <button
+                    type="button"
+                    className={`${styles['fch-city-pill']} ${!selectedCityPill && !searchCity ? styles['fch-city-pill-active'] : ''}`}
+                    onClick={() => {
+                      setSelectedCityPill('');
+                      setSearchCity('');
+                      fetchCoHosts('');
+                    }}
+                  >
+                    All Cities
+                  </button>
+                  {availableCities.map((city, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      className={`${styles['fch-city-pill']} ${selectedCityPill === city ? styles['fch-city-pill-active'] : ''}`}
+                      onClick={() => handleCityPillClick(city)}
+                    >
+                      {city}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {/* Home.jsx Style Co-Hosts Grid */}
               {loadingCohosts ? (
-                <div className="py-4 text-center text-muted">
-                  <div className="spinner-border spinner-border-sm text-danger me-2" role="status"></div>
-                  <span>Finding top co-hosts...</span>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '260px' }}>
+                  <Loader size="medium" text="Finding top-rated co-hosts..." />
+                </div>
+              ) : cohosts.length === 0 ? (
+                <div className="py-5 text-center text-muted" style={{ background: '#f8f9fa', borderRadius: '16px', margin: '20px 0 40px' }}>
+                  <FiMapPin size={36} color="#717171" style={{ marginBottom: '12px' }} />
+                  <h4 style={{ fontSize: '18px', fontWeight: 600, color: '#222' }}>No co-hosts found in this area</h4>
+                  <p style={{ fontSize: '14px', color: '#717171', margin: '6px 0 16px' }}>Try searching another city or explore top co-hosts across India.</p>
+                  <button 
+                    type="button" 
+                    className={styles['fch-connect-action-btn']}
+                    onClick={() => {
+                      setSearchCity('');
+                      setSelectedCityPill('');
+                      fetchCoHosts('');
+                    }}
+                  >
+                    View All Co-Hosts
+                  </button>
                 </div>
               ) : (
                 <div className={styles['fch-cohosts-grid']}>

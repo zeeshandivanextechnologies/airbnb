@@ -4,6 +4,7 @@ import { MdOutlineAddHome, MdChevronRight, MdOutlineEditNote } from 'react-icons
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import AuthModal from '../../components/AuthModal';
+import Loader from '../../components/Loader';
 
 function BecomeHost() {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ function BecomeHost() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [draftListing, setDraftListing] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   // Extract display name dynamically
   const firstName = user?.firstName || user?.first_name || (user?.name ? user.name.split(' ')[0] : '');
@@ -22,9 +24,11 @@ function BecomeHost() {
     let isMounted = true;
     const fetchUserDrafts = async () => {
       const activeUserId = user?.id || (user?._id);
-      if (!activeUserId) {
-        // Fallback to local draft check if any
-        try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+      try {
+        if (!activeUserId) {
+          // Check local draft if any
           const step1Str = localStorage.getItem('host_step1_data');
           const step2Str = localStorage.getItem('host_step2_data');
           const resumeRoute = localStorage.getItem('host_resume_route');
@@ -39,16 +43,14 @@ function BecomeHost() {
               });
             }
           }
-        } catch (e) {}
-        return;
-      }
+          return;
+        }
 
-      setIsLoading(true);
-      try {
-        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        setIsLoading(true);
+        // Query listings for active host
         const res = await fetch(`${baseUrl}/listings?host_id=${activeUserId}&status=all`);
         const json = await res.json();
-        if (json.success && Array.isArray(json.data)) {
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
           // Look for an in-progress or draft listing
           const foundDraft = json.data.find(item => {
             const st = (item.status || '').toLowerCase();
@@ -73,11 +75,38 @@ function BecomeHost() {
               });
             }
           }
+        } else {
+          // Check if any in-progress listing exists in database if user is generic host
+          const draftRes = await fetch(`${baseUrl}/listings?status=In%20progress`);
+          const draftJson = await draftRes.json();
+          if (draftJson.success && Array.isArray(draftJson.data) && draftJson.data.length > 0) {
+            const latestDraft = draftJson.data[0];
+            if (isMounted) {
+              setDraftListing({
+                id: latestDraft.id,
+                title: latestDraft.title || 'Finish your listing in progress',
+                route: `/host?id=${latestDraft.id}`
+              });
+            }
+          } else {
+            const resumeRoute = localStorage.getItem('host_resume_route');
+            const step1Str = localStorage.getItem('host_step1_data');
+            if ((resumeRoute || step1Str) && isMounted) {
+              setDraftListing({
+                id: 'local-draft',
+                title: 'Finish your listing in progress',
+                route: resumeRoute || '/host'
+              });
+            }
+          }
         }
       } catch (err) {
         console.error('Error fetching host drafts:', err);
       } finally {
-        if (isMounted) setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+          setInitialLoading(false);
+        }
       }
     };
 
@@ -111,6 +140,16 @@ function BecomeHost() {
     }
     navigate(route || '/host');
   };
+
+  if (initialLoading) {
+    return (
+      <div className={styles['bh-page-wrapper']}>
+        <div className="container text-center py-5">
+          <Loader size="medium" text="Loading hosting dashboard..." />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles['bh-page-wrapper']}>

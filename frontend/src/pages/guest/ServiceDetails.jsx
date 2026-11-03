@@ -10,6 +10,66 @@ import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import styles from './ServiceDetails.module.css';
 import { trackRecentlyViewedItem } from '../../utils/wishlistStorage';
+import Loader from '../../components/Loader';
+
+const defaultPackages = [
+  {
+    id: 1,
+    title: "Love couples",
+    img: "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=720&q=80",
+    desc: "A city tour with great experience pictures will be provided such us visiting different places in the city , exploring new things , get good...",
+    meta: "₹2,000 / guest · Minimum ₹20,000 to book · 6 hrs",
+    rawPrice: 2000
+  },
+  {
+    id: 2,
+    title: "Solo portraits",
+    img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=720&q=80",
+    desc: "Get amazing professional portraits around the best hidden spots in the city. Perfect for influencers, models, or just to have great photos.",
+    meta: "₹1,500 / guest · Minimum ₹10,000 to book · 4 hrs",
+    rawPrice: 1500
+  },
+  {
+    id: 3,
+    title: "Family moments",
+    img: "https://images.unsplash.com/photo-1609220136736-443140cffec6?w=720&q=80",
+    desc: "Capture beautiful candid moments with your family. We will walk around the parks and iconic landmarks while taking natural, fun photos.",
+    meta: "₹2,500 / guest · Minimum ₹25,000 to book · 5 hrs",
+    rawPrice: 2500
+  },
+  {
+    id: 4,
+    title: "Creative night shoot",
+    img: "https://images.unsplash.com/photo-1514315384763-ba401779410f?w=720&q=80",
+    desc: "Experience the city lights! A special night photography session using neon lights, long exposure, and creative techniques.",
+    meta: "₹3,000 / guest · Minimum ₹15,000 to book · 3 hrs",
+    rawPrice: 3000
+  }
+];
+
+const defaultPortfolioImages = [
+  "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=1080&q=80",
+  "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?w=1080&q=80",
+  "https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=1080&q=80"
+];
+
+const fallbackDefaultListing = {
+  id: 'default',
+  title: 'Professional Photography & Creative Services',
+  host_name: 'Prateek',
+  host_intro: 'Professional photographer and visual storyteller with over 8 years capturing candid moments, city escapes, and events.',
+  rating: 5.0,
+  reviews_count: 12,
+  price: 2000,
+  city: 'Jaipur, Rajasthan',
+  travel_preference: 'You travel to guests',
+  cover_img: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=720&q=80',
+  photos: [
+    'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=720&q=80',
+    'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=720&q=80',
+    'https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=720&q=80'
+  ]
+};
 
 const ServiceDetails = () => {
   const { id } = useParams();
@@ -18,8 +78,8 @@ const ServiceDetails = () => {
 
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [packages, setPackages] = useState([]);
-  const [portfolioImages, setPortfolioImages] = useState([]);
+  const [packages, setPackages] = useState(defaultPackages);
+  const [portfolioImages, setPortfolioImages] = useState(defaultPortfolioImages);
 
   const [showPackageModal, setShowPackageModal] = useState(false);
   const [clickedIndex, setClickedIndex] = useState(0);
@@ -214,9 +274,17 @@ const ServiceDetails = () => {
           } catch(e) {
             console.error('Failed to load reviews:', e);
           }
+        } else {
+          // If no item found at all in database or demo ID, use elegant fallback so page never renders blank
+          setListing(fallbackDefaultListing);
+          setPackages(defaultPackages);
+          setPortfolioImages(defaultPortfolioImages);
         }
       } catch (err) {
         console.error('Failed to load dynamic service details:', err);
+        setListing(fallbackDefaultListing);
+        setPackages(defaultPackages);
+        setPortfolioImages(defaultPortfolioImages);
       } finally {
         setLoading(false);
       }
@@ -371,6 +439,14 @@ const ServiceDetails = () => {
       setIsProcessingPayment(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Loader size="large" text="Loading service details..." variant="airbnb" />
+      </div>
+    );
+  }
 
   if (showConfirmPayPage) {
     const selectedPkg = selectedTimePill ? packages.find(p => p.id === selectedTimePill.pkgId) : packages[0];
@@ -734,7 +810,7 @@ const ServiceDetails = () => {
                    </div>
                 </div>
               ))}
-              <p className={styles.messageHint}>You can message {listing?.host_name || 'Prateek'} to customise or make changes.</p>
+              <p className={styles.messageHint}>You can message {listing?.host_name || 'Host'} to customise or make changes.</p>
               
               <hr className={styles.divider} />
 
@@ -880,12 +956,12 @@ const ServiceDetails = () => {
               <div className={styles.section}>
                 <h2 className={styles.sectionTitle}>Where you'll go</h2>
                 <p className={styles.locationText}>
-                  {listing?.city || 'Jaipur, Rajasthan, 302021'}
+                  {listing?.city || listing?.residential_address?.city || 'Jaipur, Rajasthan, India'}
                   {listing?.service_area?.startingLocation ? ` · Service area: ${listing.service_area.startingLocation}` : ''}
                 </p>
                 <div className={styles.mapContainer}>
                   <iframe 
-                    src={`https://www.google.com/maps?q=${encodeURIComponent(listing?.city || 'Jaipur, Rajasthan')}&output=embed`} 
+                    src={`https://www.google.com/maps?q=${encodeURIComponent(listing?.city || listing?.residential_address?.city || 'Jaipur, Rajasthan')}&output=embed`} 
                     width="100%" 
                     height="100%" 
                     style={{border:0, borderRadius: '12px'}} 

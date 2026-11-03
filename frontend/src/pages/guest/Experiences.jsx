@@ -11,9 +11,11 @@ import {
   isItemInAnyWishlist, 
   removeItemFromWishlists 
 } from '../../utils/wishlistStorage';
+import Loader from '../../components/Loader';
 
 export default function Experiences() {
   const [dynamicExperiences, setDynamicExperiences] = useState([]);
+  const [experienceCategories, setExperienceCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Wishlist modal state
@@ -69,19 +71,38 @@ export default function Experiences() {
     closeWishlistModal();
   };
 
+  // Fetch both dynamic listings and active admin categories
   useEffect(() => {
-    const fetchExperiences = async () => {
+    const fetchExperiencesData = async () => {
       try {
         setLoading(true);
         const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-        const res = await fetch(`${baseUrl}/listings?type=Experience&status=Active`);
+
+        // 1. Fetch active experience categories managed in Admin MasterData
+        const catRes = await fetch(`${baseUrl}/listings/host-categories?type=experience&all=false`);
+        const catJson = await catRes.json();
+        if (catJson.success && Array.isArray(catJson.data)) {
+          setExperienceCategories(catJson.data);
+        }
+
+        // 2. Fetch active listings
+        const res = await fetch(`${baseUrl}/listings?status=Active`);
         const json = await res.json();
         if (json.success && Array.isArray(json.data)) {
           // Strictly keep only Experience items
+          const expKeywords = [
+            'experience', 'art and design', 'fitness and wellness', 'food and drink', 
+            'history and culture', 'nature and outdoors', 'music and entertainment', 
+            'sports and active', 'popular experiences in goa', 'happening today in jaipur',
+            'weekend getaways near gurgaon', 'trending across india', 'outdoor adventures'
+          ];
           const experiencesOnly = json.data.filter(item => {
             const t = (item.type || '').toLowerCase();
             const c = (item.category || '').toLowerCase();
-            return t.includes('experience') || c.includes('experience');
+            return (
+              t.includes('experience') || 
+              expKeywords.some(kw => c.includes(kw) || t.includes(kw))
+            );
           });
           setDynamicExperiences(experiencesOnly);
         }
@@ -91,74 +112,11 @@ export default function Experiences() {
         setLoading(false);
       }
     };
-    fetchExperiences();
+
+    fetchExperiencesData();
   }, []);
 
-  const images = [
-    "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=720&q=80", // travel/adventure
-    "https://images.unsplash.com/photo-1528181304800-259b08848526?w=720&q=80", // cooking
-    "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=720&q=80", // festival
-    "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?w=720&q=80", // surfing
-    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=720&q=80", // beach
-    "https://images.unsplash.com/photo-1516598540642-e8f40a09d939?w=720&q=80", // city tour
-    "https://images.unsplash.com/photo-1528605105345-5344ea20e269?w=720&q=80", // yoga
-    "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=720&q=80"  // food/dinner
-  ];
-
-  const defaultRowsData = [
-    {
-      category: "Happening today in Jaipur",
-      listings: [
-        { title: "Old City Street Food Walk", rating: "4.97", time: "4pm", price: "2,500", image: images[1] },
-        { title: "Cruise Jaipur's Forts & Bazaars", rating: "5.0", time: "6pm", price: "3,600", image: images[5] },
-        { title: "Create traditional handblock fabric", rating: "4.99", time: "2pm", price: "2,600", image: images[4] },
-        { title: "Hands On Blue Pottery", rating: "4.97", time: "11am", price: "3,900", image: images[2] },
-        { title: "Jaipur Home Cooking", rating: "4.98", time: "4pm", price: "3,000", image: images[1] },
-        { title: "Evening Yoga Retreat", rating: "4.9", time: "5:30pm", price: "1,500", image: images[6] },
-        { title: "Sunrise Hot Air Balloon", rating: "4.95", time: "6am", price: "9,000", image: images[0] },
-        { title: "Local Market Tasting", rating: "4.8", time: "1pm", price: "2,000", image: images[7] }
-      ]
-    },
-    {
-      category: "Popular experiences in Goa",
-      listings: [
-        { title: "Surfing Lessons for Beginners", rating: "4.98", time: "8am", price: "4,000", image: images[3] },
-        { title: "Seafood Cooking Masterclass", rating: "4.9", time: "12pm", price: "3,500", image: images[1] },
-        { title: "Old Goa Heritage Walk", rating: "4.85", time: "9am", price: "1,200", image: images[5] },
-        { title: "Sunset Cruise & Dinner", rating: "4.92", time: "5pm", price: "4,500", image: images[0] },
-        { title: "Beachside Yoga Flow", rating: "4.97", time: "7am", price: "800", image: images[6] },
-        { title: "Local Feni Tasting", rating: "4.88", time: "4pm", price: "1,500", image: images[7] },
-        { title: "Music & Dance Festival", rating: "4.95", time: "8pm", price: "2,500", image: images[2] },
-        { title: "Pottery by the Sea", rating: "4.8", time: "3pm", price: "2,000", image: images[4] }
-      ]
-    },
-    {
-      category: "Weekend getaways near Gurgaon",
-      listings: [
-        { title: "Organic Farm Cooking", rating: "4.92", time: "Fri - 11am", price: "2,800", image: images[1] },
-        { title: "Pottery Workshop", rating: "4.85", time: "Sat - 1pm", price: "1,500", image: images[4] },
-        { title: "Sunset Yoga Retreat", rating: "4.95", time: "Sun - 5pm", price: "1,200", image: images[6] },
-        { title: "Aravalli Hills Nature Walk", rating: "4.8", time: "Sat - 7am", price: "1,000", image: images[5] },
-        { title: "Hot Air Balloon Safari", rating: "4.98", time: "Sun - 6am", price: "12,000", image: images[0] },
-        { title: "Street Food Tour", rating: "4.9", time: "Sat - 6pm", price: "1,800", image: images[2] },
-        { title: "Wine Tasting Masterclass", rating: "4.88", time: "Thu - 4pm", price: "3,000", image: images[7] },
-        { title: "Lake Kayaking & Surfing", rating: "4.75", time: "Fri - 9am", price: "2,200", image: images[3] }
-      ]
-    },
-    {
-      category: "Trending across India",
-      listings: [
-        { title: "Kerala Backwaters Tour", rating: "4.98", time: "Fri - 9am", price: "5,000", image: images[5] },
-        { title: "Traditional Cooking in Kerala", rating: "4.95", time: "11am", price: "3,200", image: images[1] },
-        { title: "Goa Music Festival", rating: "4.92", time: "7pm", price: "4,000", image: images[2] },
-        { title: "Himalayan Yoga Retreat", rating: "4.99", time: "Sun - 6am", price: "8,500", image: images[6] },
-        { title: "Rajasthan Hot Air Balloon", rating: "4.94", time: "Sat - 6am", price: "10,500", image: images[0] },
-        { title: "Sula Vineyards Tour", rating: "4.85", time: "Sat - 2pm", price: "2,500", image: images[7] },
-        { title: "Pondicherry Surfing", rating: "4.9", time: "Fri - 7am", price: "3,500", image: images[3] },
-        { title: "Dharavi Pottery Making", rating: "4.88", time: "3pm", price: "1,200", image: images[4] }
-      ]
-    }
-  ];
+  const fallbackExpImage = "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=720&q=80";
 
   // Helper to format live experience object for card display
   const formatExpCard = (item) => {
@@ -194,7 +152,7 @@ export default function Experiences() {
       rating: revCount > 0 ? numRating.toFixed(2) : (item.rating ? Number(item.rating).toFixed(2) : "4.95"),
       time: badgeText,
       price: item.price ? Number(item.price).toLocaleString('en-IN') : "1,500",
-      image: item.cover_img || (Array.isArray(item.photos) && item.photos[0]) || images[0]
+      image: item.cover_img || (Array.isArray(item.photos) && item.photos[0]) || fallbackExpImage
     };
   };
 
@@ -209,42 +167,46 @@ export default function Experiences() {
     dynamicByCategory[catName].push(formatExpCard(item));
   });
 
-  // Map predefined rows, augmenting with any matching dynamic experiences
+  // Build rows dynamically based on admin categories & listings
   const matchedCategories = new Set();
-  const enhancedStaticRows = defaultRowsData.map((r, rIdx) => {
-    const matchingDynamic = dynamicByCategory[r.category] || [];
-    if (matchingDynamic.length > 0) {
-      matchedCategories.add(r.category);
+  const displayRows = [];
+
+  // Priority 1: Iterate over categories configured in Admin (host_categories)
+  if (experienceCategories.length > 0) {
+    experienceCategories.forEach(cat => {
+      const catName = cat.name;
+      // Match case-insensitively with grouped listings
+      const matchedKey = Object.keys(dynamicByCategory).find(k => k.toLowerCase() === catName.toLowerCase());
+      if (matchedKey && dynamicByCategory[matchedKey].length > 0) {
+        displayRows.push({
+          category: catName,
+          listings: dynamicByCategory[matchedKey]
+        });
+        matchedCategories.add(matchedKey);
+      }
+    });
+  }
+
+  // Priority 2: Add any remaining categories that have experiences
+  Object.keys(dynamicByCategory).forEach(catName => {
+    if (!matchedCategories.has(catName) && dynamicByCategory[catName].length > 0) {
+      displayRows.push({
+        category: catName,
+        listings: dynamicByCategory[catName]
+      });
     }
-    return {
-      category: r.category,
-      listings: [
-        ...matchingDynamic,
-        ...r.listings.map((item, idx) => ({
-          ...item,
-          category: r.category,
-          id: `demo-exp-${rIdx}-${idx}`
-        }))
-      ]
-    };
   });
-
-  // Rows for newly created categories from admin or host
-  const newDynamicRows = Object.keys(dynamicByCategory)
-    .filter(cat => !matchedCategories.has(cat))
-    .map(cat => ({
-      category: cat,
-      listings: dynamicByCategory[cat]
-    }));
-
-  // Combined rows: newly created categories first, then the augmented existing rows
-  const rowsData = [...newDynamicRows, ...enhancedStaticRows];
 
   return (
     <div className={styles['experiences-container']}>
-      <main className={styles['main-content']}>
-        {rowsData.map((row, rowIndex) => (
-          <div key={rowIndex} className={styles['category-row']}>
+      {loading ? (
+        <div style={{ minHeight: '65vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Loader size="large" text="Exploring unforgettable experiences..." variant="airbnb" />
+        </div>
+      ) : (
+        <main className={styles['main-content']}>
+          {displayRows.map((row, rowIndex) => (
+            <div key={rowIndex} className={styles['category-row']}>
             <Splide 
               hasTrack={false}
               options={{
@@ -261,7 +223,7 @@ export default function Experiences() {
                 }
               }}
             >
-              {/* Header and Custom Arrows */}
+              {/* Category Header */}
               <div className={styles['category-header']}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <h2 className={styles['category-title']}>
@@ -280,27 +242,26 @@ export default function Experiences() {
                 </div>
               </div>
 
+              {/* Slider Track */}
               <SplideTrack>
                 {row.listings.map((listing, index) => {
-                  const targetId = listing.id || index;
                   const isSaved = isItemInAnyWishlist(listing.id, listing.title, row.category);
 
                   return (
                     <SplideSlide key={listing.id || index}>
                       <NavLink 
-                        to={`/experience/${targetId}`} 
-                        
+                        to={`/experience/${listing.id || index}`} 
                         style={{ textDecoration: 'none', color: 'inherit' }}
                       >
                         <div className={styles['listing-card']}>
-                          {/* Image Container with Badges */}
+                          {/* Image Box */}
                           <div className={styles['image-container']}>
                             <img 
                               src={listing.image} 
                               alt={listing.title}
                               className={styles['listing-image']}
                               onError={(e) => {
-                                e.target.src = images[0];
+                                e.target.src = fallbackExpImage;
                               }}
                             />
                             
@@ -351,7 +312,8 @@ export default function Experiences() {
             </Splide>
           </div>
         ))}
-      </main>
+        </main>
+      )}
 
       {/* Wishlist Modal */}
       {isWishlistModalOpen && (
