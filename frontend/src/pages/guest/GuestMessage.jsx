@@ -220,19 +220,7 @@ function GuestMessage() {
 
   return (
     <div className={styles.messagePage}>
-      {/* Top Banner Notice */}
-      <div className={styles.topBannerWrapper}>
-        <div className={styles.topBanner}>
-          <div className={styles.bannerIconWrapper}>
-            <div className={styles.bannerBadge}>✓</div>
-            <FaShieldAlt size={22} color="#ff385c" />
-          </div>
-          <div className={styles.bannerText}>
-            <h4 style={{ margin: 0, fontSize: '14.5px', fontWeight: '600' }}>Guest Support & Host Inbox</h4>
-            <p style={{ margin: 0, fontSize: '12.5px', color: '#6b7280' }}>All communications with hosts and support are safe, encrypted, and recorded.</p>
-          </div>
-        </div>
-      </div>
+
 
       {/* Main Chat Layout Container */}
       <div style={{
