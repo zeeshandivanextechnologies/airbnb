@@ -34,6 +34,7 @@ import HostListings from './pages/host/HostListings';
 import HostListingEditor from './pages/host/HostListingEditor';
 import HostAllPhotos from './pages/host/HostAllPhotos';
 import HostMessage from './pages/host/HostMessage';
+import GuestMessage from './pages/guest/GuestMessage';
 import IntroToHost from './pages/host/IntroToHost';
 import CmsPageView from './pages/guest/CmsPageView';
 import { useLocation } from 'react-router-dom';
@@ -72,6 +73,8 @@ function App() {
             <Route path='/experience/:id' element={<ExperienceDetails />} />
             <Route path='/search/:location' element={<SearchResults />} />
             <Route path='/profile' element={<Profile />} /> 
+            <Route path='/messages' element={<GuestMessage />} /> 
+            <Route path='/guest/messages' element={<GuestMessage />} /> 
             <Route path='/find-cost-host' element={<FindCostHost />} />   
             <Route path='/become-host' element={<BecomeHost />} />   
             <Route path='/notification' element={<Notification />} />   
