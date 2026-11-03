@@ -130,9 +130,9 @@ export default function FindCostHost() {
     <div className={styles['fch-page-wrapper']}>
       <main className={styles['fch-main-content']}>
         <div className="container">
-          <div className="row justify-content-start">
+          <div className="row justify-content-center">
             {/* Main content col */}
-            <div className="col-12 col-lg-10">
+            <div className="col-lg-12">
               
               <h1 className={styles['fch-title']}>Find someone to help you host</h1>
               <p className={styles['fch-subtitle']}>

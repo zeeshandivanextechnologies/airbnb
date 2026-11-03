@@ -185,9 +185,13 @@ export default function Footer() {
               <div className={styles['footer-column']}>
                 <h3>Hosting</h3>
                 <ul>
-                  <li><Link to="/host">Airbnb your home</Link></li>
+                  <li><Link to="/become-host">Airbnb your home</Link></li>
+                  <li><Link to="/aircover">AirCover for Hosts</Link></li>
+                  <li><Link to="/hosting/home">Hosting resources & home</Link></li>
                   <li><Link to="/hosting/host-experience">Host an experience</Link></li>
+                  <li><Link to="/find-cost-host">Find a co-host</Link></li>
                   <li><Link to="/hosting/intro-to-host">Intro to hosting</Link></li>
+                  <li><Link to="/hosting/listings">Host Dashboard</Link></li>
                   <li><Link to="/responsible-hosting">Hosting responsibly</Link></li>
                   <li><Link to="/refer">Refer a host</Link></li>
                 </ul>

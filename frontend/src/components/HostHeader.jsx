@@ -14,7 +14,12 @@ import {
   FaBell, 
   FaTimes, 
   FaUserCircle,
-  FaCheck
+  FaCheck,
+  FaCalendarAlt,
+  FaCalendarCheck,
+  FaHome,
+  FaComments,
+  FaExchangeAlt
 } from 'react-icons/fa';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
@@ -239,6 +244,51 @@ const HostHeader = () => {
 
           <div className={styles.offcanvasBody}>
             <h2 className={styles.menuTitle}>Menu</h2>
+
+            {/* Mobile Host Navigation Links (Moved from header into sidebar on mobile) */}
+            <div className={styles.mobileNavSection}>
+              <NavLink 
+                to="/hosting/today" 
+                className={({isActive}) => isActive ? `${styles.menuItem} ${styles.mobileNavActive}` : styles.menuItem}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <FaCalendarCheck className={styles.menuIcon} /> Today
+              </NavLink>
+
+              <NavLink 
+                to="/hosting/calendar" 
+                className={({isActive}) => isActive ? `${styles.menuItem} ${styles.mobileNavActive}` : styles.menuItem}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <FaCalendarAlt className={styles.menuIcon} /> Calendar
+              </NavLink>
+
+              <NavLink 
+                to="/hosting/listings" 
+                className={({isActive}) => isActive ? `${styles.menuItem} ${styles.mobileNavActive}` : styles.menuItem}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <FaHome className={styles.menuIcon} /> Listings
+              </NavLink>
+
+              <NavLink 
+                to="/hosting/messages" 
+                className={({isActive}) => isActive ? `${styles.menuItem} ${styles.mobileNavActive}` : styles.menuItem}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <FaComments className={styles.menuIcon} /> Messages
+              </NavLink>
+
+              <button 
+                type="button"
+                className={styles.menuItem} 
+                onClick={() => { setIsMenuOpen(false); navigate('/'); }}
+              >
+                <FaExchangeAlt className={styles.menuIcon} /> Switch to travelling
+              </button>
+
+              <hr className={styles.menuDivider} />
+            </div>
 
             <div className={styles.promoCard}>
               <div className={styles.promoImgRow}>

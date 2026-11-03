@@ -160,11 +160,7 @@
   margin-bottom: 28px;
 }
 
-@media (max-width: 768px) {
-  .showcaseCardsGrid {
-    grid-template-columns: 1fr;
-  }
-}
+
 
 .showcaseCard {
   background: #ffffff;
@@ -556,4 +552,41 @@
 .backBtn:hover {
   background: #e11d48;
   color: #ffffff;
+}
+
+
+@media (max-width: 768px) {
+  .showcaseCardsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .heroSection{
+    padding: 16px;
+  }
+
+  .breadcrumb{
+    gap: 5px;
+  }
+
+  .mainLayout{
+    padding: 16px;
+    gap: 16px;
+  }
+  .sectionHeading{
+    font-size: 14px;
+        margin-bottom: 16px;
+    padding-bottom: 16px;
+    margin-top: 0;
+    font-weight: 400;
+  }
+
+  .articleFooter{
+    padding-top: 16px;
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .sidebarStickyCard{
+    padding: 16px;
+  }
+
 }

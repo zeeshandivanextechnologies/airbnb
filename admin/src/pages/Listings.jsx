@@ -167,7 +167,10 @@ export default function Listings() {
           bathrooms: item.bathrooms !== undefined ? item.bathrooms : 2,
           categorizedPhotos: Array.isArray(item.categorized_photos) ? item.categorized_photos : (typeof item.categorized_photos === 'string' ? JSON.parse(item.categorized_photos || '[]') : []),
           travelPreference: item.travel_preference || '',
-          accessibilityFeatures: Array.isArray(item.accessibility_features) ? item.accessibility_features : []
+          accessibilityFeatures: Array.isArray(item.accessibility_features) ? item.accessibility_features : [],
+          guestRequirements: typeof item.guest_requirements === 'object' && item.guest_requirements !== null
+            ? item.guest_requirements
+            : (typeof item.guest_requirements === 'string' ? JSON.parse(item.guest_requirements || '{}') : {})
         }));
         setListings(normalized);
       }
@@ -415,7 +418,15 @@ export default function Listings() {
           categorized_photos: editListing.categorizedPhotos,
           travel_preference: editListing.travelPreference,
           service_offerings: editListing.serviceOfferings,
-          business_hours: editListing.businessHours
+          business_hours: editListing.businessHours,
+          guest_requirements: editListing.guestRequirements || {
+            phone_verified: true,
+            government_id_verified: true,
+            profile_photo: true,
+            payment_verified: true,
+            min_age: editListing.minAge || 18,
+            allow_infants: true
+          }
         })
       });
       const data = await res.json();
@@ -1360,6 +1371,79 @@ export default function Listings() {
                         placeholder="e.g. BA Film Making, Certified Specialist"
                         className={styles.formInput}
                       />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Guest Requirements Configuration Managed by Admin */}
+                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
+                  <label className={styles.formLabel} style={{ fontWeight: '700', color: '#0f172a', marginBottom: '8px', display: 'block' }}>
+                    Guest Verification & Requirements (Admin Controlled)
+                  </label>
+                  <div className="row g-2">
+                    <div className="col-md-6 col-12">
+                      <div className="form-check form-switch mb-2">
+                        <input 
+                          className="form-check-input" 
+                          type="checkbox" 
+                          id="reqPhone"
+                          checked={editListing.guestRequirements?.phone_verified !== false}
+                          onChange={(e) => setEditListing({
+                            ...editListing,
+                            guestRequirements: { ...(editListing.guestRequirements || {}), phone_verified: e.target.checked }
+                          })}
+                        />
+                        <label className="form-check-label ms-2" htmlFor="reqPhone" style={{ fontSize: '13px', color: '#334155' }}>
+                          Require Verified Phone Number
+                        </label>
+                      </div>
+                      <div className="form-check form-switch mb-2">
+                        <input 
+                          className="form-check-input" 
+                          type="checkbox" 
+                          id="reqGovtId"
+                          checked={editListing.guestRequirements?.government_id_verified !== false}
+                          onChange={(e) => setEditListing({
+                            ...editListing,
+                            guestRequirements: { ...(editListing.guestRequirements || {}), government_id_verified: e.target.checked }
+                          })}
+                        />
+                        <label className="form-check-label ms-2" htmlFor="reqGovtId" style={{ fontSize: '13px', color: '#334155' }}>
+                          Require Government ID Verification
+                        </label>
+                      </div>
+                    </div>
+                    <div className="col-md-6 col-12">
+                      <div className="form-check form-switch mb-2">
+                        <input 
+                          className="form-check-input" 
+                          type="checkbox" 
+                          id="reqPhoto"
+                          checked={editListing.guestRequirements?.profile_photo !== false}
+                          onChange={(e) => setEditListing({
+                            ...editListing,
+                            guestRequirements: { ...(editListing.guestRequirements || {}), profile_photo: e.target.checked }
+                          })}
+                        />
+                        <label className="form-check-label ms-2" htmlFor="reqPhoto" style={{ fontSize: '13px', color: '#334155' }}>
+                          Require Profile Face Photo
+                        </label>
+                      </div>
+                      <div className="form-check form-switch mb-2">
+                        <input 
+                          className="form-check-input" 
+                          type="checkbox" 
+                          id="reqPayment"
+                          checked={editListing.guestRequirements?.payment_verified !== false}
+                          onChange={(e) => setEditListing({
+                            ...editListing,
+                            guestRequirements: { ...(editListing.guestRequirements || {}), payment_verified: e.target.checked }
+                          })}
+                        />
+                        <label className="form-check-label ms-2" htmlFor="reqPayment" style={{ fontSize: '13px', color: '#334155' }}>
+                          Require Verified Payment Method
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>

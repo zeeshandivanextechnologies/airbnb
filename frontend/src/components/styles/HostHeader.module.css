@@ -145,44 +145,21 @@
   cursor: pointer;
 }
 
-/* Responsive adjustments */
-@media (max-width: 991px) {
-  .headerCenter {
-    display: none;
-    position: absolute;
-    top: 80px;
-    left: 0;
-    right: 0;
-    background: white;
-    flex-direction: column;
-    padding: 24px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    z-index: 100;
-  }
-
-  .headerCenter.open {
-    display: flex;
-  }
-
-  .navLink {
-    width: 100%;
-    text-align: center;
-    padding: 16px;
-  }
-
-  .headerRight {
-    display: none;
-  }
-
-  .mobileMenuBtn {
-    display: block;
-  }
-
-  .hostHeader{
-    height: 64px;
-    padding: 0 12px;
-  }
+/* Mobile Nav Section inside Offcanvas */
+.mobileNavSection {
+  display: none;
+  flex-direction: column;
 }
+
+.mobileNavActive {
+  color: #ff385c !important;
+  font-weight: 700 !important;
+}
+
+.mobileNavActive .menuIcon {
+  color: #ff385c !important;
+}
+
 
 
 
@@ -461,4 +438,98 @@
   display: inline-block;
   vertical-align: middle;
 }
+
+
+
+/* Responsive adjustments */
+@media (max-width: 991px) {
+  .headerCenter {
+    display: none !important;
+  }
+
+  .mobileNavSection {
+    display: flex;
+  }
+
+  .headerRight {
+    display: flex;
+    flex: initial;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .switchBtn {
+    display: inline-flex;
+    align-items: center;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #222222;
+    padding: 6px 10px;
+    border-radius: 20px;
+    background-color: #f7f7f7;
+    white-space: nowrap;
+  }
+
+  .switchBtn:hover {
+    background-color: #ebebeb;
+    text-decoration: none;
+  }
+
+  .actionCircles {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .userIconCircle {
+    display: flex;
+    width: 36px;
+    height: 36px;
+    font-size: 13.5px;
+  }
+
+  .menuCircleBtn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .hostHeader {
+    height: 64px;
+    padding: 0 12px;
+  }
+}
+
+@media (max-width: 767px) {
+  .header-logo-texts {
+    display: none;
+  }
+
+  .switchBtn {
+    font-size: 12.5px;
+    padding: 5px 8px;
+  }
+
+  .hostHeader {
+    padding: 0 8px;
+  }
+
+  .offcanvas{
+    border-radius: 0;
+  }
+
+  .offcanvasHeader{
+    padding: 12px 16px;
+  }
+
+  .offcanvasBody{
+    padding: 16px;
+  }
+
+  .menuTitle{
+    margin-bottom: 16px;
+  }
+
+}
+
+
 

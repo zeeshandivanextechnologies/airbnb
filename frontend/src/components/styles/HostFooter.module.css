@@ -131,5 +131,23 @@
   .footerBottom {
     flex-direction: column-reverse;
     align-items: flex-start;
+    gap: 0;
+    margin-top: 8px;
+    padding-top: 8px;
+
   }
+
+  .bottomRight{
+    width: 100%;
+    justify-content: center;
+  }
+
+  .bottomLeft{
+    justify-content: center;
+  }
+
+  .footerContainer{
+    padding: 16px 0;
+  }
+
 }

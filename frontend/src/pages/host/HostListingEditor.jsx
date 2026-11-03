@@ -236,21 +236,31 @@ function HostListingEditor() {
   // Guest Requirements States
   const [guestRequirementsForm, setGuestRequirementsForm] = useState({
     min_age: 18,
-    allow_infants: true
+    allow_infants: true,
+    phone_verified: true,
+    government_id_verified: true,
+    profile_photo: true,
+    payment_verified: true,
+    custom_rules: ''
   });
   const [isAgeDropdownOpen, setIsAgeDropdownOpen] = useState(false);
 
   const saveGuestRequirementsToDb = async (updatedReqs) => {
-    setListing(prev => ({ ...prev, ...updatedReqs }));
+    const fullPayload = {
+      min_age: updatedReqs.min_age,
+      allow_infants: updatedReqs.allow_infants,
+      guest_requirements: updatedReqs
+    };
+    setListing(prev => ({ ...prev, ...fullPayload, guest_requirements: updatedReqs }));
     setEditModal(null);
     if (!listing.id) return;
     try {
       await fetch(`${baseUrl}/listings/${listing.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedReqs)
+        body: JSON.stringify(fullPayload)
       });
-      toast.success('Guest requirements saved');
+      toast.success('Guest requirements saved successfully');
     } catch (err) {
       console.error('Failed to save guest requirements:', err);
       toast.error('Failed to save guest requirements');
@@ -565,9 +575,18 @@ function HostListingEditor() {
         country: item.country || 'India'
       });
 
+      const parsedReqs = typeof item.guest_requirements === 'object' && item.guest_requirements !== null
+        ? item.guest_requirements
+        : {};
+
       setGuestRequirementsForm({
-        min_age: item.min_age !== undefined && item.min_age !== null ? Number(item.min_age) : 18,
-        allow_infants: item.allow_infants !== undefined ? Boolean(item.allow_infants) : true
+        min_age: item.min_age !== undefined && item.min_age !== null ? Number(item.min_age) : (parsedReqs.min_age || 18),
+        allow_infants: item.allow_infants !== undefined ? Boolean(item.allow_infants) : (parsedReqs.allow_infants !== undefined ? Boolean(parsedReqs.allow_infants) : true),
+        phone_verified: parsedReqs.phone_verified !== false,
+        government_id_verified: parsedReqs.government_id_verified !== false,
+        profile_photo: parsedReqs.profile_photo !== false,
+        payment_verified: parsedReqs.payment_verified !== false,
+        custom_rules: parsedReqs.custom_rules || ''
       });
 
       setEditFormData({
@@ -816,10 +835,10 @@ function HostListingEditor() {
   return (
     <div className={`container-fluid p-0 ${styles.editorPage}`}>
       <VerifyBanner />
-      <div className="row w-100 m-0 flex-grow-1" style={{ overflow: 'hidden' }}>
+      <div className={`row w-100 m-0 flex-grow-1 ${styles.editorRowContainer}`}>
         
         {/* Left Sidebar (Scrollable) */}
-        <div className={`col-lg-4 ${styles.leftSidebar}`}>
+        <div className={`col-lg-4 col-12 ${styles.leftSidebar} ${editModal ? styles.leftSidebarHiddenMobile : ''}`}>
           {!isSettingsOpen ? (
             <>
           <div className={styles.headerRow}>
@@ -1854,15 +1873,29 @@ function HostListingEditor() {
               <div className={styles.settingsNavList}>
                 <div className={`${styles.settingsNavItem} ${styles.settingsNavActive}`}>
                   <div>
+                    
                     <div className={styles.settingsNavTitle}>Languages</div>
                     <div className={styles.settingsNavSub}>English (Default)</div>
                   </div>
                   <FaChevronRight size={14} />
                 </div>
-                <div className={styles.settingsNavItem}>
+                <div 
+                  className={styles.settingsNavItem}
+                  onClick={() => setEditModal('guest_requirements')}
+                  style={{ cursor: 'pointer' }}
+                >
                   <div>
                     <div className={styles.settingsNavTitle}>Guest requirements</div>
-                    <div className={styles.settingsNavSub}>Phone & government ID verified</div>
+                    <div className={styles.settingsNavSub}>
+                      {guestRequirementsForm.government_id_verified && guestRequirementsForm.phone_verified 
+                        ? 'Phone & government ID verified' 
+                        : guestRequirementsForm.phone_verified 
+                          ? 'Phone verified' 
+                          : guestRequirementsForm.government_id_verified 
+                            ? 'Government ID verified' 
+                            : 'Standard verification'}
+                      {guestRequirementsForm.min_age ? ` • Age ${guestRequirementsForm.min_age}+` : ''}
+                    </div>
                   </div>
                   <FaChevronRight size={14} />
                 </div>
@@ -1886,7 +1919,7 @@ function HostListingEditor() {
         </div>
 
         {/* Right Content (Fixed / Interactive Display) */}
-        <div className={`col-lg-8 ${styles.rightContent}`}>
+        <div className={`col-lg-8 col-12 ${styles.rightContent} ${!editModal ? styles.rightContentHiddenMobile : ''}`}>
           {editModal === 'title' ? (
             /* Title Editor Right Panel Screen matching screenshot */
             <form onSubmit={handleSaveModal} className={styles.rightTitleEditorContainer}>
@@ -2985,9 +3018,92 @@ function HostListingEditor() {
                 </div>
 
                 {/* Subtitle helper text under Minimum age box */}
-                <p style={{ fontSize: '12px', color: '#717171', margin: '0 0 28px 0' }}>
-                  Set a minimum age limit.
+                <p style={{ fontSize: '12px', color: '#717171', margin: '0 0 24px 0' }}>
+                  Set a minimum age limit for primary reservation guests.
                 </p>
+
+                {/* Additional Dynamic Verification Requirements */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
+                  {/* Phone Verification */}
+                  <div 
+                    onClick={() => setGuestRequirementsForm(p => ({ ...p, phone_verified: !p.phone_verified }))}
+                    style={{ display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer' }}
+                  >
+                    <div 
+                      className={styles.infantsCheckbox}
+                      style={{
+                        backgroundColor: guestRequirementsForm.phone_verified ? '#000000' : '#ffffff',
+                        border: guestRequirementsForm.phone_verified ? 'none' : '1.5px solid #b0b0b0'
+                      }}
+                    >
+                      {guestRequirementsForm.phone_verified && <FaCheck size={13} color="#ffffff" />}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '15px', color: '#222222', fontWeight: '500' }}>Confirmed phone number</div>
+                      <div style={{ fontSize: '12.5px', color: '#717171' }}>Guests must have an active, verified phone on file.</div>
+                    </div>
+                  </div>
+
+                  {/* Government ID Verification */}
+                  <div 
+                    onClick={() => setGuestRequirementsForm(p => ({ ...p, government_id_verified: !p.government_id_verified }))}
+                    style={{ display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer' }}
+                  >
+                    <div 
+                      className={styles.infantsCheckbox}
+                      style={{
+                        backgroundColor: guestRequirementsForm.government_id_verified ? '#000000' : '#ffffff',
+                        border: guestRequirementsForm.government_id_verified ? 'none' : '1.5px solid #b0b0b0'
+                      }}
+                    >
+                      {guestRequirementsForm.government_id_verified && <FaCheck size={13} color="#ffffff" />}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '15px', color: '#222222', fontWeight: '500' }}>Government-issued ID</div>
+                      <div style={{ fontSize: '12.5px', color: '#717171' }}>Require official national ID, Passport or Aadhaar verification.</div>
+                    </div>
+                  </div>
+
+                  {/* Profile Photo */}
+                  <div 
+                    onClick={() => setGuestRequirementsForm(p => ({ ...p, profile_photo: !p.profile_photo }))}
+                    style={{ display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer' }}
+                  >
+                    <div 
+                      className={styles.infantsCheckbox}
+                      style={{
+                        backgroundColor: guestRequirementsForm.profile_photo ? '#000000' : '#ffffff',
+                        border: guestRequirementsForm.profile_photo ? 'none' : '1.5px solid #b0b0b0'
+                      }}
+                    >
+                      {guestRequirementsForm.profile_photo && <FaCheck size={13} color="#ffffff" />}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '15px', color: '#222222', fontWeight: '500' }}>Profile photo required</div>
+                      <div style={{ fontSize: '12.5px', color: '#717171' }}>Guests must have an authentic face photo on profile.</div>
+                    </div>
+                  </div>
+
+                  {/* Payment Verification */}
+                  <div 
+                    onClick={() => setGuestRequirementsForm(p => ({ ...p, payment_verified: !p.payment_verified }))}
+                    style={{ display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer' }}
+                  >
+                    <div 
+                      className={styles.infantsCheckbox}
+                      style={{
+                        backgroundColor: guestRequirementsForm.payment_verified ? '#000000' : '#ffffff',
+                        border: guestRequirementsForm.payment_verified ? 'none' : '1.5px solid #b0b0b0'
+                      }}
+                    >
+                      {guestRequirementsForm.payment_verified && <FaCheck size={13} color="#ffffff" />}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '15px', color: '#222222', fontWeight: '500' }}>Payment method confirmed</div>
+                      <div style={{ fontSize: '12.5px', color: '#717171' }}>Ensure successful pre-authorization check before arrival.</div>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Custom Checkbox: Parents can bring children under 2 years old */}
                 <div 

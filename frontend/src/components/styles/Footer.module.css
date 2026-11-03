@@ -70,7 +70,7 @@
 /* Main Links Section */
 .footer-main-links {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 2rem;
   margin-bottom: 1.5rem;
   padding-bottom: 2rem;

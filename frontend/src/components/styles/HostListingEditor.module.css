@@ -5,6 +5,8 @@
   flex-direction: column;
   height: calc(100vh - 80px); /* Assuming 80px is the header height */
   overflow: hidden;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 .leftSidebar {
@@ -1857,20 +1859,155 @@
 }
 
 
-@media (max-width : 767px) {
-  .leftSidebar{
+@media (max-width : 991px) {
+  .editorPage {
+    height: 100vh;
+    min-height: -webkit-fill-available;
+    overflow: hidden;
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+    width: 100% !important;
+  }
+
+  .editorRowContainer {
+    height: calc(100vh - 64px);
+    overflow: hidden !important;
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  /* Left Sidebar: Mobile me smoothly scroll hoga */
+  .leftSidebar {
+    padding: 20px 16px 80px 16px;
+    height: 100%;
+    width: 100% !important;
+    max-width: 100vw !important;
+    border-right: none;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
+  }
+
+  /* Right Content: Mobile me jab open ho tab content scroll hoga lekin koi ugly desktop scrollbar nahi aayega */
+  .rightContent {
+    padding: 20px 16px 80px 16px;
+    height: 100%;
+    width: 100% !important;
+    max-width: 100vw !important;
+    border-top: none;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox: hide scrollbar */
+    -ms-overflow-style: none; /* IE/Edge */
+    box-sizing: border-box;
+  }
+
+  .rightContent::-webkit-scrollbar {
+    display: none; /* Chrome/Safari: hide scrollbar */
+    width: 0px;
+    background: transparent;
+  }
+
+  .leftSidebar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .leftSidebar::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+  }
+
+  /* When an editor modal is open on mobile, hide the left list so user focuses on editor */
+  .leftSidebarHiddenMobile {
+    display: none !important;
+  }
+
+  /* When no editor modal is active on mobile, hide the empty right preview */
+  .rightContentHiddenMobile {
+    display: none !important;
+  }
+
+  .headerRow {
+    margin-bottom: 20px;
+  }
+
+  .tabsContainer {
+    margin-bottom: 20px;
+  }
+
+  .cardItem {
     padding: 16px;
   }
 
-  .headerRow{
-    margin-bottom: 16px;
+  .rightTitleEditorContainer {
+    width: 100%;
+    min-height: auto;
+    padding-bottom: 24px;
   }
 
-  .tabsContainer{
-    margin-bottom: 16px;
+  .titleEditorCenter {
+    width: 100% !important;
+    padding: 10px 0;
   }
 
- 
+  .titleBigTextarea {
+    font-size: 22px !important;
+  }
+
+  .titleEditorFooter {
+    position: sticky;
+    bottom: 0;
+    background: #ffffff;
+    padding: 16px 24px;
+    z-index: 10;
+  }
+
+  .expertiseContainer{
+    padding: 16px 24px;
+  }
+
+  .photoGrid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .photoDetailContent {
+    padding: 16px !important;
+  }
+
+  .photoDetailImg {
+    max-height: 50vh !important;
+  }
+}
+
+@media (max-width : 576px) {
+  .pageTitle {
+    font-size: 20px;
+  }
+
+  .tabBtn {
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+
+  .cardHeading {
+    font-size: 15px;
+  }
+
+  .cardSubText {
+    font-size: 13px;
+  }
+
+  .photoGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .settingsNavList{
+    padding: 0px;
+  }
 
 }
 

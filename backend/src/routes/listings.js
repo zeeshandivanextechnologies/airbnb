@@ -2641,7 +2641,8 @@ router.put('/:id', async (req, res) => {
       beds,
       bathrooms,
       categorized_photos,
-      time
+      time,
+      guest_requirements
     } = req.body;
 
     const check = await pool.query('SELECT * FROM listings WHERE id = $1', [id]);
@@ -2710,6 +2711,9 @@ router.put('/:id', async (req, res) => {
     const updatedCancellation = cancellation_policy !== undefined ? cancellation_policy : cur.cancellation_policy;
     const updatedCustomLink = custom_link !== undefined ? custom_link : cur.custom_link;
     const updatedPhotoCaptions = photo_captions !== undefined ? safeJson(photo_captions, '{}') : safeJson(cur.photo_captions, '{}');
+    const updatedGuestRequirements = guest_requirements !== undefined 
+      ? (typeof guest_requirements === 'object' ? JSON.stringify(guest_requirements) : guest_requirements) 
+      : (cur.guest_requirements ? (typeof cur.guest_requirements === 'object' ? JSON.stringify(cur.guest_requirements) : cur.guest_requirements) : JSON.stringify({ phone_verified: true, government_id_verified: true, profile_photo: true, min_age: updatedMinAge, allow_infants: updatedAllowInfants }));
 
     const result = await pool.query(
       `UPDATE listings SET
@@ -2757,8 +2761,9 @@ router.put('/:id', async (req, res) => {
         beds = $42,
         bathrooms = $43,
         categorized_photos = $44,
-        time = $45
-      WHERE id = $46
+        time = $45,
+        guest_requirements = $46
+      WHERE id = $47
       RETURNING *`,
       [
         updatedTitle,
@@ -2806,6 +2811,7 @@ router.put('/:id', async (req, res) => {
         updatedBathrooms,
         updatedCategorizedPhotos,
         updatedTime,
+        updatedGuestRequirements,
         id
       ]
     );

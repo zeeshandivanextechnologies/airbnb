@@ -817,3 +817,9 @@
   color: #717171;
   font-weight: 500;
 }
+
+@media (max-width : 767px) {
+  .mapContainer{
+    height: calc(100vh - 450px);
+  }
+}
