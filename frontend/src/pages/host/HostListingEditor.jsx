@@ -633,8 +633,21 @@ function HostListingEditor() {
     fetchListingData();
   }, [id, location.key]);
 
+  const isAnyModalOpen = Boolean(
+    isOffcanvasOpen ||
+    showHostProfileModal ||
+    showLanguageModal ||
+    showCoHostInviteModal ||
+    showLocationEditModal ||
+    showAddProfileModal ||
+    showSimultaneousModal ||
+    showOfferingModal ||
+    activeOfferingDetailModal ||
+    activePhotoDetail
+  );
+
   useEffect(() => {
-    if (isOffcanvasOpen) {
+    if (isAnyModalOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -642,7 +655,7 @@ function HostListingEditor() {
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [isOffcanvasOpen]);
+  }, [isAnyModalOpen]);
 
   // Check if current listing is a Service
   const isService = (listing.type || '').toLowerCase().includes('service') ||
@@ -2124,7 +2137,7 @@ function HostListingEditor() {
           ) : editModal === 'property_type' ? (
             /* Property Type Editor Right Panel Screen */
             <form onSubmit={handleSaveModal} className={styles.rightTitleEditorContainer}>
-              <div style={{ padding: '40px 30px', maxWidth: '750px', margin: '0 auto', width: '100%' }}>
+              <div className={styles.rightSmallEditor}>
                 <h2 style={{ fontSize: '28px', fontWeight: '700', color: '#222222', marginBottom: '8px' }}>
                   {isService ? 'Which of these best describes your service?' : isExperience ? 'Which experience category?' : 'Which of these best describes your place?'}
                 </h2>
@@ -3461,7 +3474,7 @@ function HostListingEditor() {
           ) : editModal === 'price' ? (
             /* Price Editor Right Panel Screen */
             <form onSubmit={handleSaveModal} className={styles.rightTitleEditorContainer}>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', width: '100%' }}>
+              <div className={styles.priceContentSection}>
                 <div style={{ maxWidth: '580px', width: '100%', textAlign: 'center' }}>
                   <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#222222', marginBottom: '8px' }}>
                     Base price
@@ -3531,7 +3544,7 @@ function HostListingEditor() {
           ) : editModal === 'description' ? (
             /* Description Editor Right Panel Screen */
             <form onSubmit={handleSaveModal} className={styles.rightTitleEditorContainer}>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', width: '100%' }}>
+              <div className={styles.editorDescriptionContent} >
                 <div style={{ maxWidth: '640px', width: '100%' }}>
                   <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#222222', marginBottom: '8px', textAlign: 'center' }}>
                     Description
@@ -3588,12 +3601,12 @@ function HostListingEditor() {
           ) : editModal === 'discounts' ? (
             /* Discounts Editor Right Panel Screen */
             <form onSubmit={handleSaveModal} className={styles.rightTitleEditorContainer}>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', width: '100%' }}>
+              <div className={styles.discountContentSection}>
                 <div style={{ maxWidth: '600px', width: '100%' }}>
                   <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#222222', marginBottom: '8px', textAlign: 'center' }}>
                     Discounts
                   </h1>
-                  <p style={{ fontSize: '15px', color: '#717171', marginBottom: '32px', textAlign: 'center' }}>
+                  <p className={styles.discountSubTitle}>
                     Attract more bookings by offering discounts for longer stays.
                   </p>
 
@@ -3726,7 +3739,7 @@ function HostListingEditor() {
           ) : editModal === 'max_guests' ? (
             /* Max Guests Editor Right Panel Screen */
             <form onSubmit={handleSaveModal} className={styles.rightTitleEditorContainer}>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', width: '100%' }}>
+              <div className={styles.guestEditorContentSection}>
                 <div style={{ maxWidth: '580px', width: '100%' }}>
                   <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#222222', marginBottom: '8px', textAlign: 'center' }}>
                     Number of guests
@@ -3735,16 +3748,7 @@ function HostListingEditor() {
                     Set the maximum number of guests your space can comfortably accommodate.
                   </p>
 
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '28px 32px',
-                    border: '1px solid #ebebeb',
-                    borderRadius: '20px',
-                    backgroundColor: '#ffffff',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.04)'
-                  }}>
+                  <div className={styles.guestContentCard}>
                     <div>
                       <div style={{ fontSize: '18px', fontWeight: '600', color: '#222222' }}>Guests</div>
                       <div style={{ fontSize: '14px', color: '#717171' }}>Ages 13 or above</div>
@@ -3823,7 +3827,7 @@ function HostListingEditor() {
           ) : editModal === 'amenities' ? (
             /* Amenities Editor Right Panel Screen */
             <form onSubmit={handleSaveModal} className={styles.rightTitleEditorContainer}>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', width: '100%', overflowY: 'auto' }}>
+              <div className={styles.EditorRightPanelScreen}>
                 <div style={{ maxWidth: '680px', width: '100%' }}>
                   <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#222222', marginBottom: '8px', textAlign: 'center' }}>
                     Amenities

@@ -3,10 +3,17 @@
   background-color: #ffffff;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 80px); /* Assuming 80px is the header height */
+  height: calc(100vh - 80px);
+  min-height: 0;
   overflow: hidden;
   max-width: 100vw;
   overflow-x: hidden;
+}
+
+.editorRowContainer {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .leftSidebar {
@@ -15,6 +22,8 @@
   border-right: 1px solid #ebebeb;
   padding: 50px 30px;
   position: relative;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .leftSidebar::-webkit-scrollbar {
@@ -30,6 +39,8 @@
   overflow-y: auto;
   padding: 50px 30px;
   position: relative;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .rightContent::-webkit-scrollbar {
@@ -891,6 +902,67 @@
   padding: 0;
   min-height: calc(100vh - 180px);
 }
+
+.priceContentSection{
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  width: 100%;
+}
+
+.guestContentCard{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 32px;
+  border: 1px solid #ebebeb;
+  border-radius: 20px;
+  background-color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04)
+}
+
+.discountSubTitle{
+  font-size: 15px;
+  color: #717171;
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.discountContentSection{
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  width: 100%;
+}
+
+.editorDescriptionContent{
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  width: 100%;
+}
+
+.EditorRightPanelScreen{
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  width: 100%;
+  overflow-y: auto;
+}
+
+
 
 .titleEditorCenter {
   flex: 1;
@@ -1858,6 +1930,23 @@
   z-index: 10;
 }
 
+.rightSmallEditor{
+padding: 40px 30px;
+max-width: 750px;
+margin: 0 auto;
+width: 100%;
+}
+
+
+.guestEditorContentSection{
+flex: 1;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+padding: 40px 24px;
+width: 100%;
+}
 
 @media (max-width : 991px) {
   .editorPage {
@@ -1871,6 +1960,7 @@
 
   .editorRowContainer {
     height: calc(100vh - 64px);
+    min-height: 0;
     overflow: hidden !important;
     overflow-x: hidden !important;
     max-width: 100vw !important;
@@ -1887,19 +1977,21 @@
     border-right: none;
     overflow-y: auto !important;
     overflow-x: hidden !important;
+    overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
     box-sizing: border-box;
   }
 
   /* Right Content: Mobile me jab open ho tab content scroll hoga lekin koi ugly desktop scrollbar nahi aayega */
   .rightContent {
-    padding: 20px 16px 80px 16px;
+    padding: 20px 16px 64px 16px;
     height: 100%;
     width: 100% !important;
     max-width: 100vw !important;
     border-top: none;
     overflow-y: auto !important;
     overflow-x: hidden !important;
+    overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none; /* Firefox: hide scrollbar */
     -ms-overflow-style: none; /* IE/Edge */
@@ -1948,6 +2040,43 @@
     padding-bottom: 24px;
   }
 
+  .priceContentSection{
+    padding: 0px;
+    flex: 0;
+  }
+
+  .guestContentCard{
+    padding: 16px;
+  }
+
+  .discountSubTitle{
+    margin-bottom: 16px;
+  }
+
+  .discountContentSection{
+padding: 0px 0px 75px;
+  }
+
+
+  .guestEditorContentSection{
+    padding: 0px;
+    flex: 0;
+  }
+  .editorDescriptionContent{
+    padding: 0px;
+    flex: 0;
+  }
+
+  .EditorRightPanelScreen{
+    overflow-y: visible;
+    padding: 0px 0 80px 0;
+  }
+
+
+  .floatingViewBtn{
+    bottom: 0;
+  }
+
   .titleEditorCenter {
     width: 100% !important;
     padding: 10px 0;
@@ -1966,7 +2095,20 @@
   }
 
   .expertiseContainer{
-    padding: 16px 24px;
+    padding: 0;
+  }
+
+  .offeringsRightContainer{
+    padding: 0px;
+  }
+
+  .offeringPlusBtn{
+    flex-shrink: 0;
+  }
+
+  .rightSmallEditor{
+    padding: 0 0 65px 0;
+    max-width: 100%;
   }
 
   .photoGrid {
